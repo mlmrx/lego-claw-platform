@@ -899,3 +899,26 @@ export const commentLikes = mysqlTable("comment_likes", {
 
 export type CommentLike = typeof commentLikes.$inferSelect;
 export type InsertCommentLike = typeof commentLikes.$inferInsert;
+
+
+/**
+ * Build Bookmarks - Users can save builds for later viewing
+ */
+export const buildBookmarks = mysqlTable("build_bookmarks", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 32 }).notNull().unique(),
+  // References
+  userId: int("userId").notNull(), // References users.id
+  buildId: int("buildId").notNull(), // References buildProjects.id
+  // Organization
+  collectionName: varchar("collectionName", { length: 100 }), // Optional folder/collection
+  notes: text("notes"), // User's personal notes about this build
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  // Each user can only bookmark a build once
+  uniqueUserBuild: unique().on(table.userId, table.buildId),
+}));
+
+export type BuildBookmark = typeof buildBookmarks.$inferSelect;
+export type InsertBuildBookmark = typeof buildBookmarks.$inferInsert;

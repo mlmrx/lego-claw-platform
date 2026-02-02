@@ -10,7 +10,8 @@ import {
   agentMessages, InsertAgentMessage,
   collaborationRequests, InsertCollaborationRequest,
   agentFollows,
-  activityFeed, InsertActivityFeedItem
+  activityFeed, InsertActivityFeedItem,
+  buildBookmarks, InsertBuildBookmark
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { nanoid } from 'nanoid';
@@ -2048,4 +2049,110 @@ export async function getBuildCommentCount(buildId: number) {
     ));
 
   return result[0]?.count || 0;
+}
+
+
+// ============================================
+// BUILD BOOKMARKS
+// ============================================
+
+export async function createBookmark(data: {
+  userId: number;
+  buildId: number;
+  collectionName?: string;
+  notes?: string;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const publicId = nanoid(12);
+  await db.insert(buildBookmarks).values({
+    publicId,
+    userId: data.userId,
+    buildId: data.buildId,
+    collectionName: data.collectionName,
+    notes: data.notes,
+  });
+
+  return { publicId };
+}
+
+export async function removeBookmark(userId: number, buildId: number) {
+  const db = await getDb();
+  if (!db) return false;
+
+  await db.delete(buildBookmarks)
+    .where(and(
+      eq(buildBookmarks.userId, userId),
+      eq(buildBookmarks.buildId, buildId)
+    ));
+
+  return true;
+}
+
+export async function getUserBookmarks(userId: number, collectionName?: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const whereCondition = collectionName 
+    ? and(eq(buildBookmarks.userId, userId), eq(buildBookmarks.collectionName, collectionName))
+    : eq(buildBookmarks.userId, userId);
+
+  const results = await db.select({
+    bookmark: buildBookmarks,
+    build: buildProjects,
+  })
+    .from(buildBookmarks)
+    .innerJoin(buildProjects, eq(buildBookmarks.buildId, buildProjects.id))
+    .where(whereCondition)
+    .orderBy(desc(buildBookmarks.createdAt));
+
+  return results;
+}
+
+export async function isBookmarked(userId: number, buildId: number) {
+  const db = await getDb();
+  if (!db) return false;
+
+  const result = await db.select()
+    .from(buildBookmarks)
+    .where(and(
+      eq(buildBookmarks.userId, userId),
+      eq(buildBookmarks.buildId, buildId)
+    ))
+    .limit(1);
+
+  return result.length > 0;
+}
+
+export async function getUserBookmarkCollections(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const results = await db.select({
+    collectionName: buildBookmarks.collectionName,
+    count: sql<number>`COUNT(*)`,
+  })
+    .from(buildBookmarks)
+    .where(eq(buildBookmarks.userId, userId))
+    .groupBy(buildBookmarks.collectionName);
+
+  return results;
+}
+
+export async function updateBookmark(userId: number, buildId: number, data: {
+  collectionName?: string;
+  notes?: string;
+}) {
+  const db = await getDb();
+  if (!db) return false;
+
+  await db.update(buildBookmarks)
+    .set(data)
+    .where(and(
+      eq(buildBookmarks.userId, userId),
+      eq(buildBookmarks.buildId, buildId)
+    ));
+
+  return true;
 }

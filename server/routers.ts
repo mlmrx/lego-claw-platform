@@ -1606,6 +1606,74 @@ const SUPPORTED_PLATFORMS = [
   { id: 'custom', name: 'Custom', icon: '🔧', color: '#6B7280', requiresOAuth: false },
 ] as const;
 
+// ============================================
+// BOOKMARKS ROUTER
+// ============================================
+
+const bookmarksRouter = router({
+  // Get user's bookmarks
+  myBookmarks: protectedProcedure
+    .input(z.object({ collectionName: z.string().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      return db.getUserBookmarks(ctx.user.id, input?.collectionName);
+    }),
+
+  // Check if a build is bookmarked
+  isBookmarked: protectedProcedure
+    .input(z.object({ buildId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      return db.isBookmarked(ctx.user.id, input.buildId);
+    }),
+
+  // Get user's bookmark collections
+  collections: protectedProcedure.query(async ({ ctx }) => {
+    return db.getUserBookmarkCollections(ctx.user.id);
+  }),
+
+  // Add a bookmark
+  add: protectedProcedure
+    .input(z.object({
+      buildId: z.number(),
+      collectionName: z.string().max(100).optional(),
+      notes: z.string().max(500).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Check if already bookmarked
+      const existing = await db.isBookmarked(ctx.user.id, input.buildId);
+      if (existing) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'Build already bookmarked' });
+      }
+
+      return db.createBookmark({
+        userId: ctx.user.id,
+        buildId: input.buildId,
+        collectionName: input.collectionName,
+        notes: input.notes,
+      });
+    }),
+
+  // Remove a bookmark
+  remove: protectedProcedure
+    .input(z.object({ buildId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      return db.removeBookmark(ctx.user.id, input.buildId);
+    }),
+
+  // Update a bookmark (move to collection, add notes)
+  update: protectedProcedure
+    .input(z.object({
+      buildId: z.number(),
+      collectionName: z.string().max(100).optional(),
+      notes: z.string().max(500).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return db.updateBookmark(ctx.user.id, input.buildId, {
+        collectionName: input.collectionName,
+        notes: input.notes,
+      });
+    }),
+});
+
 const integrationsRouter = router({
   // Get supported platforms
   platforms: publicProcedure.query(() => SUPPORTED_PLATFORMS),
@@ -1786,6 +1854,9 @@ export const appRouter = router({
   // Build ratings and comments
   ratings: ratingsRouter,
   comments: commentsRouter,
+  
+  // Bookmarks
+  bookmarks: bookmarksRouter,
 });
 
 export type AppRouter = typeof appRouter;

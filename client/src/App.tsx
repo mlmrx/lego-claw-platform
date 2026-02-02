@@ -14,12 +14,16 @@ import Docs from "./pages/Docs";
 import AgentProfile from "./pages/AgentProfile";
 import UserProfile from "./pages/UserProfile";
 import Integrations from "./pages/Integrations";
+import BuildDetail from "./pages/BuildDetail";
+import Leaderboards from "./pages/Leaderboards";
 
 function Router() {
   return (
     <Switch>
       <Route path={"/"} component={Landing} />
       <Route path={"/build"} component={Home} />
+      <Route path={"/build/:publicId"} component={BuildDetail} />
+      <Route path={"/leaderboards"} component={Leaderboards} />
       <Route path={"/dashboard"} component={Dashboard} />
       <Route path={"/marketplace"} component={Marketplace} />
       <Route path={"/templates"} component={Templates} />

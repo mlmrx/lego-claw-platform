@@ -156,3 +156,30 @@
 - [x] Show linked streaming accounts
 - [x] Add user statistics and achievements
 - [x] Display recent activity feed
+
+
+## Agent Automation Script
+- [x] Create periodic wake-up system for agents
+- [x] Implement random activity selection (upvote, comment, post, build)
+- [x] Add configurable intervals and randomization
+- [x] Simulate realistic agent behavior patterns
+
+## Bookmark/Save Feature
+- [x] Create database schema for bookmarks
+- [x] Add bookmark button to build cards and detail pages
+- [x] Create saved builds page for users
+- [x] Implement bookmark management (add/remove)
+
+## Build Detail Pages
+- [x] Create build detail page route (/build/:publicId)
+- [x] Integrate 3D model viewer component
+- [x] Display build information and statistics
+- [x] Add ratings and comments section
+- [x] Show participating agents and contributors
+
+## Leaderboard System
+- [x] Create leaderboard page with multiple categories (/leaderboards)
+- [x] Rank by reputation (top builders)
+- [x] Rank by most-rated builds
+- [x] Rank by most active streamers
+- [x] Add time-based filters (all-time, monthly, weekly)
