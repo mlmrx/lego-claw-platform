@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
+import { SAMPLE_TEMPLATES } from "@/lib/sample-data";
 
 export default function Templates() {
   const { isAuthenticated } = useAuth();
@@ -35,11 +36,15 @@ export default function Templates() {
   });
 
   // Fetch templates
-  const { data: publicTemplates = [], isLoading: loadingPublic } = trpc.templates.list.useQuery({ limit: 50 });
-  const { data: featuredTemplates = [], isLoading: loadingFeatured } = trpc.templates.featured.useQuery({ limit: 6 });
+  const { data: dbPublicTemplates = [], isLoading: loadingPublic } = trpc.templates.list.useQuery({ limit: 50 });
+  const { data: dbFeaturedTemplates = [], isLoading: loadingFeatured } = trpc.templates.featured.useQuery({ limit: 6 });
   const { data: myTemplates = [], isLoading: loadingMy } = trpc.templates.myTemplates.useQuery(undefined, {
     enabled: isAuthenticated,
   });
+  
+  // Use sample data as fallback when database is empty
+  const publicTemplates = dbPublicTemplates.length > 0 ? dbPublicTemplates : SAMPLE_TEMPLATES;
+  const featuredTemplates = dbFeaturedTemplates.length > 0 ? dbFeaturedTemplates : SAMPLE_TEMPLATES.filter(t => t.isFeatured);
 
   // Mutations
   const useTemplateMutation = trpc.templates.use.useMutation({

@@ -22,6 +22,7 @@ import { Link } from "wouter";
 import { toast } from "sonner";
 import { ChallengeCreator } from "@/components/ChallengeCreator";
 import { SocialShare } from "@/components/SocialShare";
+import { SAMPLE_CHALLENGES } from "@/lib/sample-data";
 
 export default function Challenges() {
   const { isAuthenticated } = useAuth();
@@ -30,9 +31,18 @@ export default function Challenges() {
   const [selectedAgent, setSelectedAgent] = useState("");
 
   // Fetch challenges
-  const { data: activeChallenges = [], isLoading: loadingActive } = trpc.challenges.active.useQuery();
-  const { data: upcomingChallenges = [], isLoading: loadingUpcoming } = trpc.challenges.upcoming.useQuery();
-  const { data: completedChallenges = [], isLoading: loadingCompleted } = trpc.challenges.completed.useQuery();
+  const { data: dbActiveChallenges = [], isLoading: loadingActive } = trpc.challenges.active.useQuery();
+  const { data: dbUpcomingChallenges = [], isLoading: loadingUpcoming } = trpc.challenges.upcoming.useQuery();
+  const { data: dbCompletedChallenges = [], isLoading: loadingCompleted } = trpc.challenges.completed.useQuery();
+  
+  // Use sample data as fallback when database is empty
+  const sampleActive = SAMPLE_CHALLENGES.filter(c => c.status === 'active');
+  const sampleUpcoming = SAMPLE_CHALLENGES.filter(c => c.status === 'upcoming');
+  const sampleCompleted = SAMPLE_CHALLENGES.filter(c => c.status === 'completed');
+  
+  const activeChallenges = dbActiveChallenges.length > 0 ? dbActiveChallenges : sampleActive;
+  const upcomingChallenges = dbUpcomingChallenges.length > 0 ? dbUpcomingChallenges : sampleUpcoming;
+  const completedChallenges = dbCompletedChallenges.length > 0 ? dbCompletedChallenges : sampleCompleted;
   
   // Fetch user's agents for joining
   const { data: myAgents = [] } = trpc.registeredAgents.myAgents.useQuery(undefined, {

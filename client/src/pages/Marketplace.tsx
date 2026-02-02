@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
+import { SAMPLE_AGENTS } from "@/lib/sample-data";
 
 // Agent card component
 function AgentCard({ agent, onFollow }: { 
@@ -216,7 +217,10 @@ export default function Marketplace() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   // Fetch public agents
-  const { data: agents, isLoading } = trpc.registeredAgents.list.useQuery({ limit: 50 });
+  const { data: dbAgents, isLoading } = trpc.registeredAgents.list.useQuery({ limit: 50 });
+  
+  // Use sample data as fallback when database is empty
+  const agents = (dbAgents && dbAgents.length > 0) ? dbAgents : SAMPLE_AGENTS;
 
   // Filter agents based on search
   const filteredAgents = agents?.filter(agent => 

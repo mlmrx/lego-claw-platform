@@ -22,8 +22,16 @@ import {
   Eye,
   EyeOff,
   RefreshCw,
-  Loader2
+  Loader2,
+  Activity,
+  AlertTriangle,
+  Clock,
+  Wifi,
+  WifiOff,
+  BarChart3,
+  Zap
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { getLoginUrl } from "@/const";
 
 type Platform = {
@@ -296,6 +304,7 @@ export default function Integrations() {
         <Tabs defaultValue="active" className="space-y-6">
           <TabsList>
             <TabsTrigger value="active">Active Integrations</TabsTrigger>
+            <TabsTrigger value="health">Health Monitor</TabsTrigger>
             <TabsTrigger value="available">Available Platforms</TabsTrigger>
           </TabsList>
 
@@ -428,6 +437,259 @@ export default function Integrations() {
                 })}
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="health" className="space-y-6">
+            {/* Health Overview Cards */}
+            <div className="grid gap-4 md:grid-cols-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total Integrations</p>
+                      <p className="text-2xl font-bold">{integrations?.length || 0}</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Zap className="w-6 h-6 text-primary" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Healthy</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {integrations?.filter(i => i.isVerified && i.isActive).length || 0}
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
+                      <Wifi className="w-6 h-6 text-green-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Needs Attention</p>
+                      <p className="text-2xl font-bold text-yellow-600">
+                        {integrations?.filter(i => !i.isVerified).length || 0}
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center">
+                      <AlertTriangle className="w-6 h-6 text-yellow-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Disconnected</p>
+                      <p className="text-2xl font-bold text-red-600">
+                        {integrations?.filter(i => !i.isActive).length || 0}
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
+                      <WifiOff className="w-6 h-6 text-red-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Integration Health Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="w-5 h-5" />
+                  Integration Health Status
+                </CardTitle>
+                <CardDescription>
+                  Real-time connection status and last sync times
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {integrations?.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    No integrations to monitor
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {integrations?.map((integration) => {
+                      const platform = getPlatformInfo(integration.platform);
+                      const isHealthy = integration.isVerified && integration.isActive;
+                      const needsAttention = !integration.isVerified;
+                      const isDisconnected = !integration.isActive;
+                      
+                      // Calculate token expiry status (use lastVerifiedAt as proxy for health)
+                      const lastVerified = integration.lastVerifiedAt ? new Date(integration.lastVerifiedAt) : null;
+                      const daysSinceVerified = lastVerified ? (Date.now() - lastVerified.getTime()) / (24 * 60 * 60 * 1000) : null;
+                      const isStale = daysSinceVerified !== null && daysSinceVerified > 7;
+                      const isVeryStale = daysSinceVerified !== null && daysSinceVerified > 30;
+                      
+                      // Calculate health score
+                      let healthScore = 100;
+                      if (!integration.isVerified) healthScore -= 30;
+                      if (!integration.isActive) healthScore -= 50;
+                      if (isVeryStale) healthScore -= 40;
+                      else if (isStale) healthScore -= 20;
+                      healthScore = Math.max(0, healthScore);
+                      
+                      return (
+                        <div 
+                          key={integration.publicId}
+                          className="flex items-center gap-4 p-4 rounded-lg border bg-card"
+                        >
+                          {/* Platform Icon */}
+                          <div 
+                            className="w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0"
+                            style={{ backgroundColor: platform?.color + '20' }}
+                          >
+                            {platform?.icon}
+                          </div>
+                          
+                          {/* Platform Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium truncate">
+                                {platform?.name || integration.platform}
+                              </span>
+                              {integration.platformUsername && (
+                                <span className="text-sm text-muted-foreground">
+                                  @{integration.platformUsername}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                Last sync: {integration.lastVerifiedAt 
+                                  ? new Date(integration.lastVerifiedAt).toLocaleString()
+                                  : 'Never'
+                                }
+                              </span>
+                              {daysSinceVerified !== null && daysSinceVerified > 3 && (
+                                <span className={`flex items-center gap-1 ${
+                                  isVeryStale ? 'text-red-600' : 
+                                  isStale ? 'text-yellow-600' : ''
+                                }`}>
+                                  {Math.floor(daysSinceVerified)} days since verified
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Health Score */}
+                          <div className="w-32 flex-shrink-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs text-muted-foreground">Health</span>
+                              <span className={`text-xs font-medium ${
+                                healthScore >= 80 ? 'text-green-600' :
+                                healthScore >= 50 ? 'text-yellow-600' : 'text-red-600'
+                              }`}>
+                                {healthScore}%
+                              </span>
+                            </div>
+                            <Progress 
+                              value={healthScore} 
+                              className={`h-2 ${
+                                healthScore >= 80 ? '[&>div]:bg-green-500' :
+                                healthScore >= 50 ? '[&>div]:bg-yellow-500' : '[&>div]:bg-red-500'
+                              }`}
+                            />
+                          </div>
+                          
+                          {/* Status Badge */}
+                          <div className="flex-shrink-0">
+                            {isDisconnected ? (
+                              <Badge variant="destructive" className="gap-1">
+                                <WifiOff className="w-3 h-3" />
+                                Disconnected
+                              </Badge>
+                            ) : needsAttention ? (
+                              <Badge variant="secondary" className="gap-1 bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                                <AlertTriangle className="w-3 h-3" />
+                                Unverified
+                              </Badge>
+                            ) : isVeryStale ? (
+                              <Badge variant="destructive" className="gap-1">
+                                <Clock className="w-3 h-3" />
+                                Stale
+                              </Badge>
+                            ) : isStale ? (
+                              <Badge variant="secondary" className="gap-1 bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                                <Clock className="w-3 h-3" />
+                                Needs Refresh
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="gap-1 bg-green-500/10 text-green-600 border-green-500/20">
+                                <CheckCircle className="w-3 h-3" />
+                                Healthy
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          {/* Actions */}
+                          <div className="flex-shrink-0">
+                            {(!integration.isVerified || isVeryStale) && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => verifyMutation.mutate({ publicId: integration.publicId })}
+                                disabled={verifyMutation.isPending}
+                              >
+                                <RefreshCw className={`w-3 h-3 mr-1 ${verifyMutation.isPending ? 'animate-spin' : ''}`} />
+                                Reconnect
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Usage Statistics */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  Usage Statistics
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="text-center p-4 rounded-lg bg-muted/50">
+                    <p className="text-3xl font-bold text-primary">
+                      {integrations?.reduce((sum, i) => sum + (i.totalStreams || 0), 0) || 0}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Total Streams</p>
+                  </div>
+                  <div className="text-center p-4 rounded-lg bg-muted/50">
+                    <p className="text-3xl font-bold text-primary">
+                      {integrations?.reduce((sum, i) => sum + (i.totalViewers || 0), 0) || 0}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Total Viewers</p>
+                  </div>
+                  <div className="text-center p-4 rounded-lg bg-muted/50">
+                    <p className="text-3xl font-bold text-primary">
+                      {integrations?.filter(i => i.autoStream).length || 0}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Auto-Stream Enabled</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="available" className="space-y-4">

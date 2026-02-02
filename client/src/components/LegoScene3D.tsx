@@ -419,4 +419,268 @@ export const DUCK_BUILD: BuildStructure = {
   ],
 };
 
-export const BUILD_STRUCTURES = [SPACESHIP_BUILD, CASTLE_BUILD, ROBOT_BUILD, HOUSE_BUILD, CAR_BUILD, DUCK_BUILD];
+// Millennium Falcon inspired build
+export const STARSHIP_BUILD: BuildStructure = {
+  name: "Millennium Starship",
+  description: "An iconic smuggler's vessel",
+  totalBricks: 85,
+  bricks: [
+    // Main disc body - layer 1
+    { position: [0, 0.48, 0], color: LEGO_COLORS.gray, width: 8, depth: 6, height: 1 },
+    { position: [-3.2, 0.48, 0], color: LEGO_COLORS.gray, width: 2, depth: 4, height: 1 },
+    { position: [3.2, 0.48, 0], color: LEGO_COLORS.gray, width: 2, depth: 4, height: 1 },
+    // Main disc body - layer 2
+    { position: [0, 0.8, 0], color: LEGO_COLORS.darkGray, width: 6, depth: 4, height: 1 },
+    { position: [-2.4, 0.8, 0], color: LEGO_COLORS.darkGray, width: 2, depth: 3, height: 1 },
+    { position: [2.4, 0.8, 0], color: LEGO_COLORS.darkGray, width: 2, depth: 3, height: 1 },
+    // Cockpit arm
+    { position: [4.8, 0.48, 0], color: LEGO_COLORS.gray, width: 3, depth: 2, height: 1 },
+    { position: [5.6, 0.8, 0], color: LEGO_COLORS.gray, width: 2, depth: 2, height: 1 },
+    // Cockpit
+    { position: [6.4, 1.12, 0], color: LEGO_COLORS.cyan, width: 1, depth: 1, height: 1 },
+    // Mandibles (front forks)
+    { position: [-4.8, 0.48, -1.2], color: LEGO_COLORS.gray, width: 3, depth: 1, height: 1 },
+    { position: [-4.8, 0.48, 1.2], color: LEGO_COLORS.gray, width: 3, depth: 1, height: 1 },
+    { position: [-6.4, 0.48, -1.2], color: LEGO_COLORS.darkGray, width: 2, depth: 1, height: 1 },
+    { position: [-6.4, 0.48, 1.2], color: LEGO_COLORS.darkGray, width: 2, depth: 1, height: 1 },
+    // Top details
+    { position: [0, 1.12, 0], color: LEGO_COLORS.white, width: 4, depth: 3, height: 1 },
+    { position: [1.6, 1.44, 0], color: LEGO_COLORS.white, width: 2, depth: 2, height: 1 },
+    // Radar dish
+    { position: [1.6, 1.76, 0], color: LEGO_COLORS.white, width: 1, depth: 1, height: 1 },
+    // Engine exhausts
+    { position: [3.2, 0.48, -1.6], color: LEGO_COLORS.blue, width: 1, depth: 1, height: 1 },
+    { position: [3.2, 0.48, 1.6], color: LEGO_COLORS.blue, width: 1, depth: 1, height: 1 },
+    { position: [3.2, 0.48, 0], color: LEGO_COLORS.blue, width: 1, depth: 1, height: 1 },
+    // Landing gear
+    { position: [-1.6, 0.16, -1.6], color: LEGO_COLORS.darkGray, width: 1, depth: 1, height: 1 },
+    { position: [-1.6, 0.16, 1.6], color: LEGO_COLORS.darkGray, width: 1, depth: 1, height: 1 },
+    { position: [1.6, 0.16, 0], color: LEGO_COLORS.darkGray, width: 1, depth: 1, height: 1 },
+  ],
+};
+
+// Dragon build
+export const DRAGON_BUILD: BuildStructure = {
+  name: "Fire Dragon",
+  description: "A majestic fire-breathing dragon",
+  totalBricks: 72,
+  bricks: [
+    // Body base
+    { position: [0, 0.48, 0], color: LEGO_COLORS.red, width: 4, depth: 3, height: 3 },
+    { position: [0, 1.44, 0], color: LEGO_COLORS.red, width: 4, depth: 3, height: 3 },
+    { position: [0, 2.4, 0], color: LEGO_COLORS.red, width: 3, depth: 2, height: 3 },
+    // Neck
+    { position: [-2.4, 2.4, 0], color: LEGO_COLORS.red, width: 2, depth: 2, height: 3 },
+    { position: [-3.2, 3.36, 0], color: LEGO_COLORS.red, width: 2, depth: 2, height: 3 },
+    { position: [-4, 4.32, 0], color: LEGO_COLORS.red, width: 2, depth: 2, height: 3 },
+    // Head
+    { position: [-4.8, 5.28, 0], color: LEGO_COLORS.red, width: 3, depth: 2, height: 3 },
+    { position: [-5.6, 5.28, 0], color: LEGO_COLORS.orange, width: 1, depth: 1, height: 1 },
+    // Eyes
+    { position: [-5.2, 5.76, -0.4], color: LEGO_COLORS.yellow, width: 1, depth: 1, height: 1 },
+    { position: [-5.2, 5.76, 0.4], color: LEGO_COLORS.yellow, width: 1, depth: 1, height: 1 },
+    // Horns
+    { position: [-4.4, 6.24, -0.4], color: LEGO_COLORS.darkGray, width: 1, depth: 1, height: 1 },
+    { position: [-4.4, 6.24, 0.4], color: LEGO_COLORS.darkGray, width: 1, depth: 1, height: 1 },
+    // Tail
+    { position: [2.4, 1.44, 0], color: LEGO_COLORS.red, width: 2, depth: 2, height: 3 },
+    { position: [3.2, 0.96, 0], color: LEGO_COLORS.red, width: 2, depth: 1, height: 3 },
+    { position: [4, 0.48, 0], color: LEGO_COLORS.red, width: 2, depth: 1, height: 1 },
+    { position: [4.8, 0.48, 0], color: LEGO_COLORS.orange, width: 1, depth: 1, height: 1 },
+    // Wings left
+    { position: [0, 3.36, -2], color: LEGO_COLORS.red, width: 2, depth: 1, height: 3 },
+    { position: [-0.8, 4.32, -2.8], color: LEGO_COLORS.red, width: 3, depth: 1, height: 1 },
+    { position: [-1.6, 4.8, -3.6], color: LEGO_COLORS.red, width: 4, depth: 1, height: 1 },
+    { position: [-2.4, 5.28, -4.4], color: LEGO_COLORS.orange, width: 3, depth: 1, height: 1 },
+    // Wings right
+    { position: [0, 3.36, 2], color: LEGO_COLORS.red, width: 2, depth: 1, height: 3 },
+    { position: [-0.8, 4.32, 2.8], color: LEGO_COLORS.red, width: 3, depth: 1, height: 1 },
+    { position: [-1.6, 4.8, 3.6], color: LEGO_COLORS.red, width: 4, depth: 1, height: 1 },
+    { position: [-2.4, 5.28, 4.4], color: LEGO_COLORS.orange, width: 3, depth: 1, height: 1 },
+    // Legs
+    { position: [-0.8, 0.16, -1.6], color: LEGO_COLORS.darkGray, width: 1, depth: 1, height: 1 },
+    { position: [-0.8, 0.16, 1.6], color: LEGO_COLORS.darkGray, width: 1, depth: 1, height: 1 },
+    { position: [1.6, 0.16, -1.6], color: LEGO_COLORS.darkGray, width: 1, depth: 1, height: 1 },
+    { position: [1.6, 0.16, 1.6], color: LEGO_COLORS.darkGray, width: 1, depth: 1, height: 1 },
+    // Belly scales
+    { position: [0, 0.48, 0], color: LEGO_COLORS.orange, width: 2, depth: 1, height: 1 },
+    { position: [0, 1.44, 0], color: LEGO_COLORS.orange, width: 2, depth: 1, height: 1 },
+  ],
+};
+
+// Pirate Ship build
+export const PIRATE_SHIP_BUILD: BuildStructure = {
+  name: "Black Pearl",
+  description: "A fearsome pirate galleon",
+  totalBricks: 90,
+  bricks: [
+    // Hull base
+    { position: [0, 0.48, 0], color: LEGO_COLORS.brown, width: 8, depth: 3, height: 3 },
+    { position: [-3.2, 0.48, 0], color: LEGO_COLORS.brown, width: 2, depth: 2, height: 3 },
+    { position: [3.2, 0.48, 0], color: LEGO_COLORS.brown, width: 2, depth: 2, height: 3 },
+    // Hull sides
+    { position: [0, 1.44, -1.2], color: LEGO_COLORS.brown, width: 8, depth: 1, height: 3 },
+    { position: [0, 1.44, 1.2], color: LEGO_COLORS.brown, width: 8, depth: 1, height: 3 },
+    // Deck
+    { position: [0, 2.4, 0], color: LEGO_COLORS.tan, width: 6, depth: 2, height: 1 },
+    // Bow (front)
+    { position: [-4, 1.44, 0], color: LEGO_COLORS.brown, width: 2, depth: 2, height: 3 },
+    { position: [-4.8, 2.4, 0], color: LEGO_COLORS.brown, width: 1, depth: 1, height: 3 },
+    { position: [-5.6, 2.88, 0], color: LEGO_COLORS.yellow, width: 1, depth: 1, height: 1 },
+    // Stern (back)
+    { position: [4, 1.44, 0], color: LEGO_COLORS.brown, width: 2, depth: 2, height: 3 },
+    { position: [4, 2.4, 0], color: LEGO_COLORS.brown, width: 2, depth: 2, height: 3 },
+    { position: [4, 3.36, 0], color: LEGO_COLORS.brown, width: 2, depth: 2, height: 1 },
+    // Captain's cabin
+    { position: [4, 3.68, 0], color: LEGO_COLORS.tan, width: 2, depth: 2, height: 1 },
+    { position: [4, 4, 0], color: LEGO_COLORS.red, width: 2, depth: 2, height: 1 },
+    // Main mast
+    { position: [0, 2.72, 0], color: LEGO_COLORS.brown, width: 1, depth: 1, height: 3 },
+    { position: [0, 3.68, 0], color: LEGO_COLORS.brown, width: 1, depth: 1, height: 3 },
+    { position: [0, 4.64, 0], color: LEGO_COLORS.brown, width: 1, depth: 1, height: 3 },
+    { position: [0, 5.6, 0], color: LEGO_COLORS.brown, width: 1, depth: 1, height: 3 },
+    // Main sail
+    { position: [0, 4.64, 0], color: LEGO_COLORS.white, width: 1, depth: 4, height: 3 },
+    { position: [0, 5.6, 0], color: LEGO_COLORS.white, width: 1, depth: 3, height: 3 },
+    // Front mast
+    { position: [-2.4, 2.72, 0], color: LEGO_COLORS.brown, width: 1, depth: 1, height: 3 },
+    { position: [-2.4, 3.68, 0], color: LEGO_COLORS.brown, width: 1, depth: 1, height: 3 },
+    { position: [-2.4, 4.64, 0], color: LEGO_COLORS.brown, width: 1, depth: 1, height: 3 },
+    // Front sail
+    { position: [-2.4, 3.68, 0], color: LEGO_COLORS.white, width: 1, depth: 3, height: 3 },
+    { position: [-2.4, 4.64, 0], color: LEGO_COLORS.white, width: 1, depth: 2, height: 3 },
+    // Crow's nest
+    { position: [0, 6.56, 0], color: LEGO_COLORS.brown, width: 1, depth: 1, height: 1 },
+    // Jolly Roger flag
+    { position: [0, 7.04, 0], color: LEGO_COLORS.black, width: 1, depth: 2, height: 1 },
+    // Cannons
+    { position: [-1.6, 1.76, -1.6], color: LEGO_COLORS.darkGray, width: 1, depth: 1, height: 1 },
+    { position: [0, 1.76, -1.6], color: LEGO_COLORS.darkGray, width: 1, depth: 1, height: 1 },
+    { position: [1.6, 1.76, -1.6], color: LEGO_COLORS.darkGray, width: 1, depth: 1, height: 1 },
+    { position: [-1.6, 1.76, 1.6], color: LEGO_COLORS.darkGray, width: 1, depth: 1, height: 1 },
+    { position: [0, 1.76, 1.6], color: LEGO_COLORS.darkGray, width: 1, depth: 1, height: 1 },
+    { position: [1.6, 1.76, 1.6], color: LEGO_COLORS.darkGray, width: 1, depth: 1, height: 1 },
+  ],
+};
+
+// Mech Warrior build
+export const MECH_BUILD: BuildStructure = {
+  name: "Titan Mech",
+  description: "A towering battle mech",
+  totalBricks: 78,
+  bricks: [
+    // Feet
+    { position: [-1.6, 0.48, 0], color: LEGO_COLORS.darkGray, width: 2, depth: 3, height: 1 },
+    { position: [1.6, 0.48, 0], color: LEGO_COLORS.darkGray, width: 2, depth: 3, height: 1 },
+    // Lower legs
+    { position: [-1.6, 0.8, 0], color: LEGO_COLORS.gray, width: 1, depth: 2, height: 3 },
+    { position: [1.6, 0.8, 0], color: LEGO_COLORS.gray, width: 1, depth: 2, height: 3 },
+    { position: [-1.6, 1.76, 0], color: LEGO_COLORS.gray, width: 1, depth: 2, height: 3 },
+    { position: [1.6, 1.76, 0], color: LEGO_COLORS.gray, width: 1, depth: 2, height: 3 },
+    // Knee joints
+    { position: [-1.6, 2.72, 0], color: LEGO_COLORS.yellow, width: 1, depth: 1, height: 1 },
+    { position: [1.6, 2.72, 0], color: LEGO_COLORS.yellow, width: 1, depth: 1, height: 1 },
+    // Upper legs
+    { position: [-1.6, 3.04, 0], color: LEGO_COLORS.gray, width: 1, depth: 2, height: 3 },
+    { position: [1.6, 3.04, 0], color: LEGO_COLORS.gray, width: 1, depth: 2, height: 3 },
+    // Hip joints
+    { position: [-1.6, 4, 0], color: LEGO_COLORS.yellow, width: 1, depth: 1, height: 1 },
+    { position: [1.6, 4, 0], color: LEGO_COLORS.yellow, width: 1, depth: 1, height: 1 },
+    // Torso base
+    { position: [0, 4.32, 0], color: LEGO_COLORS.blue, width: 4, depth: 3, height: 3 },
+    { position: [0, 5.28, 0], color: LEGO_COLORS.blue, width: 4, depth: 3, height: 3 },
+    // Chest plate
+    { position: [0, 5.28, -1.2], color: LEGO_COLORS.red, width: 2, depth: 1, height: 3 },
+    // Reactor core
+    { position: [0, 5.76, -1.2], color: LEGO_COLORS.cyan, width: 1, depth: 1, height: 1 },
+    // Shoulders
+    { position: [-2.4, 5.28, 0], color: LEGO_COLORS.gray, width: 1, depth: 2, height: 3 },
+    { position: [2.4, 5.28, 0], color: LEGO_COLORS.gray, width: 1, depth: 2, height: 3 },
+    // Shoulder armor
+    { position: [-2.8, 5.76, 0], color: LEGO_COLORS.blue, width: 1, depth: 3, height: 1 },
+    { position: [2.8, 5.76, 0], color: LEGO_COLORS.blue, width: 1, depth: 3, height: 1 },
+    // Upper arms
+    { position: [-3.2, 4.8, 0], color: LEGO_COLORS.gray, width: 1, depth: 1, height: 3 },
+    { position: [3.2, 4.8, 0], color: LEGO_COLORS.gray, width: 1, depth: 1, height: 3 },
+    // Elbow joints
+    { position: [-3.2, 4.32, 0], color: LEGO_COLORS.yellow, width: 1, depth: 1, height: 1 },
+    { position: [3.2, 4.32, 0], color: LEGO_COLORS.yellow, width: 1, depth: 1, height: 1 },
+    // Lower arms
+    { position: [-3.2, 3.84, 0], color: LEGO_COLORS.gray, width: 1, depth: 1, height: 3 },
+    { position: [3.2, 3.84, 0], color: LEGO_COLORS.gray, width: 1, depth: 1, height: 3 },
+    // Left hand - cannon
+    { position: [-3.2, 2.88, 0], color: LEGO_COLORS.darkGray, width: 1, depth: 2, height: 3 },
+    { position: [-3.2, 2.4, -0.8], color: LEGO_COLORS.red, width: 1, depth: 1, height: 1 },
+    // Right hand - blade
+    { position: [3.2, 2.88, 0], color: LEGO_COLORS.darkGray, width: 1, depth: 1, height: 3 },
+    { position: [3.2, 2.4, 0], color: LEGO_COLORS.cyan, width: 1, depth: 3, height: 1 },
+    // Head
+    { position: [0, 6.24, 0], color: LEGO_COLORS.gray, width: 2, depth: 2, height: 3 },
+    // Visor
+    { position: [0, 6.72, -0.8], color: LEGO_COLORS.cyan, width: 2, depth: 1, height: 1 },
+    // Antenna
+    { position: [-0.4, 7.2, 0], color: LEGO_COLORS.red, width: 1, depth: 1, height: 1 },
+    { position: [0.4, 7.2, 0], color: LEGO_COLORS.red, width: 1, depth: 1, height: 1 },
+    // Back thrusters
+    { position: [-0.8, 5.28, 1.2], color: LEGO_COLORS.darkGray, width: 1, depth: 1, height: 3 },
+    { position: [0.8, 5.28, 1.2], color: LEGO_COLORS.darkGray, width: 1, depth: 1, height: 3 },
+    { position: [-0.8, 4.8, 1.6], color: LEGO_COLORS.orange, width: 1, depth: 1, height: 1 },
+    { position: [0.8, 4.8, 1.6], color: LEGO_COLORS.orange, width: 1, depth: 1, height: 1 },
+  ],
+};
+
+// Tower/Skyscraper build
+export const TOWER_BUILD: BuildStructure = {
+  name: "Sky Tower",
+  description: "A gleaming modern skyscraper",
+  totalBricks: 65,
+  bricks: [
+    // Foundation
+    { position: [0, 0.48, 0], color: LEGO_COLORS.gray, width: 6, depth: 6, height: 1 },
+    // Ground floor
+    { position: [0, 0.8, 0], color: LEGO_COLORS.white, width: 5, depth: 5, height: 3 },
+    { position: [0, 0.8, -2], color: LEGO_COLORS.cyan, width: 3, depth: 1, height: 3 },
+    // Floor 2
+    { position: [0, 1.76, 0], color: LEGO_COLORS.white, width: 5, depth: 5, height: 3 },
+    { position: [-2, 1.76, 0], color: LEGO_COLORS.cyan, width: 1, depth: 3, height: 3 },
+    { position: [2, 1.76, 0], color: LEGO_COLORS.cyan, width: 1, depth: 3, height: 3 },
+    // Floor 3
+    { position: [0, 2.72, 0], color: LEGO_COLORS.white, width: 4, depth: 4, height: 3 },
+    { position: [0, 2.72, -1.6], color: LEGO_COLORS.cyan, width: 2, depth: 1, height: 3 },
+    // Floor 4
+    { position: [0, 3.68, 0], color: LEGO_COLORS.white, width: 4, depth: 4, height: 3 },
+    { position: [-1.6, 3.68, 0], color: LEGO_COLORS.cyan, width: 1, depth: 2, height: 3 },
+    { position: [1.6, 3.68, 0], color: LEGO_COLORS.cyan, width: 1, depth: 2, height: 3 },
+    // Floor 5
+    { position: [0, 4.64, 0], color: LEGO_COLORS.white, width: 3, depth: 3, height: 3 },
+    { position: [0, 4.64, -1.2], color: LEGO_COLORS.cyan, width: 2, depth: 1, height: 3 },
+    // Floor 6
+    { position: [0, 5.6, 0], color: LEGO_COLORS.white, width: 3, depth: 3, height: 3 },
+    // Floor 7
+    { position: [0, 6.56, 0], color: LEGO_COLORS.white, width: 2, depth: 2, height: 3 },
+    { position: [0, 6.56, -0.8], color: LEGO_COLORS.cyan, width: 1, depth: 1, height: 3 },
+    // Floor 8
+    { position: [0, 7.52, 0], color: LEGO_COLORS.white, width: 2, depth: 2, height: 3 },
+    // Spire base
+    { position: [0, 8.48, 0], color: LEGO_COLORS.gray, width: 1, depth: 1, height: 3 },
+    // Spire
+    { position: [0, 9.44, 0], color: LEGO_COLORS.gray, width: 1, depth: 1, height: 3 },
+    { position: [0, 10.4, 0], color: LEGO_COLORS.red, width: 1, depth: 1, height: 1 },
+    // Helipad
+    { position: [0, 8.16, 0], color: LEGO_COLORS.darkGray, width: 2, depth: 2, height: 1 },
+  ],
+};
+
+export const BUILD_STRUCTURES = [
+  SPACESHIP_BUILD, 
+  CASTLE_BUILD, 
+  ROBOT_BUILD, 
+  HOUSE_BUILD, 
+  CAR_BUILD, 
+  DUCK_BUILD,
+  STARSHIP_BUILD,
+  DRAGON_BUILD,
+  PIRATE_SHIP_BUILD,
+  MECH_BUILD,
+  TOWER_BUILD,
+];
