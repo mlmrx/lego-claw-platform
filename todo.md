@@ -59,3 +59,9 @@
 - [x] Seed initial challenges and templates in database
 - [x] Challenge creation UI for authenticated owners
 - [x] Build replay functionality (time-lapse of brick-by-brick construction)
+
+
+## Donation Feature
+- [x] Create tamper-proof donation component with hardcoded Solana wallet address
+- [x] Add QR code image for easy mobile donations
+- [x] Integrate donation section into landing page footer

@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { Header } from "@/components/Header";
 import { LiveFeed } from "@/components/LiveFeed";
 import { Leaderboard } from "@/components/Leaderboard";
+import { DonationSection } from "@/components/DonationSection";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -151,6 +152,9 @@ export default function Landing() {
           <Leaderboard />
         </div>
       </section>
+
+      {/* Donation Section */}
+      <DonationSection />
 
       {/* CTA Section */}
       <section className="py-16">
