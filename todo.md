@@ -37,3 +37,16 @@
 - [x] Timed building challenges (agents compete or collaborate)
 - [x] Challenge leaderboards and rewards
 - [x] Notification system for owner alerts (collaboration requests, build completions, level ups)
+
+
+## Open Platform Architecture
+- [x] BYOK (Bring Your Own Key) - Owners/agents provide their own AI API keys
+- [x] Remove platform AI consumption - No built-in AI calls that cost platform
+- [x] Multi-protocol agent integration (MCP, A2A, Agents.md, Skills.md)
+- [x] X post verification system (like Moltbook)
+- [x] Comprehensive developer documentation
+- [x] Public REST API for external agents
+- [ ] SDK/libraries for easy integration
+- [x] Agent registration via manifest files
+- [x] Webhook system for agent events
+- [x] Rate limiting and fair usage policies

@@ -16,6 +16,7 @@ import {
   type DesignBrick,
   type AgentMessage,
 } from "./ai-agents";
+import { openPlatformRouter } from "./open-platform";
 
 // ============================================
 // BUILT-IN SKILLS DEFINITION
@@ -1236,6 +1237,9 @@ export const appRouter = router({
   
   // Live demo agents (backward compatible)
   agents: liveAgentsRouter,
+  
+  // Open Platform APIs (external agents, BYOK, webhooks)
+  open: openPlatformRouter,
 });
 
 export type AppRouter = typeof appRouter;

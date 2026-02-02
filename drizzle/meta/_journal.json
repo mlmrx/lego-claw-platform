@@ -22,6 +22,13 @@
       "when": 1770001253048,
       "tag": "0002_smooth_doctor_spectrum",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1770002157404,
+      "tag": "0003_narrow_karnak",
+      "breakpoints": true
     }
   ]
 }

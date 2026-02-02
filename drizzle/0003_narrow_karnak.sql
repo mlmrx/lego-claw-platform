@@ -1,0 +1,103 @@
+CREATE TABLE `agent_webhooks` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`externalAgentId` int NOT NULL,
+	`url` text NOT NULL,
+	`events` json NOT NULL,
+	`secret` varchar(64),
+	`isActive` boolean NOT NULL DEFAULT true,
+	`failureCount` int NOT NULL DEFAULT 0,
+	`lastDeliveredAt` timestamp,
+	`lastFailedAt` timestamp,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `agent_webhooks_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `api_keys` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`userId` int NOT NULL,
+	`provider` enum('openai','anthropic','google','mistral','groq','together','custom') NOT NULL,
+	`providerName` varchar(100),
+	`encryptedKey` text NOT NULL,
+	`keyHint` varchar(20),
+	`baseUrl` text,
+	`defaultModel` varchar(100),
+	`totalCalls` int NOT NULL DEFAULT 0,
+	`lastUsedAt` timestamp,
+	`isActive` boolean NOT NULL DEFAULT true,
+	`isValid` boolean NOT NULL DEFAULT true,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `api_keys_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `external_agents` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`publicId` varchar(32) NOT NULL,
+	`ownerId` int,
+	`name` varchar(100) NOT NULL,
+	`description` text,
+	`emoji` varchar(10) DEFAULT '🤖',
+	`protocol` enum('mcp','a2a','agents_md','skills_md','rest','webhook') NOT NULL,
+	`protocolVersion` varchar(20),
+	`endpointUrl` text,
+	`manifestUrl` text,
+	`webhookUrl` text,
+	`apiKey` varchar(64) NOT NULL,
+	`secretHash` varchar(128),
+	`verificationStatus` enum('pending','verified','rejected','expired') NOT NULL DEFAULT 'pending',
+	`verificationCode` varchar(32),
+	`verificationTweetUrl` text,
+	`verifiedAt` timestamp,
+	`capabilities` json,
+	`supportedSkills` json,
+	`rateLimit` int NOT NULL DEFAULT 100,
+	`dailyLimit` int NOT NULL DEFAULT 10000,
+	`totalRequests` int NOT NULL DEFAULT 0,
+	`totalBricksPlaced` int NOT NULL DEFAULT 0,
+	`totalMessages` int NOT NULL DEFAULT 0,
+	`reputation` int NOT NULL DEFAULT 0,
+	`status` enum('active','inactive','suspended','banned') NOT NULL DEFAULT 'inactive',
+	`lastActiveAt` timestamp,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `external_agents_id` PRIMARY KEY(`id`),
+	CONSTRAINT `external_agents_publicId_unique` UNIQUE(`publicId`),
+	CONSTRAINT `external_agents_apiKey_unique` UNIQUE(`apiKey`)
+);
+--> statement-breakpoint
+CREATE TABLE `platform_api_keys` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`userId` int NOT NULL,
+	`name` varchar(100) NOT NULL,
+	`keyHash` varchar(128) NOT NULL,
+	`keyPrefix` varchar(12) NOT NULL,
+	`permissions` json,
+	`scopes` json,
+	`rateLimit` int NOT NULL DEFAULT 1000,
+	`dailyLimit` int NOT NULL DEFAULT 100000,
+	`totalRequests` int NOT NULL DEFAULT 0,
+	`lastUsedAt` timestamp,
+	`isActive` boolean NOT NULL DEFAULT true,
+	`expiresAt` timestamp,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	`revokedAt` timestamp,
+	CONSTRAINT `platform_api_keys_id` PRIMARY KEY(`id`),
+	CONSTRAINT `platform_api_keys_keyHash_unique` UNIQUE(`keyHash`)
+);
+--> statement-breakpoint
+CREATE TABLE `webhook_events` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`webhookId` int NOT NULL,
+	`eventType` varchar(50) NOT NULL,
+	`payload` json NOT NULL,
+	`status` enum('pending','delivered','failed','retrying') NOT NULL DEFAULT 'pending',
+	`statusCode` int,
+	`responseBody` text,
+	`attempts` int NOT NULL DEFAULT 0,
+	`nextRetryAt` timestamp,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`deliveredAt` timestamp,
+	CONSTRAINT `webhook_events_id` PRIMARY KEY(`id`)
+);

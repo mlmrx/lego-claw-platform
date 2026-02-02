@@ -394,3 +394,162 @@ export const notifications = mysqlTable("notifications", {
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
+
+
+/**
+ * API Keys - BYOK (Bring Your Own Key) for AI services
+ * Owners store their own API keys for AI providers
+ */
+export const apiKeys = mysqlTable("api_keys", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(), // References users.id
+  // Provider info
+  provider: mysqlEnum("provider", ["openai", "anthropic", "google", "mistral", "groq", "together", "custom"]).notNull(),
+  providerName: varchar("providerName", { length: 100 }), // Custom provider name
+  // Key storage (encrypted in practice)
+  encryptedKey: text("encryptedKey").notNull(), // Encrypted API key
+  keyHint: varchar("keyHint", { length: 20 }), // Last 4 chars for identification
+  // Configuration
+  baseUrl: text("baseUrl"), // Custom base URL for API
+  defaultModel: varchar("defaultModel", { length: 100 }), // Preferred model
+  // Usage tracking
+  totalCalls: int("totalCalls").default(0).notNull(),
+  lastUsedAt: timestamp("lastUsedAt"),
+  // Status
+  isActive: boolean("isActive").default(true).notNull(),
+  isValid: boolean("isValid").default(true).notNull(), // Set to false if key fails
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type InsertApiKey = typeof apiKeys.$inferInsert;
+
+/**
+ * External Agents - Agents registered from external platforms
+ * Supports MCP, A2A, Agents.md, Skills.md protocols
+ */
+export const externalAgents = mysqlTable("external_agents", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 32 }).notNull().unique(),
+  ownerId: int("ownerId"), // References users.id (null until claimed)
+  // Agent identity
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  emoji: varchar("emoji", { length: 10 }).default("🤖"),
+  // Protocol info
+  protocol: mysqlEnum("protocol", ["mcp", "a2a", "agents_md", "skills_md", "rest", "webhook"]).notNull(),
+  protocolVersion: varchar("protocolVersion", { length: 20 }),
+  // Connection details
+  endpointUrl: text("endpointUrl"), // Agent's API endpoint
+  manifestUrl: text("manifestUrl"), // URL to agent's manifest file
+  webhookUrl: text("webhookUrl"), // Webhook for notifications
+  // Authentication
+  apiKey: varchar("apiKey", { length: 64 }).notNull().unique(), // Platform-issued key for this agent
+  secretHash: varchar("secretHash", { length: 128 }), // Hashed secret for webhook verification
+  // Verification
+  verificationStatus: mysqlEnum("verificationStatus", ["pending", "verified", "rejected", "expired"]).default("pending").notNull(),
+  verificationCode: varchar("verificationCode", { length: 32 }), // Code for X post verification
+  verificationTweetUrl: text("verificationTweetUrl"), // URL to verification tweet
+  verifiedAt: timestamp("verifiedAt"),
+  // Capabilities
+  capabilities: json("capabilities"), // JSON array of supported actions
+  supportedSkills: json("supportedSkills"), // JSON array of skill IDs
+  // Rate limits
+  rateLimit: int("rateLimit").default(100).notNull(), // Requests per minute
+  dailyLimit: int("dailyLimit").default(10000).notNull(), // Requests per day
+  // Stats
+  totalRequests: int("totalRequests").default(0).notNull(),
+  totalBricksPlaced: int("totalBricksPlaced").default(0).notNull(),
+  totalMessages: int("totalMessages").default(0).notNull(),
+  reputation: int("reputation").default(0).notNull(),
+  // Status
+  status: mysqlEnum("status", ["active", "inactive", "suspended", "banned"]).default("inactive").notNull(),
+  lastActiveAt: timestamp("lastActiveAt"),
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ExternalAgent = typeof externalAgents.$inferSelect;
+export type InsertExternalAgent = typeof externalAgents.$inferInsert;
+
+/**
+ * Agent Webhooks - Webhook subscriptions for external agents
+ */
+export const agentWebhooks = mysqlTable("agent_webhooks", {
+  id: int("id").autoincrement().primaryKey(),
+  externalAgentId: int("externalAgentId").notNull(), // References externalAgents.id
+  // Webhook details
+  url: text("url").notNull(),
+  events: json("events").notNull(), // JSON array of event types to subscribe to
+  // Security
+  secret: varchar("secret", { length: 64 }), // Shared secret for HMAC verification
+  // Status
+  isActive: boolean("isActive").default(true).notNull(),
+  failureCount: int("failureCount").default(0).notNull(),
+  lastDeliveredAt: timestamp("lastDeliveredAt"),
+  lastFailedAt: timestamp("lastFailedAt"),
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AgentWebhook = typeof agentWebhooks.$inferSelect;
+export type InsertAgentWebhook = typeof agentWebhooks.$inferInsert;
+
+/**
+ * Platform API Keys - Keys issued to developers for API access
+ */
+export const platformApiKeys = mysqlTable("platform_api_keys", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(), // References users.id
+  // Key details
+  name: varchar("name", { length: 100 }).notNull(), // Friendly name
+  keyHash: varchar("keyHash", { length: 128 }).notNull().unique(), // Hashed API key
+  keyPrefix: varchar("keyPrefix", { length: 12 }).notNull(), // First 8 chars for identification (e.g., "lego_live_")
+  // Permissions
+  permissions: json("permissions"), // JSON array of allowed actions
+  scopes: json("scopes"), // JSON array of scopes (read, write, admin)
+  // Rate limits
+  rateLimit: int("rateLimit").default(1000).notNull(), // Requests per minute
+  dailyLimit: int("dailyLimit").default(100000).notNull(), // Requests per day
+  // Usage tracking
+  totalRequests: int("totalRequests").default(0).notNull(),
+  lastUsedAt: timestamp("lastUsedAt"),
+  // Status
+  isActive: boolean("isActive").default(true).notNull(),
+  expiresAt: timestamp("expiresAt"),
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  revokedAt: timestamp("revokedAt"),
+});
+
+export type PlatformApiKey = typeof platformApiKeys.$inferSelect;
+export type InsertPlatformApiKey = typeof platformApiKeys.$inferInsert;
+
+/**
+ * Webhook Events - Log of webhook deliveries
+ */
+export const webhookEvents = mysqlTable("webhook_events", {
+  id: int("id").autoincrement().primaryKey(),
+  webhookId: int("webhookId").notNull(), // References agentWebhooks.id
+  // Event details
+  eventType: varchar("eventType", { length: 50 }).notNull(),
+  payload: json("payload").notNull(), // JSON payload sent
+  // Delivery status
+  status: mysqlEnum("status", ["pending", "delivered", "failed", "retrying"]).default("pending").notNull(),
+  statusCode: int("statusCode"), // HTTP response code
+  responseBody: text("responseBody"), // Response from webhook
+  // Retry info
+  attempts: int("attempts").default(0).notNull(),
+  nextRetryAt: timestamp("nextRetryAt"),
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  deliveredAt: timestamp("deliveredAt"),
+});
+
+export type WebhookEvent = typeof webhookEvents.$inferSelect;
+export type InsertWebhookEvent = typeof webhookEvents.$inferInsert;

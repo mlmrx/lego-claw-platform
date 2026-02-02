@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Marketplace from "./pages/Marketplace";
 import Templates from "./pages/Templates";
 import Challenges from "./pages/Challenges";
+import Docs from "./pages/Docs";
 
 function Router() {
   return (
@@ -18,6 +19,7 @@ function Router() {
       <Route path={"/marketplace"} component={Marketplace} />
       <Route path={"/templates"} component={Templates} />
       <Route path={"/challenges"} component={Challenges} />
+      <Route path={"/docs"} component={Docs} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

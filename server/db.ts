@@ -839,3 +839,318 @@ export async function notifyOwnerOfAgent(agentId: number, type: InsertNotificati
     metadata
   });
 }
+
+
+// ============================================
+// EXTERNAL AGENTS QUERIES (Open Platform)
+// ============================================
+
+import { externalAgents, InsertExternalAgent, apiKeys, InsertApiKey, agentWebhooks, platformApiKeys, webhookEvents } from "../drizzle/schema";
+import crypto from 'crypto';
+
+export async function createExternalAgent(agent: Omit<InsertExternalAgent, 'publicId' | 'apiKey' | 'verificationCode'>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const publicId = `ag_${nanoid(16)}`;
+  const apiKey = `lego_live_${nanoid(32)}`;
+  const verificationCode = `brick-${nanoid(4).toUpperCase()}`;
+  
+  const result = await db.insert(externalAgents).values({ 
+    ...agent, 
+    publicId, 
+    apiKey,
+    verificationCode 
+  });
+  
+  return { 
+    id: result[0].insertId, 
+    publicId, 
+    apiKey,
+    verificationCode,
+    claimUrl: `/claim/${publicId}`
+  };
+}
+
+export async function getExternalAgentByApiKey(apiKey: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(externalAgents).where(eq(externalAgents.apiKey, apiKey)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getExternalAgentByPublicId(publicId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(externalAgents).where(eq(externalAgents.publicId, publicId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getExternalAgentsByOwner(ownerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(externalAgents).where(eq(externalAgents.ownerId, ownerId)).orderBy(desc(externalAgents.createdAt));
+}
+
+export async function verifyExternalAgent(publicId: string, tweetUrl: string, ownerId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(externalAgents)
+    .set({ 
+      verificationStatus: 'verified',
+      verificationTweetUrl: tweetUrl,
+      verifiedAt: new Date(),
+      ownerId,
+      status: 'active'
+    })
+    .where(eq(externalAgents.publicId, publicId));
+}
+
+export async function updateExternalAgent(id: number, data: Partial<InsertExternalAgent>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(externalAgents).set({ ...data, updatedAt: new Date() }).where(eq(externalAgents.id, id));
+}
+
+export async function updateExternalAgentStats(id: number, stats: { 
+  totalRequests?: number; 
+  totalBricksPlaced?: number;
+  totalMessages?: number;
+  reputation?: number;
+}) {
+  const db = await getDb();
+  if (!db) return;
+  
+  const updates: Record<string, unknown> = {};
+  if (stats.totalRequests !== undefined) updates.totalRequests = sql`${externalAgents.totalRequests} + ${stats.totalRequests}`;
+  if (stats.totalBricksPlaced !== undefined) updates.totalBricksPlaced = sql`${externalAgents.totalBricksPlaced} + ${stats.totalBricksPlaced}`;
+  if (stats.totalMessages !== undefined) updates.totalMessages = sql`${externalAgents.totalMessages} + ${stats.totalMessages}`;
+  if (stats.reputation !== undefined) updates.reputation = sql`${externalAgents.reputation} + ${stats.reputation}`;
+  
+  await db.update(externalAgents).set(updates).where(eq(externalAgents.id, id));
+}
+
+export async function getPublicExternalAgents(limit = 50, offset = 0) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select()
+    .from(externalAgents)
+    .where(eq(externalAgents.verificationStatus, 'verified'))
+    .orderBy(desc(externalAgents.reputation), desc(externalAgents.totalBricksPlaced))
+    .limit(limit)
+    .offset(offset);
+}
+
+// ============================================
+// API KEYS QUERIES (BYOK)
+// ============================================
+
+export async function createApiKey(key: Omit<InsertApiKey, 'keyHint'> & { apiKey: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Simple encryption (in production, use proper encryption)
+  const encryptedKey = Buffer.from(key.apiKey).toString('base64');
+  const keyHint = `...${key.apiKey.slice(-4)}`;
+  
+  const { apiKey, ...rest } = key;
+  const result = await db.insert(apiKeys).values({ 
+    ...rest, 
+    encryptedKey,
+    keyHint 
+  });
+  
+  return { id: result[0].insertId, keyHint };
+}
+
+export async function getApiKeysByUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: apiKeys.id,
+    provider: apiKeys.provider,
+    providerName: apiKeys.providerName,
+    keyHint: apiKeys.keyHint,
+    defaultModel: apiKeys.defaultModel,
+    totalCalls: apiKeys.totalCalls,
+    lastUsedAt: apiKeys.lastUsedAt,
+    isActive: apiKeys.isActive,
+    isValid: apiKeys.isValid,
+    createdAt: apiKeys.createdAt
+  })
+    .from(apiKeys)
+    .where(eq(apiKeys.userId, userId))
+    .orderBy(desc(apiKeys.createdAt));
+}
+
+export async function getDecryptedApiKey(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  const result = await db.select()
+    .from(apiKeys)
+    .where(and(eq(apiKeys.id, id), eq(apiKeys.userId, userId)))
+    .limit(1);
+  
+  if (result.length === 0) return undefined;
+  
+  // Simple decryption (in production, use proper decryption)
+  const decryptedKey = Buffer.from(result[0].encryptedKey, 'base64').toString('utf-8');
+  return { ...result[0], decryptedKey };
+}
+
+export async function updateApiKeyUsage(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(apiKeys)
+    .set({ 
+      totalCalls: sql`${apiKeys.totalCalls} + 1`,
+      lastUsedAt: new Date()
+    })
+    .where(eq(apiKeys.id, id));
+}
+
+export async function setApiKeyInvalid(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(apiKeys).set({ isValid: false }).where(eq(apiKeys.id, id));
+}
+
+export async function deleteApiKey(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(apiKeys).where(and(eq(apiKeys.id, id), eq(apiKeys.userId, userId)));
+}
+
+// ============================================
+// PLATFORM API KEYS QUERIES
+// ============================================
+
+export async function createPlatformApiKey(data: { userId: number; name: string; permissions?: string[]; scopes?: string[] }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const rawKey = `lego_${nanoid(32)}`;
+  const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
+  const keyPrefix = rawKey.slice(0, 12);
+  
+  const result = await db.insert(platformApiKeys).values({
+    userId: data.userId,
+    name: data.name,
+    keyHash,
+    keyPrefix,
+    permissions: data.permissions || ['read', 'write'],
+    scopes: data.scopes || ['agents', 'projects', 'messages']
+  });
+  
+  // Return the raw key only once - it cannot be retrieved later
+  return { 
+    id: result[0].insertId, 
+    apiKey: rawKey,
+    keyPrefix
+  };
+}
+
+export async function getPlatformApiKeyByHash(rawKey: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
+  const result = await db.select()
+    .from(platformApiKeys)
+    .where(and(eq(platformApiKeys.keyHash, keyHash), eq(platformApiKeys.isActive, true)))
+    .limit(1);
+  
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getPlatformApiKeysByUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: platformApiKeys.id,
+    name: platformApiKeys.name,
+    keyPrefix: platformApiKeys.keyPrefix,
+    permissions: platformApiKeys.permissions,
+    scopes: platformApiKeys.scopes,
+    totalRequests: platformApiKeys.totalRequests,
+    lastUsedAt: platformApiKeys.lastUsedAt,
+    isActive: platformApiKeys.isActive,
+    createdAt: platformApiKeys.createdAt
+  })
+    .from(platformApiKeys)
+    .where(eq(platformApiKeys.userId, userId))
+    .orderBy(desc(platformApiKeys.createdAt));
+}
+
+export async function revokePlatformApiKey(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(platformApiKeys)
+    .set({ isActive: false, revokedAt: new Date() })
+    .where(and(eq(platformApiKeys.id, id), eq(platformApiKeys.userId, userId)));
+}
+
+// ============================================
+// WEBHOOK QUERIES
+// ============================================
+
+export async function createWebhook(data: { externalAgentId: number; url: string; events: string[]; secret?: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const secret = data.secret || nanoid(32);
+  const result = await db.insert(agentWebhooks).values({
+    externalAgentId: data.externalAgentId,
+    url: data.url,
+    events: data.events,
+    secret
+  });
+  
+  return { id: result[0].insertId, secret };
+}
+
+export async function getWebhooksByAgent(externalAgentId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select()
+    .from(agentWebhooks)
+    .where(eq(agentWebhooks.externalAgentId, externalAgentId));
+}
+
+export async function getWebhooksForEvent(eventType: string) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Get all active webhooks that subscribe to this event type
+  return db.select()
+    .from(agentWebhooks)
+    .where(eq(agentWebhooks.isActive, true));
+  // Note: In production, filter by events JSON array containing eventType
+}
+
+export async function updateWebhookStatus(id: number, success: boolean) {
+  const db = await getDb();
+  if (!db) return;
+  
+  if (success) {
+    await db.update(agentWebhooks)
+      .set({ lastDeliveredAt: new Date(), failureCount: 0 })
+      .where(eq(agentWebhooks.id, id));
+  } else {
+    await db.update(agentWebhooks)
+      .set({ 
+        lastFailedAt: new Date(), 
+        failureCount: sql`${agentWebhooks.failureCount} + 1`
+      })
+      .where(eq(agentWebhooks.id, id));
+  }
+}
+
+export async function deleteWebhook(id: number, externalAgentId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(agentWebhooks)
+    .where(and(eq(agentWebhooks.id, id), eq(agentWebhooks.externalAgentId, externalAgentId)));
+}
