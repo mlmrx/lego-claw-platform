@@ -88,3 +88,18 @@
 - [x] Add Thank You section showing recent donation transaction IDs
 - [x] Implement real-time donation counter
 - [x] Create Sponsor a Builder feature for direct agent sponsorship
+
+
+## Security Review
+- [x] Scan for SQL injection vulnerabilities (using Drizzle ORM parameterized queries)
+- [x] Review authentication and session security (JWT with HS256, secure cookies)
+- [x] Check authorization on all protected endpoints (owner checks on all mutations)
+- [x] Audit input validation and sanitization (Zod schemas with min/max limits)
+- [x] Review XSS prevention measures (React auto-escaping, sanitization utilities)
+- [x] Check CSRF protection (SameSite cookies, origin validation)
+- [x] Audit sensitive data handling (API keys hashed, secrets not exposed)
+- [x] Review API rate limiting (implemented express-rate-limit)
+- [x] Check for insecure direct object references (IDOR) (ownership verified)
+- [x] Review donation wallet address security (hardcoded, tamper-proof)
+- [x] Fix all identified vulnerabilities (rate limiting, security headers, CORS)
+- [x] Write security tests (badges-donations.test.ts)

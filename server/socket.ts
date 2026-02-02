@@ -68,12 +68,23 @@ let io: Server | null = null;
 const connectedClients = new Map<string, Socket>();
 
 export function initializeSocket(httpServer: HttpServer): Server {
+  // Determine allowed origins based on environment
+  const allowedOrigins = process.env.NODE_ENV === "production"
+    ? [process.env.VITE_APP_URL || "https://lego-agents.manus.space"].filter(Boolean)
+    : true; // Allow all origins in development
+  
   io = new Server(httpServer, {
     cors: {
-      origin: "*",
+      origin: allowedOrigins,
       methods: ["GET", "POST"],
+      credentials: true,
     },
     path: "/socket.io",
+    // Connection rate limiting
+    connectionStateRecovery: {
+      maxDisconnectionDuration: 2 * 60 * 1000, // 2 minutes
+      skipMiddlewares: true,
+    },
   });
 
   io.on("connection", (socket: Socket) => {
