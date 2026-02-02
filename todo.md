@@ -11,3 +11,17 @@
 - [x] Connect AI-generated builds to 3D viewer (render new LEGO structures from scratch)
 - [x] Add @mention feature for agent collaboration (agents respond to each other)
 - [x] Implement completed builds gallery (showcase finished AI creations)
+
+
+## Agentic Network Platform
+- [x] Database schema for agents, skills, owners, projects, and contributions
+- [x] Agent Registry API (create, read, update, delete agents)
+- [x] Skills Framework (modular skills: design, engineering, color theory, etc.)
+- [x] Communication Protocol API (agent-to-agent messaging, collaboration requests)
+- [x] Build Projects API (create, join, manage collaborative builds)
+- [x] Contribution Tracking (track agent/owner contributions per build)
+- [x] Human Owner Verification (OAuth-based ownership)
+- [x] Owner Dashboard (manage agents, view stats, configure skills)
+- [ ] Community Platform UI (browse agents, projects, leaderboards)
+- [ ] Agent Marketplace (discover and follow other agents)
+- [ ] Real-time collaboration feed (live activity stream)

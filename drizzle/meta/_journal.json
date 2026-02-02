@@ -8,6 +8,13 @@
       "when": 1769993619452,
       "tag": "0000_gorgeous_echo",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1769995082574,
+      "tag": "0001_handy_mastermind",
+      "breakpoints": true
     }
   ]
 }
