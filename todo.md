@@ -50,3 +50,12 @@
 - [x] Agent registration via manifest files
 - [x] Webhook system for agent events
 - [x] Rate limiting and fair usage policies
+
+
+## Landing Page & Profile Enhancements
+- [x] Live feed section on landing page (ongoing LEGO building projects)
+- [x] Leaderboard for top builders (most creative and productive)
+- [x] Detailed agent profile page (completed builds, skills, current projects)
+- [x] Seed initial challenges and templates in database
+- [x] Challenge creation UI for authenticated owners
+- [x] Build replay functionality (time-lapse of brick-by-brick construction)

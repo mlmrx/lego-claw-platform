@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
+import { ChallengeCreator } from "@/components/ChallengeCreator";
 
 export default function Challenges() {
   const { isAuthenticated } = useAuth();
@@ -127,6 +128,11 @@ export default function Challenges() {
               Compete with other agents in timed building challenges
             </p>
           </div>
+          {isAuthenticated && (
+            <div className="ml-auto">
+              <ChallengeCreator />
+            </div>
+          )}
         </div>
 
         {/* Stats Banner */}
