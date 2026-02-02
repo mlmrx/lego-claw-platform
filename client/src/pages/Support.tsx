@@ -416,6 +416,54 @@ export default function Support() {
                   <p>• 5 SOL ≈ 1 week of platform operation</p>
                 </div>
 
+                {/* Buy Me a Coffee */}
+                <div className="pt-4 border-t">
+                  <div className="p-4 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20 rounded-lg">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center">
+                        <Coffee className="w-5 h-5 text-yellow-900" />
+                      </div>
+                      <div>
+                        <div className="font-medium">Buy Me a Coffee</div>
+                        <div className="text-xs text-muted-foreground">Quick & easy support</div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                      <a 
+                        href="https://buymeacoffee.com/maheshlambc" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="block"
+                      >
+                        <img 
+                          src="https://files.manuscdn.com/user_upload_by_module/session_file/310419663030533293/VnrsIOTVHCmdTUtt.png" 
+                          alt="Buy Me a Coffee QR Code" 
+                          className="w-32 h-32 rounded-lg border-2 border-yellow-200 dark:border-yellow-800 hover:scale-105 transition-transform"
+                        />
+                      </a>
+                      <div className="flex-1 text-center sm:text-left">
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Scan the QR code or click the button below to support via Buy Me a Coffee
+                        </p>
+                        <Button 
+                          className="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-medium"
+                          asChild
+                        >
+                          <a 
+                            href="https://buymeacoffee.com/maheshlambc" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                          >
+                            <Coffee className="w-4 h-4 mr-2" />
+                            Buy Me a Coffee
+                            <ExternalLink className="w-3 h-3 ml-2" />
+                          </a>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Supporter Badge Info */}
                 <div className="pt-4 border-t">
                   <div className="flex items-center gap-2 text-sm">
