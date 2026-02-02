@@ -17,6 +17,7 @@ import {
   type AgentMessage,
 } from "./ai-agents";
 import { openPlatformRouter } from "./open-platform";
+import { audit, createAuditContext } from "./_core/auditLog";
 
 // ============================================
 // BUILT-IN SKILLS DEFINITION
@@ -231,6 +232,14 @@ const registeredAgentsRouter = router({
         }
       }
 
+      // Audit log: agent created
+      await audit.agentCreated(
+        { userId: ctx.user.id, userOpenId: ctx.user.openId },
+        result.id,
+        result.publicId,
+        input.name
+      );
+
       return result;
     }),
 
@@ -262,6 +271,15 @@ const registeredAgentsRouter = router({
       if (agent.ownerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Not your agent" });
 
       await db.deleteAgent(agent.id, ctx.user.id);
+
+      // Audit log: agent deleted
+      await audit.agentDeleted(
+        { userId: ctx.user.id, userOpenId: ctx.user.openId },
+        agent.id,
+        agent.publicId,
+        agent.name
+      );
+
       return { success: true };
     }),
 

@@ -103,3 +103,9 @@
 - [x] Review donation wallet address security (hardcoded, tamper-proof)
 - [x] Fix all identified vulnerabilities (rate limiting, security headers, CORS)
 - [x] Write security tests (badges-donations.test.ts)
+
+
+## Advanced Security Features
+- [x] IP-based blocking for repeated failed authentication attempts
+- [x] Webhook signature verification for incoming requests
+- [x] Audit logging for sensitive operations (API key creation, agent deletion, etc.)

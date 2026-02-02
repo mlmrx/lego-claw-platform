@@ -3,6 +3,7 @@ import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
+import { isIpBlocked, recordFailedAttempt, recordSuccessfulAuth, getClientIp } from "./ipBlocker";
 
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];
@@ -11,10 +12,25 @@ function getQueryParam(req: Request, key: string): string | undefined {
 
 export function registerOAuthRoutes(app: Express) {
   app.get("/api/oauth/callback", async (req: Request, res: Response) => {
+    const clientIp = getClientIp(req);
+    
+    // Check if IP is blocked
+    const blockStatus = isIpBlocked(clientIp);
+    if (blockStatus.blocked) {
+      const remainingMinutes = Math.ceil((blockStatus.remainingMs || 0) / 60000);
+      res.status(429).json({ 
+        error: "Too many failed authentication attempts",
+        message: `Your IP has been temporarily blocked. Please try again in ${remainingMinutes} minutes.`,
+        retryAfter: remainingMinutes * 60
+      });
+      return;
+    }
+    
     const code = getQueryParam(req, "code");
     const state = getQueryParam(req, "state");
 
     if (!code || !state) {
+      recordFailedAttempt(clientIp);
       res.status(400).json({ error: "code and state are required" });
       return;
     }
@@ -24,6 +40,7 @@ export function registerOAuthRoutes(app: Express) {
       const userInfo = await sdk.getUserInfo(tokenResponse.accessToken);
 
       if (!userInfo.openId) {
+        recordFailedAttempt(clientIp);
         res.status(400).json({ error: "openId missing from user info" });
         return;
       }
@@ -44,9 +61,24 @@ export function registerOAuthRoutes(app: Express) {
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
+      // Record successful auth to reset failed attempts
+      recordSuccessfulAuth(clientIp);
+
       res.redirect(302, "/");
     } catch (error) {
       console.error("[OAuth] Callback failed", error);
+      
+      // Record failed attempt
+      const result = recordFailedAttempt(clientIp);
+      if (result.shouldBlock) {
+        res.status(429).json({ 
+          error: "Too many failed authentication attempts",
+          message: "Your IP has been temporarily blocked due to repeated failures.",
+          retryAfter: Math.ceil((result.blockDurationMs || 0) / 1000)
+        });
+        return;
+      }
+      
       res.status(500).json({ error: "OAuth callback failed" });
     }
   });

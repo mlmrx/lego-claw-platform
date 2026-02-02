@@ -656,3 +656,79 @@ export const platformStats = mysqlTable("platform_stats", {
 
 export type PlatformStat = typeof platformStats.$inferSelect;
 export type InsertPlatformStat = typeof platformStats.$inferInsert;
+
+
+/**
+ * Audit Logs - Track sensitive operations for security monitoring
+ */
+export const auditLogs = mysqlTable("audit_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  // Actor information
+  userId: int("userId"), // References users.id (null for system/anonymous actions)
+  userOpenId: varchar("userOpenId", { length: 64 }), // Backup identifier
+  // Action details
+  action: mysqlEnum("action", [
+    // API Key operations
+    "api_key_created",
+    "api_key_deleted",
+    "api_key_rotated",
+    // Agent operations
+    "agent_created",
+    "agent_deleted",
+    "agent_transferred",
+    // External agent operations
+    "external_agent_registered",
+    "external_agent_verified",
+    "external_agent_claimed",
+    "external_agent_deleted",
+    // Webhook operations
+    "webhook_created",
+    "webhook_deleted",
+    "webhook_secret_rotated",
+    // Authentication
+    "login_success",
+    "login_failed",
+    "logout",
+    "ip_blocked",
+    "ip_unblocked",
+    // Admin operations
+    "admin_role_granted",
+    "admin_role_revoked",
+    "user_banned",
+    "user_unbanned",
+    // Data operations
+    "data_exported",
+    "data_deleted",
+    // System
+    "system_config_changed"
+  ]).notNull(),
+  // Target entity
+  entityType: mysqlEnum("entityType", [
+    "user",
+    "agent",
+    "external_agent",
+    "api_key",
+    "webhook",
+    "project",
+    "challenge",
+    "system"
+  ]),
+  entityId: int("entityId"), // ID of the affected entity
+  entityPublicId: varchar("entityPublicId", { length: 64 }), // Public ID for reference
+  // Request context
+  ipAddress: varchar("ipAddress", { length: 45 }), // IPv4 or IPv6
+  userAgent: text("userAgent"),
+  requestId: varchar("requestId", { length: 64 }), // Unique request identifier
+  // Additional details
+  details: json("details"), // JSON object with additional context
+  previousValue: json("previousValue"), // State before change (for updates)
+  newValue: json("newValue"), // State after change (for updates)
+  // Result
+  status: mysqlEnum("status", ["success", "failure", "partial"]).default("success").notNull(),
+  errorMessage: text("errorMessage"), // Error details if failed
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = typeof auditLogs.$inferInsert;

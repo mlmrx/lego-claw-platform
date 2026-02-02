@@ -9,6 +9,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
+import { audit } from "./_core/auditLog";
 
 // ============================================
 // EXTERNAL AGENTS ROUTER
@@ -40,6 +41,14 @@ export const externalAgentsRouter = router({
         webhookUrl: input.webhookUrl,
         capabilities: input.capabilities,
       });
+
+      // Audit log: external agent registered
+      await audit.externalAgentRegistered(
+        {},
+        result.id,
+        result.publicId,
+        input.name
+      );
 
       return {
         success: true,
