@@ -6,7 +6,7 @@
 
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { Blocks, Eye, Bot, Info, LogIn, Store, Grid3X3, Trophy, Book } from "lucide-react";
+import { Blocks, Eye, Bot, Info, LogIn, Store, Grid3X3, Trophy, Book, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -96,6 +96,12 @@ export function Header({ className }: HeaderProps) {
             <Button variant="ghost" size="sm" className="rounded-xl gap-2">
               <Book className="w-4 h-4" />
               Docs
+            </Button>
+          </Link>
+          <Link href="/support">
+            <Button variant="ghost" size="sm" className="rounded-xl gap-2 text-red-500 hover:text-red-600 hover:bg-red-50">
+              <Heart className="w-4 h-4" />
+              Support
             </Button>
           </Link>
         </motion.nav>

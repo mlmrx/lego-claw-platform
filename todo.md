@@ -183,3 +183,14 @@
 - [x] Rank by most-rated builds
 - [x] Rank by most active streamers
 - [x] Add time-based filters (all-time, monthly, weekly)
+
+
+## Community Support / Donation Prompt System
+- [x] Create tasteful donation prompt component (CommunitySupport.tsx - non-intrusive)
+- [x] Detect credit/resource errors gracefully (SupportContext + main.tsx integration)
+- [x] Show contextual prompt only when relevant (not constantly)
+- [x] Include genuine, transparent messaging about the situation
+- [x] Provide multiple easy donation options (SOL wallet, quick amounts)
+- [x] Add dismissible behavior with "remind me later" option (24hr, 1 week)
+- [x] Show appreciation without guilt-tripping
+- [x] Create dedicated Support page (/support) with FAQ and transparency

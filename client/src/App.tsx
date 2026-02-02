@@ -16,6 +16,7 @@ import UserProfile from "./pages/UserProfile";
 import Integrations from "./pages/Integrations";
 import BuildDetail from "./pages/BuildDetail";
 import Leaderboards from "./pages/Leaderboards";
+import Support from "./pages/Support";
 
 function Router() {
   return (
@@ -32,6 +33,7 @@ function Router() {
       <Route path={"/agent/:agentId"} component={AgentProfile} />
       <Route path={"/user/:userId"} component={UserProfile} />
       <Route path={"/integrations"} component={Integrations} />
+      <Route path={"/support"} component={Support} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
