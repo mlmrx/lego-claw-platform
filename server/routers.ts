@@ -1209,6 +1209,184 @@ const notificationsRouter = router({
 });
 
 // ============================================
+// BADGES ROUTER
+// ============================================
+
+const badgesRouter = router({
+  // Get all badges
+  list: publicProcedure.query(async () => {
+    return db.getAllBadges();
+  }),
+
+  // Get badge by slug
+  bySlug: publicProcedure
+    .input(z.object({ slug: z.string() }))
+    .query(async ({ input }) => {
+      return db.getBadgeBySlug(input.slug);
+    }),
+
+  // Get user's badges
+  userBadges: publicProcedure
+    .input(z.object({ userId: z.number() }))
+    .query(async ({ input }) => {
+      return db.getUserBadges(input.userId);
+    }),
+
+  // Get agent's badges
+  agentBadges: publicProcedure
+    .input(z.object({ agentId: z.number() }))
+    .query(async ({ input }) => {
+      return db.getAgentBadges(input.agentId);
+    }),
+
+  // Get my badges (authenticated user)
+  myBadges: protectedProcedure.query(async ({ ctx }) => {
+    return db.getUserBadges(ctx.user.id);
+  }),
+});
+
+// ============================================
+// DONATIONS ROUTER
+// ============================================
+
+const donationsRouter = router({
+  // Get recent donations (public thank you list)
+  recent: publicProcedure
+    .input(z.object({ limit: z.number().min(1).max(50).default(10) }).optional())
+    .query(async ({ input }) => {
+      return db.getRecentDonations(input?.limit ?? 10);
+    }),
+
+  // Get donation stats
+  stats: publicProcedure.query(async () => {
+    return db.getDonationStats();
+  }),
+
+  // Get sponsored agents
+  sponsoredAgents: publicProcedure
+    .input(z.object({ limit: z.number().min(1).max(20).default(10) }).optional())
+    .query(async ({ input }) => {
+      return db.getSponsoredAgents(input?.limit ?? 10);
+    }),
+
+  // Record a donation (called after verifying on-chain transaction)
+  record: publicProcedure
+    .input(z.object({
+      transactionId: z.string().min(1),
+      walletAddress: z.string().optional(),
+      amount: z.string().min(1),
+      amountUsd: z.string().optional(),
+      donorName: z.string().max(100).optional(),
+      sponsoredAgentPublicId: z.string().optional(),
+      sponsorMessage: z.string().max(500).optional(),
+      isPublic: z.boolean().default(true),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Check if transaction already recorded
+      const existing = await db.getDonationByTransactionId(input.transactionId);
+      if (existing) {
+        throw new TRPCError({ code: "CONFLICT", message: "Donation already recorded" });
+      }
+
+      let sponsoredAgentId: number | undefined;
+      if (input.sponsoredAgentPublicId) {
+        const agent = await db.getAgentByPublicId(input.sponsoredAgentPublicId);
+        if (agent) sponsoredAgentId = agent.id;
+      }
+
+      const result = await db.createDonation({
+        transactionId: input.transactionId,
+        walletAddress: input.walletAddress,
+        amount: input.amount,
+        amountUsd: input.amountUsd,
+        userId: ctx.user?.id,
+        donorName: input.donorName,
+        sponsoredAgentId,
+        sponsorMessage: input.sponsorMessage,
+        isPublic: input.isPublic,
+      });
+
+      return result;
+    }),
+});
+
+// ============================================
+// USER PROFILE ROUTER (for user profile page)
+// ============================================
+
+const userProfileRouter = router({
+  // Get user profile by ID
+  byId: publicProcedure
+    .input(z.object({ userId: z.number() }))
+    .query(async ({ input }) => {
+      const user = await db.getUserById(input.userId);
+      if (!user) return null;
+      
+      const userAgents = await db.getAgentsByOwner(user.id);
+      const userBadges = await db.getUserBadges(user.id);
+      
+      return {
+        user: {
+          id: user.id,
+          openId: user.openId,
+          name: user.name,
+          displayName: user.displayName,
+          bio: user.bio,
+          avatarUrl: user.avatarUrl,
+          totalAgents: user.totalAgents,
+          totalContributions: user.totalContributions,
+          reputation: user.reputation,
+          createdAt: user.createdAt,
+        },
+        agents: userAgents,
+        badges: userBadges,
+      };
+    }),
+
+  // Get my full profile
+  me: protectedProcedure.query(async ({ ctx }) => {
+    const userAgents = await db.getAgentsByOwner(ctx.user.id);
+    const userBadges = await db.getUserBadges(ctx.user.id);
+    const challenges = await db.getChallengesByCreator(ctx.user.id);
+    
+    return {
+      user: ctx.user,
+      agents: userAgents,
+      badges: userBadges,
+      challenges,
+    };
+  }),
+
+  // Get user's created challenges
+  challenges: publicProcedure
+    .input(z.object({ userId: z.number() }))
+    .query(async ({ input }) => {
+      return db.getChallengesByCreator(input.userId);
+    }),
+
+  // Get user stats
+  stats: publicProcedure
+    .input(z.object({ userId: z.number() }))
+    .query(async ({ input }) => {
+      const user = await db.getUserById(input.userId);
+      if (!user) return null;
+      
+      const agents = await db.getAgentsByOwner(user.id);
+      const totalBricks = agents.reduce((sum, a) => sum + a.totalBricksPlaced, 0);
+      const totalBuilds = agents.reduce((sum, a) => sum + a.totalBuildsContributed, 0);
+      
+      return {
+        totalAgents: user.totalAgents,
+        totalContributions: user.totalContributions,
+        reputation: user.reputation,
+        totalBricks,
+        totalBuilds,
+        memberSince: user.createdAt,
+      };
+    }),
+});
+
+// ============================================
 // MAIN APP ROUTER
 // ============================================
 
@@ -1240,6 +1418,15 @@ export const appRouter = router({
   
   // Open Platform APIs (external agents, BYOK, webhooks)
   open: openPlatformRouter,
+  
+  // Badges and achievements
+  badges: badgesRouter,
+  
+  // Donations
+  donations: donationsRouter,
+  
+  // User profiles
+  userProfile: userProfileRouter,
 });
 
 export type AppRouter = typeof appRouter;

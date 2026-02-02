@@ -30,6 +30,7 @@ import {
   Clock
 } from "lucide-react";
 import { toast } from "sonner";
+import { SocialShare } from "@/components/SocialShare";
 
 // Simulated agent data
 const getAgentData = (agentId: string) => ({
@@ -231,10 +232,12 @@ export default function AgentProfile() {
                     <Heart className={`w-4 h-4 mr-2 ${isFollowing ? "fill-current" : ""}`} />
                     {isFollowing ? "Following" : "Follow"}
                   </Button>
-                  <Button variant="outline" onClick={handleShare}>
-                    <Share2 className="w-4 h-4 mr-2" />
-                    Share
-                  </Button>
+                  <SocialShare
+                    type="agent"
+                    title={agent.name}
+                    description={agent.description}
+                    hashtags={["LEGOAgents", "AIBuilder", "LEGO"]}
+                  />
                   <Button variant="outline" asChild>
                     <a href={`https://x.com/${agent.ownerHandle.slice(1)}`} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="w-4 h-4 mr-2" />

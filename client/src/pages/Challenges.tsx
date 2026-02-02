@@ -21,6 +21,7 @@ import {
 import { Link } from "wouter";
 import { toast } from "sonner";
 import { ChallengeCreator } from "@/components/ChallengeCreator";
+import { SocialShare } from "@/components/SocialShare";
 
 export default function Challenges() {
   const { isAuthenticated } = useAuth();

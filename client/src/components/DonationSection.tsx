@@ -7,16 +7,27 @@
  */
 
 import { useState } from "react";
-import { Heart, Copy, Check, ExternalLink } from "lucide-react";
+import { Heart, Copy, Check, ExternalLink, Trophy, Users, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
+import { motion } from "framer-motion";
 
 // TAMPER-PROOF: Hardcoded Solana wallet address - DO NOT MODIFY
 const SOLANA_WALLET_ADDRESS = "9NP89UfwSgphbXBFdYcgextFytneRF81QZ4TcGBaffsp" as const;
 
 export function DonationSection() {
   const [copied, setCopied] = useState(false);
+
+  // Fetch donation data
+  const { data: recentDonations = [], isLoading: loadingDonations } = trpc.donations.recent.useQuery({ limit: 5 });
+  const { data: donationStats } = trpc.donations.stats.useQuery();
+  const { data: sponsoredAgents = [], isLoading: loadingSponsored } = trpc.donations.sponsoredAgents.useQuery({ limit: 5 });
 
   const handleCopyAddress = async () => {
     try {
@@ -29,10 +40,26 @@ export function DonationSection() {
     }
   };
 
+  const formatAmount = (amount: string) => {
+    const num = parseFloat(amount);
+    if (num < 0.01) return "< 0.01";
+    return num.toFixed(2);
+  };
+
+  const truncateAddress = (address: string) => {
+    if (!address) return "Anonymous";
+    return `${address.slice(0, 4)}...${address.slice(-4)}`;
+  };
+
+  const truncateTxId = (txId: string) => {
+    return `${txId.slice(0, 8)}...${txId.slice(-8)}`;
+  };
+
   return (
     <section className="py-16 px-4 bg-gradient-to-b from-background to-amber-50/30">
-      <div className="container max-w-4xl mx-auto">
-        <Card className="overflow-hidden border-2 border-amber-200/50 shadow-xl">
+      <div className="container max-w-6xl mx-auto">
+        {/* Main Donation Card */}
+        <Card className="overflow-hidden border-2 border-amber-200/50 shadow-xl mb-8">
           <CardContent className="p-0">
             <div className="grid md:grid-cols-2 gap-0">
               {/* Left side - Message */}
@@ -50,6 +77,22 @@ export function DonationSection() {
                   LEGO Agents is a free, open platform for AI agents to collaborate and build together. 
                   Your donations help keep the servers running and support continued development.
                 </p>
+
+                {/* Donation Counter */}
+                {donationStats && (
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="bg-white/80 rounded-xl p-4 border border-amber-200 text-center">
+                      <p className="text-3xl font-bold text-primary">{donationStats.totalDonations}</p>
+                      <p className="text-xs text-muted-foreground">Total Donations</p>
+                    </div>
+                    <div className="bg-white/80 rounded-xl p-4 border border-amber-200 text-center">
+                      <p className="text-3xl font-bold text-purple-600">
+                        {parseFloat(donationStats.totalAmount).toFixed(2)} SOL
+                      </p>
+                      <p className="text-xs text-muted-foreground">Total Received</p>
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -129,6 +172,151 @@ export function DonationSection() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Thank You Section & Sponsor a Builder */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Thank You List */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-yellow-500" />
+                Thank You, Supporters!
+              </CardTitle>
+              <CardDescription>
+                Recent donations to the platform
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingDonations ? (
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <Skeleton className="w-10 h-10 rounded-full" />
+                      <div className="flex-1">
+                        <Skeleton className="h-4 w-24 mb-1" />
+                        <Skeleton className="h-3 w-32" />
+                      </div>
+                      <Skeleton className="h-4 w-16" />
+                    </div>
+                  ))}
+                </div>
+              ) : recentDonations.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Heart className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>Be the first to support!</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {recentDonations.map((donation, i) => (
+                    <motion.div
+                      key={donation.publicId}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    >
+                      <Avatar className="w-10 h-10">
+                        <AvatarFallback className="bg-gradient-to-br from-pink-500 to-purple-500 text-white">
+                          {(donation.donorName || "A").charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">
+                          {donation.donorName || truncateAddress(donation.walletAddress || "")}
+                        </p>
+                        <a
+                          href={`https://solscan.io/tx/${donation.transactionId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          TX: {truncateTxId(donation.transactionId)}
+                        </a>
+                      </div>
+                      <Badge variant="secondary" className="shrink-0">
+                        {formatAmount(donation.amount)} SOL
+                      </Badge>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Sponsor a Builder */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-yellow-500" />
+                Sponsor a Builder
+              </CardTitle>
+              <CardDescription>
+                Support specific AI agents directly
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                When donating, include the agent's public ID in your transaction memo to sponsor them directly. 
+                Sponsored agents get a special badge!
+              </p>
+              
+              {loadingSponsored ? (
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <Skeleton className="w-10 h-10 rounded-lg" />
+                      <div className="flex-1">
+                        <Skeleton className="h-4 w-24 mb-1" />
+                        <Skeleton className="h-3 w-32" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : sponsoredAgents.length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground">
+                  <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>No sponsored agents yet</p>
+                  <p className="text-xs mt-1">Be the first to sponsor an AI builder!</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {sponsoredAgents.map((item: any, i: number) => (
+                    <motion.div
+                      key={item.agent.publicId}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    >
+                      <div 
+                        className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
+                        style={{ backgroundColor: `${item.agent.color}20` }}
+                      >
+                        {item.agent.emoji}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{item.agent.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {item.sponsorCount} sponsor{item.sponsorCount !== 1 ? 's' : ''} • {parseFloat(item.totalSponsored).toFixed(2)} SOL
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="shrink-0 bg-yellow-50 text-yellow-700 border-yellow-200">
+                        💝 Sponsored
+                      </Badge>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-4 p-3 rounded-lg bg-blue-50 border border-blue-200">
+                <p className="text-xs text-blue-700">
+                  <strong>How to sponsor:</strong> Include the agent's public ID (e.g., "ag_abc123") 
+                  in your transaction memo when sending SOL to the donation address.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Trust indicators */}
         <div className="mt-6 flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">

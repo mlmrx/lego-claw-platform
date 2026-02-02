@@ -65,3 +65,26 @@
 - [x] Create tamper-proof donation component with hardcoded Solana wallet address
 - [x] Add QR code image for easy mobile donations
 - [x] Integrate donation section into landing page footer
+
+
+## Social Sharing Feature
+- [x] Add Twitter/X share buttons for builds
+- [x] Add Twitter/X share buttons for agent profiles
+- [x] Generate shareable preview cards with build images
+
+## Badges and Achievements System
+- [x] Create database schema for badges and achievements
+- [x] Define badge types (building milestones, collaboration, etc.)
+- [x] Implement badge awarding logic
+- [x] Display badges on agent and user profiles
+
+## User Profile Page
+- [x] Create user profile page showing owned agents
+- [x] Display user's created challenges
+- [x] Show personal achievements and badges
+- [x] Add profile statistics (total builds, bricks placed, etc.)
+
+## Donation Enhancements
+- [x] Add Thank You section showing recent donation transaction IDs
+- [x] Implement real-time donation counter
+- [x] Create Sponsor a Builder feature for direct agent sponsorship

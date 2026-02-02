@@ -553,3 +553,106 @@ export const webhookEvents = mysqlTable("webhook_events", {
 
 export type WebhookEvent = typeof webhookEvents.$inferSelect;
 export type InsertWebhookEvent = typeof webhookEvents.$inferInsert;
+
+
+/**
+ * Badges - Achievement badges that can be earned
+ */
+export const badges = mysqlTable("badges", {
+  id: int("id").autoincrement().primaryKey(),
+  slug: varchar("slug", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  icon: varchar("icon", { length: 50 }).notNull(), // Emoji or icon
+  color: varchar("color", { length: 20 }).notNull(), // Badge color
+  category: mysqlEnum("category", ["building", "collaboration", "creativity", "milestone", "special"]).notNull(),
+  // Requirements
+  requirement: json("requirement"), // JSON object with achievement criteria
+  threshold: int("threshold").default(1).notNull(), // Value needed to earn
+  // Rarity
+  rarity: mysqlEnum("rarity", ["common", "uncommon", "rare", "epic", "legendary"]).default("common").notNull(),
+  // Stats
+  earnedCount: int("earnedCount").default(0).notNull(),
+  // Status
+  isActive: boolean("isActive").default(true).notNull(),
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Badge = typeof badges.$inferSelect;
+export type InsertBadge = typeof badges.$inferInsert;
+
+/**
+ * User Badges - Badges earned by users
+ */
+export const userBadges = mysqlTable("user_badges", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(), // References users.id
+  badgeId: int("badgeId").notNull(), // References badges.id
+  // Progress
+  progress: int("progress").default(0).notNull(), // Current progress toward badge
+  // Timestamps
+  earnedAt: timestamp("earnedAt").defaultNow().notNull(),
+});
+
+export type UserBadge = typeof userBadges.$inferSelect;
+export type InsertUserBadge = typeof userBadges.$inferInsert;
+
+/**
+ * Agent Badges - Badges earned by agents
+ */
+export const agentBadges = mysqlTable("agent_badges", {
+  id: int("id").autoincrement().primaryKey(),
+  agentId: int("agentId").notNull(), // References agents.id
+  badgeId: int("badgeId").notNull(), // References badges.id
+  // Progress
+  progress: int("progress").default(0).notNull(),
+  // Timestamps
+  earnedAt: timestamp("earnedAt").defaultNow().notNull(),
+});
+
+export type AgentBadge = typeof agentBadges.$inferSelect;
+export type InsertAgentBadge = typeof agentBadges.$inferInsert;
+
+/**
+ * Donations - Track donations to the platform
+ */
+export const donations = mysqlTable("donations", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 32 }).notNull().unique(),
+  // Donor info (optional - can be anonymous)
+  userId: int("userId"), // References users.id (null for anonymous)
+  donorName: varchar("donorName", { length: 100 }), // Display name
+  // Transaction details
+  transactionId: varchar("transactionId", { length: 128 }).notNull().unique(), // Blockchain tx ID
+  walletAddress: varchar("walletAddress", { length: 64 }), // Donor's wallet
+  // Amount
+  amount: varchar("amount", { length: 50 }).notNull(), // Amount in SOL
+  amountUsd: varchar("amountUsd", { length: 20 }), // USD equivalent at time of donation
+  // Sponsorship
+  sponsoredAgentId: int("sponsoredAgentId"), // References agents.id (for Sponsor a Builder)
+  sponsorMessage: text("sponsorMessage"), // Optional message from sponsor
+  // Status
+  status: mysqlEnum("status", ["pending", "confirmed", "failed"]).default("pending").notNull(),
+  // Visibility
+  isPublic: boolean("isPublic").default(true).notNull(), // Show in public thank you list
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  confirmedAt: timestamp("confirmedAt"),
+});
+
+export type Donation = typeof donations.$inferSelect;
+export type InsertDonation = typeof donations.$inferInsert;
+
+/**
+ * Platform Stats - Aggregate platform statistics
+ */
+export const platformStats = mysqlTable("platform_stats", {
+  id: int("id").autoincrement().primaryKey(),
+  statKey: varchar("statKey", { length: 64 }).notNull().unique(),
+  statValue: varchar("statValue", { length: 100 }).notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PlatformStat = typeof platformStats.$inferSelect;
+export type InsertPlatformStat = typeof platformStats.$inferInsert;

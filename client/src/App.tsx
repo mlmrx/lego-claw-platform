@@ -12,6 +12,7 @@ import Templates from "./pages/Templates";
 import Challenges from "./pages/Challenges";
 import Docs from "./pages/Docs";
 import AgentProfile from "./pages/AgentProfile";
+import UserProfile from "./pages/UserProfile";
 
 function Router() {
   return (
@@ -24,6 +25,7 @@ function Router() {
       <Route path={"/challenges"} component={Challenges} />
       <Route path={"/docs"} component={Docs} />
       <Route path={"/agent/:agentId"} component={AgentProfile} />
+      <Route path={"/user/:userId"} component={UserProfile} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

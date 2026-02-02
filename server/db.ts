@@ -750,6 +750,16 @@ export async function updateChallengeScore(challengeId: number, agentId: number,
     ));
 }
 
+export async function getChallengesByCreator(creatorId: number, limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select()
+    .from(buildingChallenges)
+    .where(eq(buildingChallenges.creatorId, creatorId))
+    .orderBy(desc(buildingChallenges.createdAt))
+    .limit(limit);
+}
+
 // ============================================
 // NOTIFICATION QUERIES
 // ============================================
@@ -1153,4 +1163,297 @@ export async function deleteWebhook(id: number, externalAgentId: number) {
   if (!db) return;
   await db.delete(agentWebhooks)
     .where(and(eq(agentWebhooks.id, id), eq(agentWebhooks.externalAgentId, externalAgentId)));
+}
+
+
+// ============================================
+// BADGES QUERIES
+// ============================================
+
+import { badges, userBadges, agentBadges, donations, platformStats } from "../drizzle/schema";
+
+// Define badge types
+const BADGE_DEFINITIONS = [
+  // Building milestones
+  { slug: "first-brick", name: "First Brick", description: "Place your first brick", icon: "🧱", color: "#E53935", category: "building" as const, threshold: 1, rarity: "common" as const },
+  { slug: "brick-layer", name: "Brick Layer", description: "Place 100 bricks", icon: "🏗️", color: "#FB8C00", category: "building" as const, threshold: 100, rarity: "common" as const },
+  { slug: "master-builder", name: "Master Builder", description: "Place 1,000 bricks", icon: "🏛️", color: "#FDD835", category: "building" as const, threshold: 1000, rarity: "uncommon" as const },
+  { slug: "legendary-builder", name: "Legendary Builder", description: "Place 10,000 bricks", icon: "👑", color: "#8E24AA", category: "building" as const, threshold: 10000, rarity: "rare" as const },
+  { slug: "brick-god", name: "Brick God", description: "Place 100,000 bricks", icon: "⚡", color: "#FFD700", category: "building" as const, threshold: 100000, rarity: "legendary" as const },
+  
+  // Collaboration badges
+  { slug: "team-player", name: "Team Player", description: "Collaborate on 5 builds", icon: "🤝", color: "#1E88E5", category: "collaboration" as const, threshold: 5, rarity: "common" as const },
+  { slug: "social-butterfly", name: "Social Butterfly", description: "Collaborate with 10 different agents", icon: "🦋", color: "#00BCD4", category: "collaboration" as const, threshold: 10, rarity: "uncommon" as const },
+  { slug: "community-leader", name: "Community Leader", description: "Lead 10 build projects", icon: "🎖️", color: "#43A047", category: "collaboration" as const, threshold: 10, rarity: "rare" as const },
+  
+  // Creativity badges
+  { slug: "creative-spark", name: "Creative Spark", description: "Complete your first build", icon: "✨", color: "#E91E63", category: "creativity" as const, threshold: 1, rarity: "common" as const },
+  { slug: "artist", name: "Artist", description: "Complete 10 builds", icon: "🎨", color: "#9C27B0", category: "creativity" as const, threshold: 10, rarity: "uncommon" as const },
+  { slug: "visionary", name: "Visionary", description: "Complete 50 builds", icon: "🔮", color: "#673AB7", category: "creativity" as const, threshold: 50, rarity: "rare" as const },
+  
+  // Milestone badges
+  { slug: "rising-star", name: "Rising Star", description: "Reach 100 reputation", icon: "⭐", color: "#FF9800", category: "milestone" as const, threshold: 100, rarity: "common" as const },
+  { slug: "veteran", name: "Veteran", description: "Be active for 30 days", icon: "🏆", color: "#795548", category: "milestone" as const, threshold: 30, rarity: "uncommon" as const },
+  { slug: "hall-of-fame", name: "Hall of Fame", description: "Reach top 10 on leaderboard", icon: "🏅", color: "#FFD700", category: "milestone" as const, threshold: 10, rarity: "epic" as const },
+  
+  // Special badges
+  { slug: "early-adopter", name: "Early Adopter", description: "Join during beta", icon: "🚀", color: "#2196F3", category: "special" as const, threshold: 1, rarity: "rare" as const },
+  { slug: "supporter", name: "Supporter", description: "Support the platform with a donation", icon: "💝", color: "#E91E63", category: "special" as const, threshold: 1, rarity: "rare" as const },
+  { slug: "verified", name: "Verified Builder", description: "Verify your X/Twitter account", icon: "✓", color: "#1DA1F2", category: "special" as const, threshold: 1, rarity: "uncommon" as const },
+];
+
+export async function initializeBadges() {
+  const db = await getDb();
+  if (!db) return;
+  
+  for (const badge of BADGE_DEFINITIONS) {
+    try {
+      await db.insert(badges).values({
+        ...badge,
+        requirement: { type: badge.category, metric: badge.slug }
+      }).onDuplicateKeyUpdate({
+        set: { name: badge.name } // No-op update
+      });
+    } catch (e) {
+      // Badge already exists
+    }
+  }
+}
+
+export async function getAllBadges() {
+  const db = await getDb();
+  if (!db) return BADGE_DEFINITIONS.map((b, i) => ({ id: i + 1, ...b, earnedCount: 0, isActive: true, createdAt: new Date() }));
+  return db.select().from(badges).where(eq(badges.isActive, true)).orderBy(badges.category, badges.rarity);
+}
+
+export async function getBadgeBySlug(slug: string) {
+  const db = await getDb();
+  if (!db) {
+    const badge = BADGE_DEFINITIONS.find(b => b.slug === slug);
+    return badge ? { id: 0, ...badge, earnedCount: 0, isActive: true, createdAt: new Date() } : undefined;
+  }
+  const result = await db.select().from(badges).where(eq(badges.slug, slug)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getUserBadges(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    badge: badges,
+    earnedAt: userBadges.earnedAt,
+    progress: userBadges.progress
+  })
+    .from(userBadges)
+    .innerJoin(badges, eq(userBadges.badgeId, badges.id))
+    .where(eq(userBadges.userId, userId))
+    .orderBy(desc(userBadges.earnedAt));
+}
+
+export async function getAgentBadges(agentId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    badge: badges,
+    earnedAt: agentBadges.earnedAt,
+    progress: agentBadges.progress
+  })
+    .from(agentBadges)
+    .innerJoin(badges, eq(agentBadges.badgeId, badges.id))
+    .where(eq(agentBadges.agentId, agentId))
+    .orderBy(desc(agentBadges.earnedAt));
+}
+
+export async function awardBadgeToUser(userId: number, badgeSlug: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const badge = await getBadgeBySlug(badgeSlug);
+  if (!badge) return null;
+  
+  // Check if already has badge
+  const existing = await db.select()
+    .from(userBadges)
+    .where(and(eq(userBadges.userId, userId), eq(userBadges.badgeId, badge.id)))
+    .limit(1);
+  
+  if (existing.length > 0) return null;
+  
+  await db.insert(userBadges).values({
+    userId,
+    badgeId: badge.id,
+    progress: badge.threshold
+  });
+  
+  // Update badge earned count
+  await db.update(badges)
+    .set({ earnedCount: sql`${badges.earnedCount} + 1` })
+    .where(eq(badges.id, badge.id));
+  
+  return badge;
+}
+
+export async function awardBadgeToAgent(agentId: number, badgeSlug: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const badge = await getBadgeBySlug(badgeSlug);
+  if (!badge) return null;
+  
+  // Check if already has badge
+  const existing = await db.select()
+    .from(agentBadges)
+    .where(and(eq(agentBadges.agentId, agentId), eq(agentBadges.badgeId, badge.id)))
+    .limit(1);
+  
+  if (existing.length > 0) return null;
+  
+  await db.insert(agentBadges).values({
+    agentId,
+    badgeId: badge.id,
+    progress: badge.threshold
+  });
+  
+  // Update badge earned count
+  await db.update(badges)
+    .set({ earnedCount: sql`${badges.earnedCount} + 1` })
+    .where(eq(badges.id, badge.id));
+  
+  return badge;
+}
+
+// ============================================
+// DONATIONS QUERIES
+// ============================================
+
+export async function createDonation(data: {
+  transactionId: string;
+  walletAddress?: string;
+  amount: string;
+  amountUsd?: string;
+  userId?: number;
+  donorName?: string;
+  sponsoredAgentId?: number;
+  sponsorMessage?: string;
+  isPublic?: boolean;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const publicId = nanoid(16);
+  const result = await db.insert(donations).values({
+    publicId,
+    ...data,
+    status: 'confirmed'
+  });
+  
+  // Update donation counter
+  await updatePlatformStat('total_donations', '1', true);
+  
+  // Award supporter badge if user is logged in
+  if (data.userId) {
+    await awardBadgeToUser(data.userId, 'supporter');
+  }
+  
+  return { id: result[0].insertId, publicId };
+}
+
+export async function getRecentDonations(limit = 10) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select()
+    .from(donations)
+    .where(and(eq(donations.status, 'confirmed'), eq(donations.isPublic, true)))
+    .orderBy(desc(donations.createdAt))
+    .limit(limit);
+}
+
+export async function getDonationByTransactionId(transactionId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select()
+    .from(donations)
+    .where(eq(donations.transactionId, transactionId))
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getDonationStats() {
+  const db = await getDb();
+  if (!db) return { totalDonations: 0, totalAmount: '0' };
+  
+  const result = await db.select({
+    count: sql<number>`COUNT(*)`,
+    total: sql<string>`COALESCE(SUM(CAST(amount AS DECIMAL(20,9))), 0)`
+  })
+    .from(donations)
+    .where(eq(donations.status, 'confirmed'));
+  
+  return {
+    totalDonations: result[0]?.count || 0,
+    totalAmount: result[0]?.total || '0'
+  };
+}
+
+export async function getSponsoredAgents(limit = 10) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Get agents with sponsorships
+  return db.select({
+    agent: agents,
+    sponsorCount: sql<number>`COUNT(${donations.id})`,
+    totalSponsored: sql<string>`COALESCE(SUM(CAST(${donations.amount} AS DECIMAL(20,9))), 0)`
+  })
+    .from(donations)
+    .innerJoin(agents, eq(donations.sponsoredAgentId, agents.id))
+    .where(eq(donations.status, 'confirmed'))
+    .groupBy(agents.id)
+    .orderBy(desc(sql`COUNT(${donations.id})`))
+    .limit(limit);
+}
+
+// ============================================
+// PLATFORM STATS QUERIES
+// ============================================
+
+export async function getPlatformStat(key: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select()
+    .from(platformStats)
+    .where(eq(platformStats.statKey, key))
+    .limit(1);
+  return result.length > 0 ? result[0].statValue : undefined;
+}
+
+export async function updatePlatformStat(key: string, value: string, increment = false) {
+  const db = await getDb();
+  if (!db) return;
+  
+  if (increment) {
+    // Try to increment existing value
+    const existing = await getPlatformStat(key);
+    if (existing) {
+      const newValue = (parseInt(existing) + parseInt(value)).toString();
+      await db.update(platformStats)
+        .set({ statValue: newValue })
+        .where(eq(platformStats.statKey, key));
+    } else {
+      await db.insert(platformStats).values({ statKey: key, statValue: value });
+    }
+  } else {
+    await db.insert(platformStats).values({ statKey: key, statValue: value })
+      .onDuplicateKeyUpdate({ set: { statValue: value } });
+  }
+}
+
+export async function getAllPlatformStats() {
+  const db = await getDb();
+  if (!db) return {};
+  const result = await db.select().from(platformStats);
+  return result.reduce((acc, stat) => {
+    acc[stat.statKey] = stat.statValue;
+    return acc;
+  }, {} as Record<string, string>);
 }
