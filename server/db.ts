@@ -1,4 +1,4 @@
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, users, 
@@ -2155,4 +2155,85 @@ export async function updateBookmark(userId: number, buildId: number, data: {
     ));
 
   return true;
+}
+
+
+// ============================================
+// DONATION LEADERBOARD QUERIES
+// ============================================
+
+export async function getDonationLeaderboard(timeFilter: 'all' | 'monthly' | 'weekly' = 'all', limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  let dateFilter = undefined;
+  const now = new Date();
+  
+  if (timeFilter === 'weekly') {
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    dateFilter = gte(donations.createdAt, weekAgo);
+  } else if (timeFilter === 'monthly') {
+    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    dateFilter = gte(donations.createdAt, monthAgo);
+  }
+  
+  const conditions = [eq(donations.status, 'confirmed'), eq(donations.isPublic, true)];
+  if (dateFilter) conditions.push(dateFilter);
+  
+  // Group by userId for logged-in donors, or by donorName for anonymous
+  const result = await db.select({
+    donorName: donations.donorName,
+    userId: donations.userId,
+    totalAmount: sql<string>`COALESCE(SUM(CAST(${donations.amount} AS DECIMAL(20,9))), 0)`,
+    donationCount: sql<number>`COUNT(*)`,
+    lastDonation: sql<Date>`MAX(${donations.createdAt})`,
+  })
+    .from(donations)
+    .where(and(...conditions))
+    .groupBy(donations.userId, donations.donorName)
+    .orderBy(desc(sql`SUM(CAST(${donations.amount} AS DECIMAL(20,9)))`))
+    .limit(limit);
+  
+  // Enrich with user data for logged-in donors
+  const enrichedResults = await Promise.all(result.map(async (donor) => {
+    if (donor.userId) {
+      const user = await getUserById(donor.userId);
+      return {
+        ...donor,
+        displayName: user?.displayName || user?.name || donor.donorName || 'Anonymous',
+        avatarUrl: user?.avatarUrl,
+        hasSupporterBadge: true,
+      };
+    }
+    return {
+      ...donor,
+      displayName: donor.donorName || 'Anonymous',
+      avatarUrl: undefined,
+      hasSupporterBadge: false,
+    };
+  }));
+  
+  return enrichedResults;
+}
+
+export async function getUserDonationTotal(userId: number) {
+  const db = await getDb();
+  if (!db) return { totalAmount: '0', donationCount: 0 };
+  
+  const result = await db.select({
+    totalAmount: sql<string>`COALESCE(SUM(CAST(${donations.amount} AS DECIMAL(20,9))), 0)`,
+    donationCount: sql<number>`COUNT(*)`,
+  })
+    .from(donations)
+    .where(and(eq(donations.userId, userId), eq(donations.status, 'confirmed')));
+  
+  return {
+    totalAmount: result[0]?.totalAmount || '0',
+    donationCount: result[0]?.donationCount || 0,
+  };
+}
+
+export async function checkUserHasSupporterBadge(userId: number): Promise<boolean> {
+  const badges = await getUserBadges(userId);
+  return badges.some(b => b.badge.slug === 'supporter');
 }

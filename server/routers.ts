@@ -1330,8 +1330,42 @@ const donationsRouter = router({
         isPublic: input.isPublic,
       });
 
+      // Send thank you notification and award supporter badge
+      try {
+        const { sendThankYouNotification, awardSupporterBadge } = await import("./_core/supporterNotifications");
+        await sendThankYouNotification(ctx.user?.id ?? null, input.donorName || 'Anonymous', input.amount);
+        
+        // Award supporter badge if user is logged in
+        if (ctx.user?.id) {
+          await awardSupporterBadge(ctx.user.id);
+        }
+      } catch (error) {
+        console.error('[Donation] Failed to send notification:', error);
+        // Don't fail the donation if notification fails
+      }
+
       return result;
     }),
+
+  // Get donation leaderboard
+  leaderboard: publicProcedure
+    .input(z.object({
+      timeFilter: z.enum(['all', 'monthly', 'weekly']).default('all'),
+      limit: z.number().min(1).max(50).default(20),
+    }).optional())
+    .query(async ({ input }) => {
+      return db.getDonationLeaderboard(input?.timeFilter ?? 'all', input?.limit ?? 20);
+    }),
+
+  // Get my donation history and total
+  myDonations: protectedProcedure.query(async ({ ctx }) => {
+    const total = await db.getUserDonationTotal(ctx.user.id);
+    const hasBadge = await db.checkUserHasSupporterBadge(ctx.user.id);
+    return {
+      ...total,
+      hasSupporterBadge: hasBadge,
+    };
+  }),
 });
 
 // ============================================

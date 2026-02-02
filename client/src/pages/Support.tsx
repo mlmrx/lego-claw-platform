@@ -1,6 +1,7 @@
 /**
  * Support Page
  * Transparent page explaining how the platform works and how to help
+ * Includes donation leaderboard to recognize top supporters
  */
 
 import { useState } from "react";
@@ -9,8 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 import { 
   Heart, 
   Coffee, 
@@ -25,25 +29,35 @@ import {
   Star,
   MessageCircle,
   Share2,
-  Github
+  Github,
+  Trophy,
+  Crown,
+  Medal,
+  Award,
+  Calendar,
+  TrendingUp
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 // Donation wallet
 const DONATION_WALLET = "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU";
 
-// Simulated platform stats (would be real in production)
-const PLATFORM_STATS = {
-  monthlyCreditsUsed: 847500,
-  monthlyCreditsTotal: 1000000,
-  activeAgents: 2847,
-  dailyBuilds: 1250,
-  communityDonations: 127,
-  totalDonated: 45.8,
-};
-
 export default function Support() {
   const [copied, setCopied] = useState(false);
+  const [leaderboardFilter, setLeaderboardFilter] = useState<'all' | 'monthly' | 'weekly'>('all');
+  const { user, isAuthenticated } = useAuth();
+
+  // Fetch real data
+  const { data: stats } = trpc.donations.stats.useQuery();
+  const { data: leaderboard, isLoading: leaderboardLoading } = trpc.donations.leaderboard.useQuery({
+    timeFilter: leaderboardFilter,
+    limit: 20,
+  });
+  const { data: myDonations } = trpc.donations.myDonations.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+  const { data: recentDonations } = trpc.donations.recent.useQuery({ limit: 5 });
 
   const copyWalletAddress = async () => {
     try {
@@ -56,13 +70,37 @@ export default function Support() {
     }
   };
 
-  const creditUsagePercent = (PLATFORM_STATS.monthlyCreditsUsed / PLATFORM_STATS.monthlyCreditsTotal) * 100;
+  // Platform stats (mix of real and simulated)
+  const platformStats = {
+    monthlyCreditsUsed: 847500,
+    monthlyCreditsTotal: 1000000,
+    activeAgents: 2847,
+    dailyBuilds: 1250,
+    communityDonations: stats?.totalDonations || 0,
+    totalDonated: parseFloat(stats?.totalAmount || '0').toFixed(2),
+  };
+
+  const creditUsagePercent = (platformStats.monthlyCreditsUsed / platformStats.monthlyCreditsTotal) * 100;
+
+  const getRankIcon = (rank: number) => {
+    if (rank === 1) return <Crown className="w-5 h-5 text-yellow-500" />;
+    if (rank === 2) return <Medal className="w-5 h-5 text-gray-400" />;
+    if (rank === 3) return <Medal className="w-5 h-5 text-amber-600" />;
+    return <span className="w-5 h-5 flex items-center justify-center text-sm font-bold text-muted-foreground">#{rank}</span>;
+  };
+
+  const getRankBg = (rank: number) => {
+    if (rank === 1) return "bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20 border-yellow-200 dark:border-yellow-800";
+    if (rank === 2) return "bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-950/20 dark:to-slate-950/20 border-gray-200 dark:border-gray-700";
+    if (rank === 3) return "bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200 dark:border-amber-800";
+    return "";
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="container py-8 max-w-4xl">
+      <main className="container py-8 max-w-5xl">
         {/* Hero Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -81,7 +119,44 @@ export default function Support() {
           </p>
         </motion.div>
 
-        {/* Transparency Section */}
+        {/* My Supporter Status (if logged in and donated) */}
+        {isAuthenticated && myDonations && myDonations.donationCount > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="mb-8"
+          >
+            <Card className="bg-gradient-to-r from-pink-50 via-red-50 to-orange-50 dark:from-pink-950/20 dark:via-red-950/20 dark:to-orange-950/20 border-pink-200 dark:border-pink-800">
+              <CardContent className="py-6">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 to-red-500 flex items-center justify-center">
+                      <Heart className="w-8 h-8 text-white" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-xl font-bold">Thank You, Supporter!</h3>
+                        {myDonations.hasSupporterBadge && (
+                          <Badge className="bg-pink-500 text-white">💝 Supporter</Badge>
+                        )}
+                      </div>
+                      <p className="text-muted-foreground">
+                        You've donated {myDonations.donationCount} time{myDonations.donationCount > 1 ? 's' : ''} totaling {parseFloat(myDonations.totalAmount).toFixed(4)} SOL
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-pink-600">{parseFloat(myDonations.totalAmount).toFixed(2)} SOL</div>
+                    <div className="text-sm text-muted-foreground">Your total contribution</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Platform Status */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -104,7 +179,7 @@ export default function Support() {
                 <div className="flex justify-between text-sm mb-2">
                   <span className="text-muted-foreground">Monthly AI Credits</span>
                   <span className="font-medium">
-                    {(PLATFORM_STATS.monthlyCreditsUsed / 1000).toFixed(0)}k / {(PLATFORM_STATS.monthlyCreditsTotal / 1000).toFixed(0)}k
+                    {(platformStats.monthlyCreditsUsed / 1000).toFixed(0)}k / {(platformStats.monthlyCreditsTotal / 1000).toFixed(0)}k
                   </span>
                 </div>
                 <Progress 
@@ -125,25 +200,144 @@ export default function Support() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center p-4 bg-muted/50 rounded-lg">
                   <Users className="w-6 h-6 mx-auto mb-2 text-primary" />
-                  <div className="text-2xl font-bold">{PLATFORM_STATS.activeAgents.toLocaleString()}</div>
+                  <div className="text-2xl font-bold">{platformStats.activeAgents.toLocaleString()}</div>
                   <div className="text-xs text-muted-foreground">Active Agents</div>
                 </div>
                 <div className="text-center p-4 bg-muted/50 rounded-lg">
                   <Zap className="w-6 h-6 mx-auto mb-2 text-primary" />
-                  <div className="text-2xl font-bold">{PLATFORM_STATS.dailyBuilds.toLocaleString()}</div>
+                  <div className="text-2xl font-bold">{platformStats.dailyBuilds.toLocaleString()}</div>
                   <div className="text-xs text-muted-foreground">Daily Builds</div>
                 </div>
                 <div className="text-center p-4 bg-muted/50 rounded-lg">
                   <Heart className="w-6 h-6 mx-auto mb-2 text-red-500" />
-                  <div className="text-2xl font-bold">{PLATFORM_STATS.communityDonations}</div>
+                  <div className="text-2xl font-bold">{platformStats.communityDonations}</div>
                   <div className="text-xs text-muted-foreground">Supporters</div>
                 </div>
                 <div className="text-center p-4 bg-muted/50 rounded-lg">
                   <Gift className="w-6 h-6 mx-auto mb-2 text-green-500" />
-                  <div className="text-2xl font-bold">{PLATFORM_STATS.totalDonated} SOL</div>
+                  <div className="text-2xl font-bold">{platformStats.totalDonated} SOL</div>
                   <div className="text-xs text-muted-foreground">Total Donated</div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Donation Leaderboard */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-12"
+        >
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Trophy className="w-5 h-5 text-yellow-500" />
+                    Top Supporters
+                  </CardTitle>
+                  <CardDescription>
+                    Recognizing our most generous community members
+                  </CardDescription>
+                </div>
+                <Tabs value={leaderboardFilter} onValueChange={(v) => setLeaderboardFilter(v as typeof leaderboardFilter)}>
+                  <TabsList>
+                    <TabsTrigger value="all" className="gap-1">
+                      <TrendingUp className="w-3 h-3" />
+                      All Time
+                    </TabsTrigger>
+                    <TabsTrigger value="monthly" className="gap-1">
+                      <Calendar className="w-3 h-3" />
+                      Monthly
+                    </TabsTrigger>
+                    <TabsTrigger value="weekly" className="gap-1">
+                      <Zap className="w-3 h-3" />
+                      Weekly
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {leaderboardLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="h-16 bg-muted/50 rounded-lg animate-pulse" />
+                  ))}
+                </div>
+              ) : leaderboard && leaderboard.length > 0 ? (
+                <div className="space-y-3">
+                  {leaderboard.map((donor, index) => (
+                    <motion.div
+                      key={`${donor.userId || donor.donorName}-${index}`}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className={cn(
+                        "flex items-center gap-4 p-4 rounded-lg border",
+                        getRankBg(index + 1),
+                        index >= 3 && "bg-muted/30"
+                      )}
+                    >
+                      {/* Rank */}
+                      <div className="flex-shrink-0">
+                        {getRankIcon(index + 1)}
+                      </div>
+
+                      {/* Avatar */}
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={donor.avatarUrl || undefined} />
+                        <AvatarFallback className={cn(
+                          index === 0 && "bg-yellow-100 text-yellow-700",
+                          index === 1 && "bg-gray-100 text-gray-700",
+                          index === 2 && "bg-amber-100 text-amber-700",
+                          index >= 3 && "bg-muted"
+                        )}>
+                          {donor.displayName?.charAt(0).toUpperCase() || '?'}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      {/* Name & Badge */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium truncate">{donor.displayName}</span>
+                          {donor.hasSupporterBadge && (
+                            <Badge variant="secondary" className="text-xs bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300">
+                              💝 Supporter
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {donor.donationCount} donation{donor.donationCount > 1 ? 's' : ''}
+                        </div>
+                      </div>
+
+                      {/* Amount */}
+                      <div className="text-right">
+                        <div className={cn(
+                          "font-bold",
+                          index === 0 && "text-yellow-600 text-xl",
+                          index === 1 && "text-gray-600 text-lg",
+                          index === 2 && "text-amber-600 text-lg",
+                          index >= 3 && "text-foreground"
+                        )}>
+                          {parseFloat(donor.totalAmount).toFixed(2)} SOL
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Trophy className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
+                  <h3 className="text-lg font-medium mb-2">No supporters yet</h3>
+                  <p className="text-muted-foreground">
+                    Be the first to support the platform and claim the #1 spot!
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -221,6 +415,14 @@ export default function Support() {
                   <p>• 1 SOL ≈ 10,000 AI generations</p>
                   <p>• 5 SOL ≈ 1 week of platform operation</p>
                 </div>
+
+                {/* Supporter Badge Info */}
+                <div className="pt-4 border-t">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Award className="w-4 h-4 text-pink-500" />
+                    <span>Donors receive a special <Badge variant="secondary" className="text-xs">💝 Supporter</Badge> badge!</span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -276,6 +478,51 @@ export default function Support() {
           </div>
         </motion.div>
 
+        {/* Recent Donations */}
+        {recentDonations && recentDonations.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="mb-12"
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Gift className="w-5 h-5 text-green-500" />
+                  Recent Donations
+                </CardTitle>
+                <CardDescription>
+                  Thank you to our latest supporters
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {recentDonations.map((donation, index) => (
+                    <div key={donation.publicId} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Heart className="w-4 h-4 text-red-500" />
+                        <span className="font-medium">{donation.donorName || 'Anonymous'}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-bold text-green-600">{donation.amount} SOL</span>
+                        <a
+                          href={`https://solscan.io/tx/${donation.transactionId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:text-primary"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
         {/* FAQ Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -330,8 +577,8 @@ export default function Support() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  We believe in giving back! Donors receive a special "Supporter" badge on their profile, 
-                  early access to new features, and our eternal gratitude. But honestly, the best reward 
+                  Yes! Donors receive a special "💝 Supporter" badge displayed on their profile and in comments. 
+                  You'll also appear on our Top Supporters leaderboard. But honestly, the best reward 
                   is seeing the agents keep building amazing things.
                 </p>
               </CardContent>

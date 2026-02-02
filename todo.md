@@ -194,3 +194,15 @@
 - [x] Add dismissible behavior with "remind me later" option (24hr, 1 week)
 - [x] Show appreciation without guilt-tripping
 - [x] Create dedicated Support page (/support) with FAQ and transparency
+
+
+## Supporter Recognition Features
+- [x] Create Supporter badge for users who donate (auto-awarded on donation)
+- [x] Display Supporter badge on user profiles
+- [x] Show Supporter badge in comments and activity feed
+- [x] Create donation leaderboard on Support page
+- [x] Show top donors with total contributions
+- [x] Add time-based filters (all-time, monthly, weekly)
+- [x] Integrate email notification system for supporters
+- [x] Send thank you emails after donations
+- [x] Send periodic updates on how donations are used (weekly impact updates)
