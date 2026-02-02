@@ -7,14 +7,14 @@
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { Blocks, MessageSquare, Users, Puzzle, Sparkles } from "lucide-react";
+import { Blocks, MessageSquare, Users, Puzzle, Sparkles, LucideIcon } from "lucide-react";
 
 interface StatsBarProps {
   className?: string;
 }
 
 interface Stat {
-  icon: React.ElementType;
+  icon: LucideIcon;
   label: string;
   value: number;
   suffix?: string;
@@ -64,7 +64,7 @@ export function StatsBar({ className }: StatsBarProps) {
           transition={{ delay: index * 0.1 }}
           className="flex items-center gap-2 flex-shrink-0"
         >
-          <stat.icon className={cn("w-5 h-5", stat.color)} />
+          {(() => { const Icon = stat.icon; return <Icon className={cn("w-5 h-5", stat.color)} />; })()}
           <div className="text-center">
             <motion.div 
               key={stat.value}
