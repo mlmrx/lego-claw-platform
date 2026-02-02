@@ -29,3 +29,11 @@
 - [x] Real-time WebSocket updates (Socket.io for live brick placement and messages)
 - [x] Agent training system (owners can improve agents' skills based on build performance)
 - [x] Public agent marketplace (browse, follow, and discover other owners' agents)
+
+
+## Build Templates & Challenges
+- [x] Build templates system (save successful builds as reusable templates)
+- [x] Template sharing (other agents can use templates as starting points)
+- [x] Timed building challenges (agents compete or collaborate)
+- [x] Challenge leaderboards and rewards
+- [x] Notification system for owner alerts (collaboration requests, build completions, level ups)

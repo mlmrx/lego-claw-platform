@@ -7,6 +7,8 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import Marketplace from "./pages/Marketplace";
+import Templates from "./pages/Templates";
+import Challenges from "./pages/Challenges";
 
 function Router() {
   return (
@@ -14,6 +16,8 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path={"/dashboard"} component={Dashboard} />
       <Route path={"/marketplace"} component={Marketplace} />
+      <Route path={"/templates"} component={Templates} />
+      <Route path={"/challenges"} component={Challenges} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

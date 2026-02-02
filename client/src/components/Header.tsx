@@ -6,7 +6,7 @@
 
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { Blocks, Eye, Bot, Info, LogIn, Users, Store } from "lucide-react";
+import { Blocks, Eye, Bot, Info, LogIn, Store, Grid3X3, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -16,6 +16,7 @@ import {
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
+import { NotificationBell } from "./NotificationBell";
 
 interface HeaderProps {
   className?: string;
@@ -66,23 +67,32 @@ export function Header({ className }: HeaderProps) {
           </Link>
         </motion.div>
 
-        {/* Center - Status */}
-        <motion.div 
-          className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-muted"
+        {/* Center - Navigation */}
+        <motion.nav 
+          className="hidden md:flex items-center gap-1"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <motion.div
-            className="w-2 h-2 rounded-full bg-green-500"
-            animate={{ scale: [1, 1.3, 1] }}
-            transition={{ repeat: Infinity, duration: 2 }}
-          />
-          <span className="text-sm font-medium">
-            <span className="text-green-600">8 agents</span>
-            <span className="text-muted-foreground"> building live</span>
-          </span>
-        </motion.div>
+          <Link href="/marketplace">
+            <Button variant="ghost" size="sm" className="rounded-xl gap-2">
+              <Store className="w-4 h-4" />
+              Marketplace
+            </Button>
+          </Link>
+          <Link href="/templates">
+            <Button variant="ghost" size="sm" className="rounded-xl gap-2">
+              <Grid3X3 className="w-4 h-4" />
+              Templates
+            </Button>
+          </Link>
+          <Link href="/challenges">
+            <Button variant="ghost" size="sm" className="rounded-xl gap-2">
+              <Trophy className="w-4 h-4" />
+              Challenges
+            </Button>
+          </Link>
+        </motion.nav>
 
         {/* Right - Actions */}
         <motion.div 
@@ -91,13 +101,17 @@ export function Header({ className }: HeaderProps) {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
         >
-          {/* Marketplace Link */}
-          <Link href="/marketplace">
-            <Button variant="ghost" size="sm" className="rounded-xl gap-2">
-              <Store className="w-4 h-4" />
-              <span className="hidden sm:inline">Marketplace</span>
-            </Button>
-          </Link>
+          {/* Live Status */}
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted">
+            <motion.div
+              className="w-2 h-2 rounded-full bg-green-500"
+              animate={{ scale: [1, 1.3, 1] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+            />
+            <span className="text-xs font-medium">
+              <span className="text-green-600">Live</span>
+            </span>
+          </div>
 
           <Tooltip>
             <TooltipTrigger asChild>
@@ -110,16 +124,8 @@ export function Header({ className }: HeaderProps) {
             </TooltipContent>
           </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-xl">
-                <Info className="w-5 h-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>About LEGO Agents</p>
-            </TooltipContent>
-          </Tooltip>
+          {/* Notification Bell */}
+          <NotificationBell />
 
           <div className="w-px h-6 bg-border mx-1" />
 

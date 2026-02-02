@@ -942,6 +942,272 @@ const trainingRouter = router({
 });
 
 // ============================================
+// TEMPLATES ROUTER - Build templates system
+// ============================================
+
+const templatesRouter = router({
+  // List public templates
+  list: publicProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(20),
+      offset: z.number().min(0).default(0),
+    }).optional())
+    .query(async ({ input }) => {
+      return db.getPublicTemplates(input?.limit ?? 20, input?.offset ?? 0);
+    }),
+
+  // Get featured templates
+  featured: publicProcedure
+    .input(z.object({ limit: z.number().min(1).max(20).default(10) }).optional())
+    .query(async ({ input }) => {
+      return db.getFeaturedTemplates(input?.limit ?? 10);
+    }),
+
+  // Get template by ID
+  byId: publicProcedure
+    .input(z.object({ publicId: z.string() }))
+    .query(async ({ input }) => {
+      return db.getBuildTemplateByPublicId(input.publicId);
+    }),
+
+  // Get user's templates
+  myTemplates: protectedProcedure.query(async ({ ctx }) => {
+    return db.getTemplatesByCreator(ctx.user.id);
+  }),
+
+  // Create template from a build
+  create: protectedProcedure
+    .input(z.object({
+      name: z.string().min(1).max(200),
+      description: z.string().optional(),
+      theme: z.string().max(50).optional(),
+      style: z.string().max(50).optional(),
+      difficulty: z.enum(["beginner", "intermediate", "advanced", "expert"]).default("intermediate"),
+      brickData: z.array(z.any()),
+      totalBricks: z.number().min(1),
+      previewImage: z.string().optional(),
+      sourceProjectId: z.number().optional(),
+      isPublic: z.boolean().default(true),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return db.createBuildTemplate({
+        ...input,
+        creatorId: ctx.user.id,
+      });
+    }),
+
+  // Use a template (increment usage count)
+  use: publicProcedure
+    .input(z.object({ publicId: z.string() }))
+    .mutation(async ({ input }) => {
+      const template = await db.getBuildTemplateByPublicId(input.publicId);
+      if (!template) throw new TRPCError({ code: "NOT_FOUND", message: "Template not found" });
+      
+      await db.incrementTemplateUsage(template.id);
+      return { success: true, brickData: template.brickData };
+    }),
+
+  // Like a template
+  like: protectedProcedure
+    .input(z.object({ publicId: z.string() }))
+    .mutation(async ({ input }) => {
+      const template = await db.getBuildTemplateByPublicId(input.publicId);
+      if (!template) throw new TRPCError({ code: "NOT_FOUND", message: "Template not found" });
+      
+      await db.likeTemplate(template.id);
+      return { success: true };
+    }),
+
+  // Delete template
+  delete: protectedProcedure
+    .input(z.object({ publicId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const template = await db.getBuildTemplateByPublicId(input.publicId);
+      if (!template) throw new TRPCError({ code: "NOT_FOUND", message: "Template not found" });
+      if (template.creatorId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Not your template" });
+      
+      await db.deleteTemplate(template.id, ctx.user.id);
+      return { success: true };
+    }),
+});
+
+// ============================================
+// CHALLENGES ROUTER - Timed building challenges
+// ============================================
+
+const challengesRouter = router({
+  // List active challenges
+  active: publicProcedure
+    .input(z.object({ limit: z.number().min(1).max(50).default(20) }).optional())
+    .query(async ({ input }) => {
+      return db.getActiveChallenges(input?.limit ?? 20);
+    }),
+
+  // List upcoming challenges
+  upcoming: publicProcedure
+    .input(z.object({ limit: z.number().min(1).max(50).default(20) }).optional())
+    .query(async ({ input }) => {
+      return db.getUpcomingChallenges(input?.limit ?? 20);
+    }),
+
+  // List completed challenges
+  completed: publicProcedure
+    .input(z.object({ limit: z.number().min(1).max(50).default(20) }).optional())
+    .query(async ({ input }) => {
+      return db.getCompletedChallenges(input?.limit ?? 20);
+    }),
+
+  // Get challenge by ID
+  byId: publicProcedure
+    .input(z.object({ publicId: z.string() }))
+    .query(async ({ input }) => {
+      return db.getChallengeByPublicId(input.publicId);
+    }),
+
+  // Get challenge participants
+  participants: publicProcedure
+    .input(z.object({ publicId: z.string() }))
+    .query(async ({ input }) => {
+      const challenge = await db.getChallengeByPublicId(input.publicId);
+      if (!challenge) return [];
+      return db.getChallengeParticipants(challenge.id);
+    }),
+
+  // Create a challenge
+  create: protectedProcedure
+    .input(z.object({
+      name: z.string().min(1).max(200),
+      description: z.string().optional(),
+      theme: z.string().max(50).optional(),
+      rules: z.string().optional(),
+      challengeType: z.enum(["speed", "creativity", "collaboration", "precision", "themed"]).default("creativity"),
+      mode: z.enum(["solo", "team", "versus"]).default("solo"),
+      durationMinutes: z.number().min(5).max(1440).default(30),
+      startsAt: z.date().optional(),
+      minAgents: z.number().min(1).max(100).default(1),
+      maxAgents: z.number().min(1).max(100).default(10),
+      minLevel: z.number().min(1).max(100).default(1),
+      experienceReward: z.number().min(0).max(10000).default(100),
+      reputationReward: z.number().min(0).max(1000).default(50),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const startsAt = input.startsAt ?? new Date();
+      const endsAt = new Date(startsAt.getTime() + input.durationMinutes * 60 * 1000);
+      
+      return db.createChallenge({
+        ...input,
+        creatorId: ctx.user.id,
+        startsAt,
+        endsAt,
+        status: input.startsAt && input.startsAt > new Date() ? 'upcoming' : 'active',
+      });
+    }),
+
+  // Join a challenge with an agent
+  join: protectedProcedure
+    .input(z.object({
+      challengePublicId: z.string(),
+      agentPublicId: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const challenge = await db.getChallengeByPublicId(input.challengePublicId);
+      if (!challenge) throw new TRPCError({ code: "NOT_FOUND", message: "Challenge not found" });
+      if (challenge.status !== 'active' && challenge.status !== 'upcoming') {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Challenge is not open for joining" });
+      }
+      if (challenge.participantCount >= challenge.maxAgents) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Challenge is full" });
+      }
+
+      const agent = await db.getAgentByPublicId(input.agentPublicId);
+      if (!agent) throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
+      if (agent.ownerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Not your agent" });
+      if (agent.level < challenge.minLevel) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: `Agent must be at least level ${challenge.minLevel}` });
+      }
+
+      await db.joinChallenge(challenge.id, agent.id);
+      
+      // Notify owner about challenge join
+      await db.createNotification({
+        userId: ctx.user.id,
+        title: "Joined Challenge!",
+        message: `${agent.name} has joined the challenge "${challenge.name}"`,
+        notificationType: 'challenge_started',
+        agentId: agent.id,
+        challengeId: challenge.id,
+      });
+
+      return { success: true };
+    }),
+
+  // Submit challenge entry
+  submit: protectedProcedure
+    .input(z.object({
+      challengePublicId: z.string(),
+      agentPublicId: z.string(),
+      submissionData: z.any(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const challenge = await db.getChallengeByPublicId(input.challengePublicId);
+      if (!challenge) throw new TRPCError({ code: "NOT_FOUND", message: "Challenge not found" });
+      if (challenge.status !== 'active') {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Challenge is not active" });
+      }
+
+      const agent = await db.getAgentByPublicId(input.agentPublicId);
+      if (!agent) throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
+      if (agent.ownerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Not your agent" });
+
+      await db.submitChallengeEntry(challenge.id, agent.id, input.submissionData);
+      return { success: true };
+    }),
+});
+
+// ============================================
+// NOTIFICATIONS ROUTER - Owner alerts
+// ============================================
+
+const notificationsRouter = router({
+  // Get user's notifications
+  list: protectedProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(50),
+      includeRead: z.boolean().default(false),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      return db.getUserNotifications(ctx.user.id, input?.limit ?? 50, input?.includeRead ?? false);
+    }),
+
+  // Get unread count
+  unreadCount: protectedProcedure.query(async ({ ctx }) => {
+    return db.getUnreadNotificationCount(ctx.user.id);
+  }),
+
+  // Mark notification as read
+  markRead: protectedProcedure
+    .input(z.object({ publicId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await db.markNotificationRead(input.publicId, ctx.user.id);
+      return { success: true };
+    }),
+
+  // Mark all as read
+  markAllRead: protectedProcedure.mutation(async ({ ctx }) => {
+    await db.markAllNotificationsRead(ctx.user.id);
+    return { success: true };
+  }),
+
+  // Archive notification
+  archive: protectedProcedure
+    .input(z.object({ publicId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await db.archiveNotification(input.publicId, ctx.user.id);
+      return { success: true };
+    }),
+});
+
+// ============================================
 // MAIN APP ROUTER
 // ============================================
 
@@ -964,6 +1230,9 @@ export const appRouter = router({
   activity: activityRouter,
   profile: profileRouter,
   training: trainingRouter,
+  templates: templatesRouter,
+  challenges: challengesRouter,
+  notifications: notificationsRouter,
   
   // Live demo agents (backward compatible)
   agents: liveAgentsRouter,

@@ -15,6 +15,13 @@
       "when": 1769995082574,
       "tag": "0001_handy_mastermind",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1770001253048,
+      "tag": "0002_smooth_doctor_spectrum",
+      "breakpoints": true
     }
   ]
 }

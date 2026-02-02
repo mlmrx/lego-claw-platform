@@ -258,3 +258,139 @@ export const activityFeed = mysqlTable("activity_feed", {
 
 export type ActivityFeedItem = typeof activityFeed.$inferSelect;
 export type InsertActivityFeedItem = typeof activityFeed.$inferInsert;
+
+
+/**
+ * Build Templates - Saved build designs that can be reused
+ */
+export const buildTemplates = mysqlTable("build_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 32 }).notNull().unique(),
+  creatorId: int("creatorId").notNull(), // References users.id
+  sourceProjectId: int("sourceProjectId"), // References buildProjects.id (if created from a project)
+  // Template details
+  name: varchar("name", { length: 200 }).notNull(),
+  description: text("description"),
+  theme: varchar("theme", { length: 50 }),
+  style: varchar("style", { length: 50 }),
+  difficulty: mysqlEnum("difficulty", ["beginner", "intermediate", "advanced", "expert"]).default("intermediate"),
+  // Build data
+  brickData: json("brickData").notNull(), // JSON array of brick positions and colors
+  totalBricks: int("totalBricks").default(0).notNull(),
+  previewImage: text("previewImage"), // URL to preview image
+  // Visibility
+  isPublic: boolean("isPublic").default(true).notNull(),
+  isFeatured: boolean("isFeatured").default(false).notNull(),
+  // Stats
+  usageCount: int("usageCount").default(0).notNull(),
+  likes: int("likes").default(0).notNull(),
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BuildTemplate = typeof buildTemplates.$inferSelect;
+export type InsertBuildTemplate = typeof buildTemplates.$inferInsert;
+
+/**
+ * Building Challenges - Timed competitions for agents
+ */
+export const buildingChallenges = mysqlTable("building_challenges", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 32 }).notNull().unique(),
+  creatorId: int("creatorId"), // References users.id (null for system challenges)
+  // Challenge details
+  name: varchar("name", { length: 200 }).notNull(),
+  description: text("description"),
+  theme: varchar("theme", { length: 50 }),
+  rules: text("rules"),
+  // Challenge type
+  challengeType: mysqlEnum("challengeType", ["speed", "creativity", "collaboration", "precision", "themed"]).default("creativity").notNull(),
+  mode: mysqlEnum("mode", ["solo", "team", "versus"]).default("solo").notNull(),
+  // Timing
+  durationMinutes: int("durationMinutes").default(30).notNull(),
+  startsAt: timestamp("startsAt"),
+  endsAt: timestamp("endsAt"),
+  // Requirements
+  minAgents: int("minAgents").default(1).notNull(),
+  maxAgents: int("maxAgents").default(10).notNull(),
+  minLevel: int("minLevel").default(1).notNull(),
+  requiredSkills: json("requiredSkills"), // JSON array of skill IDs
+  // Rewards
+  experienceReward: int("experienceReward").default(100).notNull(),
+  reputationReward: int("reputationReward").default(50).notNull(),
+  // Status
+  status: mysqlEnum("status", ["upcoming", "active", "voting", "completed", "cancelled"]).default("upcoming").notNull(),
+  // Stats
+  participantCount: int("participantCount").default(0).notNull(),
+  submissionCount: int("submissionCount").default(0).notNull(),
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BuildingChallenge = typeof buildingChallenges.$inferSelect;
+export type InsertBuildingChallenge = typeof buildingChallenges.$inferInsert;
+
+/**
+ * Challenge Participants - Agents participating in challenges
+ */
+export const challengeParticipants = mysqlTable("challenge_participants", {
+  id: int("id").autoincrement().primaryKey(),
+  challengeId: int("challengeId").notNull(), // References buildingChallenges.id
+  agentId: int("agentId").notNull(), // References agents.id
+  teamId: int("teamId"), // For team challenges
+  // Submission
+  submissionData: json("submissionData"), // JSON with build data
+  submittedAt: timestamp("submittedAt"),
+  // Scoring
+  score: int("score").default(0).notNull(),
+  rank: int("rank"),
+  // Timestamps
+  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+});
+
+export type ChallengeParticipant = typeof challengeParticipants.$inferSelect;
+export type InsertChallengeParticipant = typeof challengeParticipants.$inferInsert;
+
+/**
+ * Notifications - Alerts for owners about their agents
+ */
+export const notifications = mysqlTable("notifications", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 32 }).notNull().unique(),
+  userId: int("userId").notNull(), // References users.id (owner to notify)
+  // Notification content
+  title: varchar("title", { length: 200 }).notNull(),
+  message: text("message").notNull(),
+  notificationType: mysqlEnum("notificationType", [
+    "collaboration_request",
+    "build_completed",
+    "level_up",
+    "skill_acquired",
+    "challenge_started",
+    "challenge_ended",
+    "challenge_won",
+    "agent_mentioned",
+    "template_used",
+    "follower_gained",
+    "achievement_unlocked",
+    "system"
+  ]).notNull(),
+  // Related entities
+  agentId: int("agentId"), // References agents.id
+  projectId: int("projectId"), // References buildProjects.id
+  challengeId: int("challengeId"), // References buildingChallenges.id
+  // Metadata
+  metadata: json("metadata"), // Additional context data
+  actionUrl: text("actionUrl"), // URL to navigate to
+  // Status
+  isRead: boolean("isRead").default(false).notNull(),
+  isArchived: boolean("isArchived").default(false).notNull(),
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  readAt: timestamp("readAt"),
+});
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;

@@ -1,0 +1,83 @@
+CREATE TABLE `build_templates` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`publicId` varchar(32) NOT NULL,
+	`creatorId` int NOT NULL,
+	`sourceProjectId` int,
+	`name` varchar(200) NOT NULL,
+	`description` text,
+	`theme` varchar(50),
+	`style` varchar(50),
+	`difficulty` enum('beginner','intermediate','advanced','expert') DEFAULT 'intermediate',
+	`brickData` json NOT NULL,
+	`totalBricks` int NOT NULL DEFAULT 0,
+	`previewImage` text,
+	`isPublic` boolean NOT NULL DEFAULT true,
+	`isFeatured` boolean NOT NULL DEFAULT false,
+	`usageCount` int NOT NULL DEFAULT 0,
+	`likes` int NOT NULL DEFAULT 0,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `build_templates_id` PRIMARY KEY(`id`),
+	CONSTRAINT `build_templates_publicId_unique` UNIQUE(`publicId`)
+);
+--> statement-breakpoint
+CREATE TABLE `building_challenges` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`publicId` varchar(32) NOT NULL,
+	`creatorId` int,
+	`name` varchar(200) NOT NULL,
+	`description` text,
+	`theme` varchar(50),
+	`rules` text,
+	`challengeType` enum('speed','creativity','collaboration','precision','themed') NOT NULL DEFAULT 'creativity',
+	`mode` enum('solo','team','versus') NOT NULL DEFAULT 'solo',
+	`durationMinutes` int NOT NULL DEFAULT 30,
+	`startsAt` timestamp,
+	`endsAt` timestamp,
+	`minAgents` int NOT NULL DEFAULT 1,
+	`maxAgents` int NOT NULL DEFAULT 10,
+	`minLevel` int NOT NULL DEFAULT 1,
+	`requiredSkills` json,
+	`experienceReward` int NOT NULL DEFAULT 100,
+	`reputationReward` int NOT NULL DEFAULT 50,
+	`status` enum('upcoming','active','voting','completed','cancelled') NOT NULL DEFAULT 'upcoming',
+	`participantCount` int NOT NULL DEFAULT 0,
+	`submissionCount` int NOT NULL DEFAULT 0,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `building_challenges_id` PRIMARY KEY(`id`),
+	CONSTRAINT `building_challenges_publicId_unique` UNIQUE(`publicId`)
+);
+--> statement-breakpoint
+CREATE TABLE `challenge_participants` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`challengeId` int NOT NULL,
+	`agentId` int NOT NULL,
+	`teamId` int,
+	`submissionData` json,
+	`submittedAt` timestamp,
+	`score` int NOT NULL DEFAULT 0,
+	`rank` int,
+	`joinedAt` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `challenge_participants_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `notifications` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`publicId` varchar(32) NOT NULL,
+	`userId` int NOT NULL,
+	`title` varchar(200) NOT NULL,
+	`message` text NOT NULL,
+	`notificationType` enum('collaboration_request','build_completed','level_up','skill_acquired','challenge_started','challenge_ended','challenge_won','agent_mentioned','template_used','follower_gained','achievement_unlocked','system') NOT NULL,
+	`agentId` int,
+	`projectId` int,
+	`challengeId` int,
+	`metadata` json,
+	`actionUrl` text,
+	`isRead` boolean NOT NULL DEFAULT false,
+	`isArchived` boolean NOT NULL DEFAULT false,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`readAt` timestamp,
+	CONSTRAINT `notifications_id` PRIMARY KEY(`id`),
+	CONSTRAINT `notifications_publicId_unique` UNIQUE(`publicId`)
+);
