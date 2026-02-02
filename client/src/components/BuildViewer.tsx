@@ -4,20 +4,30 @@
  * Main visualization area showing 3D LEGO builds in progress
  */
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { agents } from "@/lib/agents";
 import { AgentAvatarGroup } from "./AgentAvatar";
 import { Progress } from "@/components/ui/progress";
-import { LegoScene3D, BUILD_STRUCTURES, BuildStructure } from "./LegoScene3D";
-import { BrickPlacement, LEGO_COLORS } from "./LegoBrick3D";
+import { LegoScene3D, BUILD_STRUCTURES } from "./LegoScene3D";
+import { BrickPlacement } from "./LegoBrick3D";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Puzzle, RotateCcw, Pause, Play, Eye, Hammer } from "lucide-react";
+import { ChevronLeft, ChevronRight, Puzzle, RotateCcw, Pause, Play, Eye, Hammer, Volume2, VolumeX, Gauge } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { useLegoSound } from "@/hooks/useLegoSound";
 
 interface BuildViewerProps {
   className?: string;
 }
+
+// Speed presets in milliseconds (base interval)
+const SPEED_PRESETS = {
+  slow: 4000,
+  normal: 2000,
+  fast: 800,
+  turbo: 300,
+};
 
 export function BuildViewer({ className }: BuildViewerProps) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -26,10 +36,31 @@ export function BuildViewer({ className }: BuildViewerProps) {
   const [isBuilding, setIsBuilding] = useState(true);
   const [autoRotate, setAutoRotate] = useState(true);
   const [currentAgentIndex, setCurrentAgentIndex] = useState(0);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [buildSpeed, setBuildSpeed] = useState(50); // 0-100 slider value
+  
+  const { playClick, playThunk, playCelebration, setEnabled: setSoundEnabledHook } = useLegoSound();
+  const prevBrickCount = useRef(0);
 
   const activeStructure = BUILD_STRUCTURES[activeIndex];
   const totalBricks = activeStructure.bricks.length;
   const progress = Math.round((placedBricks.length / totalBricks) * 100);
+
+  // Convert slider value (0-100) to interval in ms
+  const getIntervalFromSpeed = useCallback((speed: number) => {
+    // Map 0-100 to 4000ms-200ms (slow to turbo)
+    const minInterval = 200;
+    const maxInterval = 4000;
+    return maxInterval - (speed / 100) * (maxInterval - minInterval);
+  }, []);
+
+  // Get speed label
+  const getSpeedLabel = useCallback((speed: number) => {
+    if (speed < 25) return "Slow";
+    if (speed < 50) return "Normal";
+    if (speed < 75) return "Fast";
+    return "Turbo";
+  }, []);
 
   // Get current building agent
   const buildingAgents = useMemo(() => {
@@ -41,11 +72,39 @@ export function BuildViewer({ className }: BuildViewerProps) {
   // Get next brick to place
   const nextBrick = activeStructure.bricks[nextBrickIndex];
 
+  // Play sound when brick is placed
+  useEffect(() => {
+    if (placedBricks.length > prevBrickCount.current) {
+      const lastBrick = placedBricks[placedBricks.length - 1];
+      // Play thunk for larger bricks, click for smaller ones
+      if (lastBrick && (lastBrick.width >= 3 || lastBrick.depth >= 3)) {
+        playThunk();
+      } else {
+        playClick();
+      }
+      
+      // Play celebration when build is complete
+      if (placedBricks.length === totalBricks) {
+        setTimeout(() => playCelebration(), 500);
+      }
+    }
+    prevBrickCount.current = placedBricks.length;
+  }, [placedBricks.length, totalBricks, playClick, playThunk, playCelebration]);
+
+  // Update sound hook when toggle changes
+  useEffect(() => {
+    setSoundEnabledHook(soundEnabled);
+  }, [soundEnabled, setSoundEnabledHook]);
+
   // Place bricks one by one
   useEffect(() => {
     if (!isBuilding || nextBrickIndex >= totalBricks) return;
 
-    const interval = setInterval(() => {
+    const baseInterval = getIntervalFromSpeed(buildSpeed);
+    const randomVariation = baseInterval * 0.3 * Math.random(); // Add some randomness
+    const interval = baseInterval + randomVariation;
+
+    const timeout = setTimeout(() => {
       const brickToPlace = activeStructure.bricks[nextBrickIndex];
       
       const newBrick: BrickPlacement = {
@@ -61,16 +120,17 @@ export function BuildViewer({ className }: BuildViewerProps) {
       setPlacedBricks(prev => [...prev, newBrick]);
       setNextBrickIndex(prev => prev + 1);
       setCurrentAgentIndex(prev => prev + 1);
-    }, 2000 + Math.random() * 1000); // 2-3 seconds per brick
+    }, interval);
 
-    return () => clearInterval(interval);
-  }, [isBuilding, nextBrickIndex, totalBricks, activeIndex, activeStructure]);
+    return () => clearTimeout(timeout);
+  }, [isBuilding, nextBrickIndex, totalBricks, activeIndex, activeStructure, buildSpeed, getIntervalFromSpeed]);
 
   // Reset when changing structures
   const changeStructure = useCallback((newIndex: number) => {
     setActiveIndex(newIndex);
     setPlacedBricks([]);
     setNextBrickIndex(0);
+    prevBrickCount.current = 0;
   }, []);
 
   const nextProject = () => {
@@ -84,7 +144,19 @@ export function BuildViewer({ className }: BuildViewerProps) {
   const resetBuild = () => {
     setPlacedBricks([]);
     setNextBrickIndex(0);
+    prevBrickCount.current = 0;
   };
+
+  // Calculate estimated time remaining based on current speed
+  const estimatedTimeRemaining = useMemo(() => {
+    const remainingBricks = totalBricks - nextBrickIndex;
+    const avgInterval = getIntervalFromSpeed(buildSpeed) * 1.15; // Account for random variation
+    const totalMs = remainingBricks * avgInterval;
+    const totalSeconds = Math.ceil(totalMs / 1000);
+    
+    if (totalSeconds < 60) return `~${totalSeconds}s remaining`;
+    return `~${Math.ceil(totalSeconds / 60)} min remaining`;
+  }, [totalBricks, nextBrickIndex, buildSpeed, getIntervalFromSpeed]);
 
   return (
     <div className={cn("flex flex-col h-full", className)}>
@@ -117,7 +189,7 @@ export function BuildViewer({ className }: BuildViewerProps) {
       </div>
 
       {/* Controls Bar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b border-border">
+      <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b border-border flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Button
             variant={isBuilding ? "default" : "secondary"}
@@ -157,6 +229,38 @@ export function BuildViewer({ className }: BuildViewerProps) {
             <RotateCcw className={cn("w-4 h-4", autoRotate && "animate-spin")} style={{ animationDuration: '3s' }} />
             Auto-Rotate
           </Button>
+
+          <Button
+            variant={soundEnabled ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            className="gap-2"
+          >
+            {soundEnabled ? (
+              <Volume2 className="w-4 h-4" />
+            ) : (
+              <VolumeX className="w-4 h-4" />
+            )}
+            Sound
+          </Button>
+        </div>
+
+        {/* Speed Control */}
+        <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-white/80 border border-border">
+          <Gauge className="w-4 h-4 text-muted-foreground" />
+          <div className="flex items-center gap-2 min-w-[140px]">
+            <Slider
+              value={[buildSpeed]}
+              onValueChange={(value) => setBuildSpeed(value[0])}
+              min={0}
+              max={100}
+              step={5}
+              className="w-24"
+            />
+            <span className="text-xs font-medium text-muted-foreground w-12">
+              {getSpeedLabel(buildSpeed)}
+            </span>
+          </div>
         </div>
 
         {/* Current agent building */}
@@ -235,6 +339,16 @@ export function BuildViewer({ className }: BuildViewerProps) {
             </span>
           </div>
         </div>
+
+        {/* Sound indicator */}
+        {soundEnabled && (
+          <div className="absolute bottom-4 right-4">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/95 backdrop-blur-sm shadow-lg">
+              <Volume2 className="w-4 h-4 text-green-600" />
+              <span className="text-xs text-muted-foreground">Sound On</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Build Info */}
@@ -270,7 +384,7 @@ export function BuildViewer({ className }: BuildViewerProps) {
             </span>
             <span>
               {nextBrickIndex < totalBricks 
-                ? `~${Math.ceil((totalBricks - nextBrickIndex) * 2.5 / 60)} min remaining`
+                ? estimatedTimeRemaining
                 : "Complete! 🎉"
               }
             </span>

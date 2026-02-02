@@ -310,4 +310,113 @@ export const ROBOT_BUILD: BuildStructure = {
   ],
 };
 
-export const BUILD_STRUCTURES = [SPACESHIP_BUILD, CASTLE_BUILD, ROBOT_BUILD];
+// Cozy House build
+export const HOUSE_BUILD: BuildStructure = {
+  name: "Cozy House",
+  description: "A charming family home",
+  totalBricks: 28,
+  bricks: [
+    // Foundation
+    { position: [0, 0.48, 0], color: LEGO_COLORS.gray, width: 6, depth: 4, height: 1 },
+    // Front wall left
+    { position: [-2, 0.8, -1.6], color: LEGO_COLORS.white, width: 2, depth: 1, height: 3 },
+    // Front wall right
+    { position: [2, 0.8, -1.6], color: LEGO_COLORS.white, width: 2, depth: 1, height: 3 },
+    // Door frame
+    { position: [0, 0.8, -1.6], color: LEGO_COLORS.brown, width: 1, depth: 1, height: 3 },
+    // Back wall
+    { position: [0, 0.8, 1.6], color: LEGO_COLORS.white, width: 6, depth: 1, height: 3 },
+    // Left wall
+    { position: [-2.4, 0.8, 0], color: LEGO_COLORS.white, width: 1, depth: 3, height: 3 },
+    // Right wall
+    { position: [2.4, 0.8, 0], color: LEGO_COLORS.white, width: 1, depth: 3, height: 3 },
+    // Second floor front
+    { position: [0, 1.76, -1.6], color: LEGO_COLORS.white, width: 6, depth: 1, height: 3 },
+    // Window left
+    { position: [-1.6, 1.76, -1.6], color: LEGO_COLORS.cyan, width: 1, depth: 1, height: 1 },
+    // Window right
+    { position: [1.6, 1.76, -1.6], color: LEGO_COLORS.cyan, width: 1, depth: 1, height: 1 },
+    // Roof base
+    { position: [0, 2.72, 0], color: LEGO_COLORS.red, width: 6, depth: 4, height: 1 },
+    // Roof peak left
+    { position: [-0.8, 3.04, 0], color: LEGO_COLORS.red, width: 4, depth: 3, height: 1 },
+    // Roof peak center
+    { position: [0, 3.36, 0], color: LEGO_COLORS.red, width: 2, depth: 2, height: 1 },
+    // Chimney
+    { position: [1.6, 3.36, 0.8], color: LEGO_COLORS.orange, width: 1, depth: 1, height: 3 },
+  ],
+};
+
+// Race Car build
+export const CAR_BUILD: BuildStructure = {
+  name: "Race Car",
+  description: "A speedy racing machine",
+  totalBricks: 22,
+  bricks: [
+    // Chassis base
+    { position: [0, 0.48, 0], color: LEGO_COLORS.red, width: 6, depth: 2, height: 1 },
+    // Front bumper
+    { position: [-2.4, 0.48, 0], color: LEGO_COLORS.black, width: 1, depth: 2, height: 1 },
+    // Rear bumper
+    { position: [2.4, 0.48, 0], color: LEGO_COLORS.black, width: 1, depth: 2, height: 1 },
+    // Front wheels left
+    { position: [-1.6, 0.32, -1.2], color: LEGO_COLORS.black, width: 1, depth: 1, height: 1 },
+    // Front wheels right
+    { position: [-1.6, 0.32, 1.2], color: LEGO_COLORS.black, width: 1, depth: 1, height: 1 },
+    // Rear wheels left
+    { position: [1.6, 0.32, -1.2], color: LEGO_COLORS.black, width: 1, depth: 1, height: 1 },
+    // Rear wheels right
+    { position: [1.6, 0.32, 1.2], color: LEGO_COLORS.black, width: 1, depth: 1, height: 1 },
+    // Hood
+    { position: [-1.2, 0.8, 0], color: LEGO_COLORS.red, width: 3, depth: 2, height: 1 },
+    // Cockpit base
+    { position: [0.4, 0.8, 0], color: LEGO_COLORS.red, width: 2, depth: 2, height: 1 },
+    // Windshield
+    { position: [-0.4, 1.12, 0], color: LEGO_COLORS.cyan, width: 1, depth: 2, height: 1 },
+    // Driver seat
+    { position: [0.4, 1.12, 0], color: LEGO_COLORS.black, width: 1, depth: 1, height: 1 },
+    // Rear spoiler base
+    { position: [2, 0.8, 0], color: LEGO_COLORS.red, width: 1, depth: 2, height: 1 },
+    // Spoiler wing
+    { position: [2, 1.44, 0], color: LEGO_COLORS.yellow, width: 1, depth: 3, height: 1 },
+    // Racing stripe
+    { position: [0, 1.12, 0], color: LEGO_COLORS.white, width: 4, depth: 1, height: 1 },
+    // Headlights
+    { position: [-2.4, 0.8, -0.4], color: LEGO_COLORS.yellow, width: 1, depth: 1, height: 1 },
+    { position: [-2.4, 0.8, 0.4], color: LEGO_COLORS.yellow, width: 1, depth: 1, height: 1 },
+  ],
+};
+
+// Cute Duck build
+export const DUCK_BUILD: BuildStructure = {
+  name: "Rubber Duck",
+  description: "An adorable yellow duck",
+  totalBricks: 18,
+  bricks: [
+    // Body base
+    { position: [0, 0.48, 0], color: LEGO_COLORS.yellow, width: 3, depth: 3, height: 3 },
+    // Body middle
+    { position: [0, 1.44, 0], color: LEGO_COLORS.yellow, width: 3, depth: 3, height: 3 },
+    // Body top
+    { position: [0, 2.4, 0], color: LEGO_COLORS.yellow, width: 2, depth: 2, height: 3 },
+    // Tail
+    { position: [1.2, 1.44, 0], color: LEGO_COLORS.yellow, width: 1, depth: 1, height: 3 },
+    { position: [1.6, 1.92, 0], color: LEGO_COLORS.yellow, width: 1, depth: 1, height: 1 },
+    // Head
+    { position: [-0.8, 3.36, 0], color: LEGO_COLORS.yellow, width: 2, depth: 2, height: 3 },
+    // Beak top
+    { position: [-1.6, 3.36, 0], color: LEGO_COLORS.orange, width: 1, depth: 1, height: 1 },
+    // Beak bottom
+    { position: [-1.6, 3.04, 0], color: LEGO_COLORS.orange, width: 1, depth: 1, height: 1 },
+    // Left eye
+    { position: [-1.2, 3.84, -0.4], color: LEGO_COLORS.black, width: 1, depth: 1, height: 1 },
+    // Right eye
+    { position: [-1.2, 3.84, 0.4], color: LEGO_COLORS.black, width: 1, depth: 1, height: 1 },
+    // Wing left
+    { position: [0, 1.44, -1.2], color: LEGO_COLORS.yellow, width: 1, depth: 1, height: 1 },
+    // Wing right
+    { position: [0, 1.44, 1.2], color: LEGO_COLORS.yellow, width: 1, depth: 1, height: 1 },
+  ],
+};
+
+export const BUILD_STRUCTURES = [SPACESHIP_BUILD, CASTLE_BUILD, ROBOT_BUILD, HOUSE_BUILD, CAR_BUILD, DUCK_BUILD];
