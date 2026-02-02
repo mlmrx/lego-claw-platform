@@ -764,6 +764,184 @@ const liveAgentsRouter = router({
 });
 
 // ============================================
+// TRAINING ROUTER - Agent skill improvement
+// ============================================
+
+const trainingRouter = router({
+  // Get training progress for an agent
+  getProgress: protectedProcedure
+    .input(z.object({ agentPublicId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const agent = await db.getAgentByPublicId(input.agentPublicId);
+      if (!agent) throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
+      if (agent.ownerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Not your agent" });
+
+      const skills = await db.getAgentSkills(agent.id);
+      const experienceToNextLevel = agent.level * 100;
+      const progressToNextLevel = Math.min(100, (agent.experience / experienceToNextLevel) * 100);
+
+      return {
+        level: agent.level,
+        experience: agent.experience,
+        experienceToNextLevel,
+        progressToNextLevel,
+        skills: skills.map(s => ({
+          skillId: s.skill.id,
+          name: s.skill.name,
+          slug: s.skill.slug,
+          icon: s.skill.icon,
+          proficiency: s.proficiency,
+          maxProficiency: 100,
+        })),
+        totalBricksPlaced: agent.totalBricksPlaced,
+        totalBuildsContributed: agent.totalBuildsContributed,
+        reputation: agent.reputation,
+      };
+    }),
+
+  // Train a specific skill
+  trainSkill: protectedProcedure
+    .input(z.object({
+      agentPublicId: z.string(),
+      skillId: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const agent = await db.getAgentByPublicId(input.agentPublicId);
+      if (!agent) throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
+      if (agent.ownerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Not your agent" });
+
+      const skills = await db.getAgentSkills(agent.id);
+      const agentSkill = skills.find(s => s.skill.id === input.skillId);
+      
+      if (!agentSkill) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Agent doesn't have this skill" });
+      }
+
+      // Calculate training result
+      const currentProficiency = agentSkill.proficiency;
+      const trainingGain = Math.floor(Math.random() * 5) + 1; // 1-5 points
+      const newProficiency = Math.min(100, currentProficiency + trainingGain);
+      const experienceGain = trainingGain * 2;
+
+      // Update skill proficiency
+      await db.updateAgentSkillProficiency(agent.id, input.skillId, newProficiency);
+
+      // Update agent experience
+      const newExperience = agent.experience + experienceGain;
+      const experienceToNextLevel = agent.level * 100;
+      let newLevel = agent.level;
+      let leveledUp = false;
+
+      if (newExperience >= experienceToNextLevel) {
+        newLevel = agent.level + 1;
+        leveledUp = true;
+      }
+
+      await db.updateAgentStats(agent.id, {
+        experience: leveledUp ? newExperience - experienceToNextLevel : newExperience,
+      });
+
+      if (leveledUp) {
+        await db.updateAgent(agent.id, { level: newLevel } as any);
+      }
+
+      return {
+        success: true,
+        trainingGain,
+        newProficiency,
+        experienceGain,
+        leveledUp,
+        newLevel,
+      };
+    }),
+
+  // Award experience for completing a build
+  awardBuildExperience: protectedProcedure
+    .input(z.object({
+      agentPublicId: z.string(),
+      bricksPlaced: z.number(),
+      buildCompleted: z.boolean(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const agent = await db.getAgentByPublicId(input.agentPublicId);
+      if (!agent) throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
+      if (agent.ownerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Not your agent" });
+
+      // Calculate experience
+      let experienceGain = input.bricksPlaced; // 1 XP per brick
+      if (input.buildCompleted) {
+        experienceGain += 50; // Bonus for completing a build
+      }
+
+      // Calculate reputation gain
+      const reputationGain = input.buildCompleted ? 10 : Math.floor(input.bricksPlaced / 10);
+
+      // Update stats
+      const newExperience = agent.experience + experienceGain;
+      const experienceToNextLevel = agent.level * 100;
+      let newLevel = agent.level;
+      let leveledUp = false;
+
+      if (newExperience >= experienceToNextLevel) {
+        newLevel = agent.level + 1;
+        leveledUp = true;
+      }
+
+      await db.updateAgentStats(agent.id, {
+        experience: leveledUp ? newExperience - experienceToNextLevel : newExperience,
+        totalBricksPlaced: agent.totalBricksPlaced + input.bricksPlaced,
+        totalBuildsContributed: input.buildCompleted ? agent.totalBuildsContributed + 1 : agent.totalBuildsContributed,
+        reputation: agent.reputation + reputationGain,
+      });
+
+      if (leveledUp) {
+        await db.updateAgent(agent.id, { level: newLevel } as any);
+      }
+
+      return {
+        success: true,
+        experienceGain,
+        reputationGain,
+        leveledUp,
+        newLevel,
+      };
+    }),
+
+  // Get leaderboard
+  getLeaderboard: publicProcedure
+    .input(z.object({
+      sortBy: z.enum(["reputation", "bricks", "builds", "level"]).default("reputation"),
+      limit: z.number().min(1).max(100).default(20),
+    }))
+    .query(async ({ input }) => {
+      const agents = await db.getPublicAgents(input.limit, 0);
+      
+      // Sort based on criteria
+      const sorted = [...agents].sort((a, b) => {
+        switch (input.sortBy) {
+          case "reputation": return b.reputation - a.reputation;
+          case "bricks": return b.totalBricksPlaced - a.totalBricksPlaced;
+          case "builds": return b.totalBuildsContributed - a.totalBuildsContributed;
+          case "level": return b.level - a.level;
+          default: return b.reputation - a.reputation;
+        }
+      });
+
+      return sorted.map((agent, index) => ({
+        rank: index + 1,
+        publicId: agent.publicId,
+        name: agent.name,
+        emoji: agent.emoji,
+        color: agent.color,
+        level: agent.level,
+        reputation: agent.reputation,
+        totalBricksPlaced: agent.totalBricksPlaced,
+        totalBuildsContributed: agent.totalBuildsContributed,
+      }));
+    }),
+});
+
+// ============================================
 // MAIN APP ROUTER
 // ============================================
 
@@ -785,6 +963,7 @@ export const appRouter = router({
   collaboration: collaborationRouter,
   activity: activityRouter,
   profile: profileRouter,
+  training: trainingRouter,
   
   // Live demo agents (backward compatible)
   agents: liveAgentsRouter,

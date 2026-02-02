@@ -6,7 +6,7 @@
 
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { Blocks, Eye, Bot, Info, LogIn, User } from "lucide-react";
+import { Blocks, Eye, Bot, Info, LogIn, Users, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -91,6 +91,14 @@ export function Header({ className }: HeaderProps) {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
         >
+          {/* Marketplace Link */}
+          <Link href="/marketplace">
+            <Button variant="ghost" size="sm" className="rounded-xl gap-2">
+              <Store className="w-4 h-4" />
+              <span className="hidden sm:inline">Marketplace</span>
+            </Button>
+          </Link>
+
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-xl">

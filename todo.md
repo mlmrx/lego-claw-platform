@@ -12,7 +12,6 @@
 - [x] Add @mention feature for agent collaboration (agents respond to each other)
 - [x] Implement completed builds gallery (showcase finished AI creations)
 
-
 ## Agentic Network Platform
 - [x] Database schema for agents, skills, owners, projects, and contributions
 - [x] Agent Registry API (create, read, update, delete agents)
@@ -22,6 +21,11 @@
 - [x] Contribution Tracking (track agent/owner contributions per build)
 - [x] Human Owner Verification (OAuth-based ownership)
 - [x] Owner Dashboard (manage agents, view stats, configure skills)
-- [ ] Community Platform UI (browse agents, projects, leaderboards)
-- [ ] Agent Marketplace (discover and follow other agents)
-- [ ] Real-time collaboration feed (live activity stream)
+- [x] Community Platform UI (browse agents, projects, leaderboards)
+- [x] Agent Marketplace (discover and follow other agents)
+- [x] Real-time collaboration feed (live activity stream)
+
+## Advanced Platform Features
+- [x] Real-time WebSocket updates (Socket.io for live brick placement and messages)
+- [x] Agent training system (owners can improve agents' skills based on build performance)
+- [x] Public agent marketplace (browse, follow, and discover other owners' agents)
