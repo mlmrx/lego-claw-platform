@@ -347,6 +347,162 @@ export const webhooksRouter = router({
 });
 
 // ============================================
+// EXTERNAL AGENT INTEGRATIONS ROUTER
+// ============================================
+
+const externalIntegrationsRouter = router({
+  // List integrations for an external agent
+  list: publicProcedure
+    .input(z.object({ apiKey: z.string() }))
+    .query(async ({ input }) => {
+      const agent = await db.getExternalAgentByApiKey(input.apiKey);
+      if (!agent) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid API key" });
+      }
+      return db.getSocialIntegrationsByExternalAgent(agent.id);
+    }),
+
+  // Create integration for external agent
+  create: publicProcedure
+    .input(z.object({
+      apiKey: z.string(),
+      platform: z.enum(['twitch', 'youtube', 'twitter', 'discord', 'kick', 'tiktok', 'facebook', 'instagram', 'custom']),
+      platformName: z.string().max(100).optional(),
+      credentials: z.object({
+        apiKey: z.string().min(1).max(500).optional(),
+        apiSecret: z.string().max(500).optional(),
+        accessToken: z.string().max(2000).optional(),
+        refreshToken: z.string().max(2000).optional(),
+      }).optional(),
+      platformUserId: z.string().max(128).optional(),
+      platformUsername: z.string().max(128).optional(),
+      channelId: z.string().max(128).optional(),
+      channelUrl: z.string().url().optional(),
+      streamSettings: z.record(z.string(), z.unknown()).optional(),
+      scopes: z.array(z.string()).optional(),
+      autoStream: z.boolean().optional(),
+      notifyOnLive: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const agent = await db.getExternalAgentByApiKey(input.apiKey);
+      if (!agent) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid API key" });
+      }
+
+      const result = await db.createSocialIntegration({
+        externalAgentId: agent.id,
+        platform: input.platform,
+        platformName: input.platformName,
+        apiKey: input.credentials?.apiKey,
+        apiSecret: input.credentials?.apiSecret,
+        accessToken: input.credentials?.accessToken,
+        refreshToken: input.credentials?.refreshToken,
+        platformUserId: input.platformUserId,
+        platformUsername: input.platformUsername,
+        channelId: input.channelId,
+        channelUrl: input.channelUrl,
+        streamSettings: input.streamSettings,
+        scopes: input.scopes,
+        autoStream: input.autoStream,
+        notifyOnLive: input.notifyOnLive,
+      });
+
+      return {
+        success: true,
+        integration: {
+          publicId: result.publicId,
+          platform: input.platform,
+        },
+      };
+    }),
+
+  // Update integration
+  update: publicProcedure
+    .input(z.object({
+      apiKey: z.string(),
+      integrationId: z.string(),
+      credentials: z.object({
+        apiKey: z.string().min(1).max(500).optional(),
+        apiSecret: z.string().max(500).optional(),
+        accessToken: z.string().max(2000).optional(),
+        refreshToken: z.string().max(2000).optional(),
+      }).optional(),
+      platformUserId: z.string().max(128).optional(),
+      platformUsername: z.string().max(128).optional(),
+      channelId: z.string().max(128).optional(),
+      channelUrl: z.string().url().optional(),
+      streamSettings: z.record(z.string(), z.unknown()).optional(),
+      scopes: z.array(z.string()).optional(),
+      autoStream: z.boolean().optional(),
+      notifyOnLive: z.boolean().optional(),
+      isActive: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const agent = await db.getExternalAgentByApiKey(input.apiKey);
+      if (!agent) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid API key" });
+      }
+
+      const integration = await db.getSocialIntegrationByPublicId(input.integrationId);
+      if (!integration || integration.externalAgentId !== agent.id) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Integration not found" });
+      }
+
+      await db.updateSocialIntegration(input.integrationId, agent.id, 'agent', {
+        apiKey: input.credentials?.apiKey,
+        apiSecret: input.credentials?.apiSecret,
+        accessToken: input.credentials?.accessToken,
+        refreshToken: input.credentials?.refreshToken,
+        platformUserId: input.platformUserId,
+        platformUsername: input.platformUsername,
+        channelId: input.channelId,
+        channelUrl: input.channelUrl,
+        streamSettings: input.streamSettings,
+        scopes: input.scopes,
+        autoStream: input.autoStream,
+        notifyOnLive: input.notifyOnLive,
+        isActive: input.isActive,
+      });
+
+      return { success: true };
+    }),
+
+  // Delete integration
+  delete: publicProcedure
+    .input(z.object({
+      apiKey: z.string(),
+      integrationId: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      const agent = await db.getExternalAgentByApiKey(input.apiKey);
+      if (!agent) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid API key" });
+      }
+
+      const integration = await db.getSocialIntegrationByPublicId(input.integrationId);
+      if (!integration || integration.externalAgentId !== agent.id) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Integration not found" });
+      }
+
+      await db.deleteSocialIntegration(input.integrationId, agent.id, 'agent');
+      return { success: true };
+    }),
+
+  // Get supported platforms
+  platforms: publicProcedure.query(() => [
+    { id: 'twitch', name: 'Twitch', requiresOAuth: true },
+    { id: 'youtube', name: 'YouTube', requiresOAuth: true },
+    { id: 'twitter', name: 'X (Twitter)', requiresOAuth: true },
+    { id: 'discord', name: 'Discord', requiresOAuth: false },
+    { id: 'kick', name: 'Kick', requiresOAuth: true },
+    { id: 'tiktok', name: 'TikTok', requiresOAuth: true },
+    { id: 'facebook', name: 'Facebook', requiresOAuth: true },
+    { id: 'instagram', name: 'Instagram', requiresOAuth: true },
+    { id: 'custom', name: 'Custom', requiresOAuth: false },
+  ]),
+});
+
+// ============================================
 // COMBINED OPEN PLATFORM ROUTER
 // ============================================
 
@@ -355,4 +511,5 @@ export const openPlatformRouter = router({
   keys: apiKeysRouter,
   platformKeys: platformKeysRouter,
   webhooks: webhooksRouter,
+  integrations: externalIntegrationsRouter,
 });

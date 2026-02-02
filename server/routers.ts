@@ -1405,6 +1405,154 @@ const userProfileRouter = router({
 });
 
 // ============================================
+// SOCIAL INTEGRATIONS ROUTER
+// ============================================
+
+const SUPPORTED_PLATFORMS = [
+  { id: 'twitch', name: 'Twitch', icon: '📺', color: '#9146FF', requiresOAuth: true },
+  { id: 'youtube', name: 'YouTube', icon: '▶️', color: '#FF0000', requiresOAuth: true },
+  { id: 'twitter', name: 'X (Twitter)', icon: '𝕏', color: '#000000', requiresOAuth: true },
+  { id: 'discord', name: 'Discord', icon: '💬', color: '#5865F2', requiresOAuth: false },
+  { id: 'kick', name: 'Kick', icon: '🎮', color: '#53FC18', requiresOAuth: true },
+  { id: 'tiktok', name: 'TikTok', icon: '🎵', color: '#000000', requiresOAuth: true },
+  { id: 'facebook', name: 'Facebook', icon: '📘', color: '#1877F2', requiresOAuth: true },
+  { id: 'instagram', name: 'Instagram', icon: '📷', color: '#E4405F', requiresOAuth: true },
+  { id: 'custom', name: 'Custom', icon: '🔧', color: '#6B7280', requiresOAuth: false },
+] as const;
+
+const integrationsRouter = router({
+  // Get supported platforms
+  platforms: publicProcedure.query(() => SUPPORTED_PLATFORMS),
+
+  // Get user's integrations
+  myIntegrations: protectedProcedure.query(async ({ ctx }) => {
+    return db.getSocialIntegrationsByUser(ctx.user.id);
+  }),
+
+  // Get integration by ID
+  get: protectedProcedure
+    .input(z.object({ publicId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const integration = await db.getSocialIntegrationByPublicId(input.publicId);
+      if (!integration) throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
+      if (integration.userId !== ctx.user.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'Not your integration' });
+      return integration;
+    }),
+
+  // Create new integration
+  create: protectedProcedure
+    .input(z.object({
+      platform: z.enum(['twitch', 'youtube', 'twitter', 'discord', 'kick', 'tiktok', 'facebook', 'instagram', 'custom']),
+      platformName: z.string().max(100).optional(),
+      apiKey: z.string().min(1).max(500).optional(),
+      apiSecret: z.string().max(500).optional(),
+      accessToken: z.string().max(2000).optional(),
+      refreshToken: z.string().max(2000).optional(),
+      platformUserId: z.string().max(128).optional(),
+      platformUsername: z.string().max(128).optional(),
+      channelId: z.string().max(128).optional(),
+      channelUrl: z.string().url().optional(),
+      streamSettings: z.record(z.string(), z.unknown()).optional(),
+      scopes: z.array(z.string()).optional(),
+      autoStream: z.boolean().optional(),
+      notifyOnLive: z.boolean().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await db.createSocialIntegration({
+        userId: ctx.user.id,
+        ...input,
+      });
+      
+      // Audit log
+      await audit.apiKeyCreated(
+        { userId: ctx.user.id, userOpenId: ctx.user.openId },
+        result.id,
+        `social_integration_${input.platform}`
+      );
+      
+      return result;
+    }),
+
+  // Update integration
+  update: protectedProcedure
+    .input(z.object({
+      publicId: z.string(),
+      platformName: z.string().max(100).optional(),
+      apiKey: z.string().min(1).max(500).optional(),
+      apiSecret: z.string().max(500).optional(),
+      accessToken: z.string().max(2000).optional(),
+      refreshToken: z.string().max(2000).optional(),
+      platformUserId: z.string().max(128).optional(),
+      platformUsername: z.string().max(128).optional(),
+      channelId: z.string().max(128).optional(),
+      channelUrl: z.string().url().optional(),
+      streamSettings: z.record(z.string(), z.unknown()).optional(),
+      scopes: z.array(z.string()).optional(),
+      autoStream: z.boolean().optional(),
+      notifyOnLive: z.boolean().optional(),
+      isActive: z.boolean().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const integration = await db.getSocialIntegrationByPublicId(input.publicId);
+      if (!integration) throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
+      if (integration.userId !== ctx.user.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'Not your integration' });
+      
+      const { publicId, ...updateData } = input;
+      await db.updateSocialIntegration(publicId, ctx.user.id, 'user', updateData);
+      return { success: true };
+    }),
+
+  // Delete integration
+  delete: protectedProcedure
+    .input(z.object({ publicId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const integration = await db.getSocialIntegrationByPublicId(input.publicId);
+      if (!integration) throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
+      if (integration.userId !== ctx.user.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'Not your integration' });
+      
+      await db.deleteSocialIntegration(input.publicId, ctx.user.id, 'user');
+      
+      // Audit log
+      await audit.apiKeyDeleted(
+        { userId: ctx.user.id, userOpenId: ctx.user.openId },
+        integration.id,
+        `social_integration_${integration.platform}`
+      );
+      
+      return { success: true };
+    }),
+
+  // Verify integration credentials
+  verify: protectedProcedure
+    .input(z.object({ publicId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const integration = await db.getSocialIntegrationWithCredentials(input.publicId);
+      if (!integration) throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
+      if (integration.userId !== ctx.user.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'Not your integration' });
+      
+      // TODO: Implement actual verification for each platform
+      // For now, just mark as verified if credentials exist
+      if (!integration.apiKey && !integration.accessToken) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'No credentials to verify' });
+      }
+      
+      await db.verifySocialIntegration(input.publicId);
+      return { success: true, verified: true };
+    }),
+
+  // Get integration events/history
+  events: protectedProcedure
+    .input(z.object({ publicId: z.string(), limit: z.number().min(1).max(100).default(50) }))
+    .query(async ({ ctx, input }) => {
+      const integration = await db.getSocialIntegrationByPublicId(input.publicId);
+      if (!integration) throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
+      if (integration.userId !== ctx.user.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'Not your integration' });
+      
+      return db.getIntegrationEvents(integration.id, input.limit);
+    }),
+});
+
+// ============================================
 // MAIN APP ROUTER
 // ============================================
 
@@ -1445,6 +1593,9 @@ export const appRouter = router({
   
   // User profiles
   userProfile: userProfileRouter,
+  
+  // Social streaming integrations
+  integrations: integrationsRouter,
 });
 
 export type AppRouter = typeof appRouter;

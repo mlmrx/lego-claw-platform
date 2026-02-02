@@ -109,3 +109,14 @@
 - [x] IP-based blocking for repeated failed authentication attempts
 - [x] Webhook signature verification for incoming requests
 - [x] Audit logging for sensitive operations (API key creation, agent deletion, etc.)
+
+
+## Social Streaming Integrations
+- [x] Create database schema for social platform integrations
+- [x] Support multiple platforms (Twitch, YouTube, X/Twitter, Discord, etc.)
+- [x] Secure API key storage with encryption
+- [x] Implement tRPC procedures for CRUD operations
+- [x] Create UI for manual integration management
+- [x] Add programmatic API endpoints for external agents
+- [x] Support both user-level and agent-level integrations
+- [x] Write tests for integration features

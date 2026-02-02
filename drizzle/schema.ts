@@ -732,3 +732,100 @@ export const auditLogs = mysqlTable("audit_logs", {
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = typeof auditLogs.$inferInsert;
+
+
+/**
+ * Social Streaming Integrations - Connect to streaming platforms
+ * Supports Twitch, YouTube Live, X/Twitter, Discord, Kick, etc.
+ * Users and agents can add their own API keys for streaming.
+ */
+export const socialIntegrations = mysqlTable("social_integrations", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 32 }).notNull().unique(),
+  // Owner - either a user or an external agent
+  userId: int("userId"), // References users.id (for user-owned integrations)
+  externalAgentId: int("externalAgentId"), // References external_agents.id (for agent-owned)
+  // Platform info
+  platform: mysqlEnum("platform", [
+    "twitch",
+    "youtube",
+    "twitter",
+    "discord",
+    "kick",
+    "tiktok",
+    "facebook",
+    "instagram",
+    "custom"
+  ]).notNull(),
+  platformName: varchar("platformName", { length: 100 }), // Custom platform name
+  // Credentials (encrypted)
+  encryptedApiKey: text("encryptedApiKey"), // Primary API key/token
+  encryptedApiSecret: text("encryptedApiSecret"), // API secret if needed
+  encryptedAccessToken: text("encryptedAccessToken"), // OAuth access token
+  encryptedRefreshToken: text("encryptedRefreshToken"), // OAuth refresh token
+  keyHint: varchar("keyHint", { length: 20 }), // Last 4 chars for identification
+  // Platform-specific identifiers
+  platformUserId: varchar("platformUserId", { length: 128 }), // User ID on the platform
+  platformUsername: varchar("platformUsername", { length: 128 }), // Username on platform
+  channelId: varchar("channelId", { length: 128 }), // Channel/stream ID
+  channelUrl: text("channelUrl"), // URL to the channel
+  // Configuration
+  streamSettings: json("streamSettings"), // Platform-specific settings (quality, title template, etc.)
+  autoStream: boolean("autoStream").default(false).notNull(), // Auto-start streaming on builds
+  notifyOnLive: boolean("notifyOnLive").default(true).notNull(), // Notify when going live
+  // Permissions
+  scopes: json("scopes"), // OAuth scopes granted
+  permissions: json("permissions"), // What this integration can do
+  // Status
+  isActive: boolean("isActive").default(true).notNull(),
+  isVerified: boolean("isVerified").default(false).notNull(), // Credentials verified
+  lastVerifiedAt: timestamp("lastVerifiedAt"),
+  // Usage tracking
+  totalStreams: int("totalStreams").default(0).notNull(),
+  totalViewers: int("totalViewers").default(0).notNull(),
+  lastStreamedAt: timestamp("lastStreamedAt"),
+  // Token management
+  tokenExpiresAt: timestamp("tokenExpiresAt"),
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SocialIntegration = typeof socialIntegrations.$inferSelect;
+export type InsertSocialIntegration = typeof socialIntegrations.$inferInsert;
+
+/**
+ * Integration Events - Log of streaming events
+ */
+export const integrationEvents = mysqlTable("integration_events", {
+  id: int("id").autoincrement().primaryKey(),
+  integrationId: int("integrationId").notNull(), // References social_integrations.id
+  // Event details
+  eventType: mysqlEnum("eventType", [
+    "stream_started",
+    "stream_ended",
+    "viewer_joined",
+    "chat_message",
+    "donation_received",
+    "subscription",
+    "raid",
+    "host",
+    "follow",
+    "error",
+    "token_refreshed",
+    "credentials_updated"
+  ]).notNull(),
+  // Event data
+  payload: json("payload"), // Event-specific data
+  // Metrics
+  viewerCount: int("viewerCount"),
+  duration: int("duration"), // Duration in seconds (for stream_ended)
+  // Status
+  status: mysqlEnum("status", ["success", "failure"]).default("success").notNull(),
+  errorMessage: text("errorMessage"),
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type IntegrationEvent = typeof integrationEvents.$inferSelect;
+export type InsertIntegrationEvent = typeof integrationEvents.$inferInsert;

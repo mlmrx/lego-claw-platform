@@ -1457,3 +1457,312 @@ export async function getAllPlatformStats() {
     return acc;
   }, {} as Record<string, string>);
 }
+
+
+// ============================================
+// SOCIAL INTEGRATIONS QUERIES
+// ============================================
+
+import { socialIntegrations, integrationEvents, InsertSocialIntegration, InsertIntegrationEvent } from "../drizzle/schema";
+
+// Simple encryption for API keys (in production, use a proper KMS)
+const ENCRYPTION_KEY = process.env.JWT_SECRET || 'default-encryption-key-change-me';
+
+function encrypt(text: string): string {
+  const iv = crypto.randomBytes(16);
+  const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
+  const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  return iv.toString('hex') + ':' + encrypted;
+}
+
+function decrypt(encryptedText: string): string {
+  try {
+    const [ivHex, encrypted] = encryptedText.split(':');
+    const iv = Buffer.from(ivHex, 'hex');
+    const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
+    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  } catch {
+    return '';
+  }
+}
+
+export async function createSocialIntegration(data: {
+  userId?: number;
+  externalAgentId?: number;
+  platform: InsertSocialIntegration['platform'];
+  platformName?: string;
+  apiKey?: string;
+  apiSecret?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  platformUserId?: string;
+  platformUsername?: string;
+  channelId?: string;
+  channelUrl?: string;
+  streamSettings?: Record<string, unknown>;
+  scopes?: string[];
+  permissions?: string[];
+  autoStream?: boolean;
+  notifyOnLive?: boolean;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const publicId = nanoid(16);
+  const keyHint = data.apiKey ? data.apiKey.slice(-4) : undefined;
+  
+  const result = await db.insert(socialIntegrations).values({
+    publicId,
+    userId: data.userId,
+    externalAgentId: data.externalAgentId,
+    platform: data.platform,
+    platformName: data.platformName,
+    encryptedApiKey: data.apiKey ? encrypt(data.apiKey) : undefined,
+    encryptedApiSecret: data.apiSecret ? encrypt(data.apiSecret) : undefined,
+    encryptedAccessToken: data.accessToken ? encrypt(data.accessToken) : undefined,
+    encryptedRefreshToken: data.refreshToken ? encrypt(data.refreshToken) : undefined,
+    keyHint,
+    platformUserId: data.platformUserId,
+    platformUsername: data.platformUsername,
+    channelId: data.channelId,
+    channelUrl: data.channelUrl,
+    streamSettings: data.streamSettings,
+    scopes: data.scopes,
+    permissions: data.permissions,
+    autoStream: data.autoStream ?? false,
+    notifyOnLive: data.notifyOnLive ?? true,
+  });
+  
+  return { id: result[0].insertId, publicId };
+}
+
+export async function getSocialIntegrationsByUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: socialIntegrations.id,
+    publicId: socialIntegrations.publicId,
+    platform: socialIntegrations.platform,
+    platformName: socialIntegrations.platformName,
+    keyHint: socialIntegrations.keyHint,
+    platformUserId: socialIntegrations.platformUserId,
+    platformUsername: socialIntegrations.platformUsername,
+    channelId: socialIntegrations.channelId,
+    channelUrl: socialIntegrations.channelUrl,
+    streamSettings: socialIntegrations.streamSettings,
+    autoStream: socialIntegrations.autoStream,
+    notifyOnLive: socialIntegrations.notifyOnLive,
+    isActive: socialIntegrations.isActive,
+    isVerified: socialIntegrations.isVerified,
+    lastVerifiedAt: socialIntegrations.lastVerifiedAt,
+    totalStreams: socialIntegrations.totalStreams,
+    totalViewers: socialIntegrations.totalViewers,
+    lastStreamedAt: socialIntegrations.lastStreamedAt,
+    createdAt: socialIntegrations.createdAt,
+    updatedAt: socialIntegrations.updatedAt,
+  })
+    .from(socialIntegrations)
+    .where(eq(socialIntegrations.userId, userId))
+    .orderBy(desc(socialIntegrations.createdAt));
+}
+
+export async function getSocialIntegrationsByExternalAgent(externalAgentId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: socialIntegrations.id,
+    publicId: socialIntegrations.publicId,
+    platform: socialIntegrations.platform,
+    platformName: socialIntegrations.platformName,
+    keyHint: socialIntegrations.keyHint,
+    platformUserId: socialIntegrations.platformUserId,
+    platformUsername: socialIntegrations.platformUsername,
+    channelId: socialIntegrations.channelId,
+    channelUrl: socialIntegrations.channelUrl,
+    streamSettings: socialIntegrations.streamSettings,
+    autoStream: socialIntegrations.autoStream,
+    notifyOnLive: socialIntegrations.notifyOnLive,
+    isActive: socialIntegrations.isActive,
+    isVerified: socialIntegrations.isVerified,
+    lastVerifiedAt: socialIntegrations.lastVerifiedAt,
+    totalStreams: socialIntegrations.totalStreams,
+    totalViewers: socialIntegrations.totalViewers,
+    lastStreamedAt: socialIntegrations.lastStreamedAt,
+    createdAt: socialIntegrations.createdAt,
+    updatedAt: socialIntegrations.updatedAt,
+  })
+    .from(socialIntegrations)
+    .where(eq(socialIntegrations.externalAgentId, externalAgentId))
+    .orderBy(desc(socialIntegrations.createdAt));
+}
+
+export async function getSocialIntegrationByPublicId(publicId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select()
+    .from(socialIntegrations)
+    .where(eq(socialIntegrations.publicId, publicId))
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getSocialIntegrationWithCredentials(publicId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select()
+    .from(socialIntegrations)
+    .where(eq(socialIntegrations.publicId, publicId))
+    .limit(1);
+  
+  if (result.length === 0) return undefined;
+  
+  const integration = result[0];
+  return {
+    ...integration,
+    apiKey: integration.encryptedApiKey ? decrypt(integration.encryptedApiKey) : undefined,
+    apiSecret: integration.encryptedApiSecret ? decrypt(integration.encryptedApiSecret) : undefined,
+    accessToken: integration.encryptedAccessToken ? decrypt(integration.encryptedAccessToken) : undefined,
+    refreshToken: integration.encryptedRefreshToken ? decrypt(integration.encryptedRefreshToken) : undefined,
+  };
+}
+
+export async function updateSocialIntegration(publicId: string, ownerId: number, ownerType: 'user' | 'agent', data: {
+  platformName?: string;
+  apiKey?: string;
+  apiSecret?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  platformUserId?: string;
+  platformUsername?: string;
+  channelId?: string;
+  channelUrl?: string;
+  streamSettings?: Record<string, unknown>;
+  scopes?: string[];
+  permissions?: string[];
+  autoStream?: boolean;
+  notifyOnLive?: boolean;
+  isActive?: boolean;
+  tokenExpiresAt?: Date;
+}) {
+  const db = await getDb();
+  if (!db) return;
+  
+  const updateData: Record<string, unknown> = {};
+  
+  if (data.platformName !== undefined) updateData.platformName = data.platformName;
+  if (data.apiKey !== undefined) {
+    updateData.encryptedApiKey = encrypt(data.apiKey);
+    updateData.keyHint = data.apiKey.slice(-4);
+  }
+  if (data.apiSecret !== undefined) updateData.encryptedApiSecret = encrypt(data.apiSecret);
+  if (data.accessToken !== undefined) updateData.encryptedAccessToken = encrypt(data.accessToken);
+  if (data.refreshToken !== undefined) updateData.encryptedRefreshToken = encrypt(data.refreshToken);
+  if (data.platformUserId !== undefined) updateData.platformUserId = data.platformUserId;
+  if (data.platformUsername !== undefined) updateData.platformUsername = data.platformUsername;
+  if (data.channelId !== undefined) updateData.channelId = data.channelId;
+  if (data.channelUrl !== undefined) updateData.channelUrl = data.channelUrl;
+  if (data.streamSettings !== undefined) updateData.streamSettings = data.streamSettings;
+  if (data.scopes !== undefined) updateData.scopes = data.scopes;
+  if (data.permissions !== undefined) updateData.permissions = data.permissions;
+  if (data.autoStream !== undefined) updateData.autoStream = data.autoStream;
+  if (data.notifyOnLive !== undefined) updateData.notifyOnLive = data.notifyOnLive;
+  if (data.isActive !== undefined) updateData.isActive = data.isActive;
+  if (data.tokenExpiresAt !== undefined) updateData.tokenExpiresAt = data.tokenExpiresAt;
+  
+  const condition = ownerType === 'user'
+    ? and(eq(socialIntegrations.publicId, publicId), eq(socialIntegrations.userId, ownerId))
+    : and(eq(socialIntegrations.publicId, publicId), eq(socialIntegrations.externalAgentId, ownerId));
+  
+  await db.update(socialIntegrations)
+    .set(updateData)
+    .where(condition);
+}
+
+export async function deleteSocialIntegration(publicId: string, ownerId: number, ownerType: 'user' | 'agent') {
+  const db = await getDb();
+  if (!db) return;
+  
+  const condition = ownerType === 'user'
+    ? and(eq(socialIntegrations.publicId, publicId), eq(socialIntegrations.userId, ownerId))
+    : and(eq(socialIntegrations.publicId, publicId), eq(socialIntegrations.externalAgentId, ownerId));
+  
+  await db.delete(socialIntegrations).where(condition);
+}
+
+export async function verifySocialIntegration(publicId: string) {
+  const db = await getDb();
+  if (!db) return;
+  
+  await db.update(socialIntegrations)
+    .set({ isVerified: true, lastVerifiedAt: new Date() })
+    .where(eq(socialIntegrations.publicId, publicId));
+}
+
+export async function recordIntegrationEvent(data: {
+  integrationId: number;
+  eventType: InsertIntegrationEvent['eventType'];
+  payload?: Record<string, unknown>;
+  viewerCount?: number;
+  duration?: number;
+  status?: 'success' | 'failure';
+  errorMessage?: string;
+}) {
+  const db = await getDb();
+  if (!db) return;
+  
+  await db.insert(integrationEvents).values({
+    integrationId: data.integrationId,
+    eventType: data.eventType,
+    payload: data.payload,
+    viewerCount: data.viewerCount,
+    duration: data.duration,
+    status: data.status ?? 'success',
+    errorMessage: data.errorMessage,
+  });
+  
+  // Update integration stats if stream ended
+  if (data.eventType === 'stream_ended') {
+    await db.update(socialIntegrations)
+      .set({
+        totalStreams: sql`${socialIntegrations.totalStreams} + 1`,
+        totalViewers: sql`${socialIntegrations.totalViewers} + ${data.viewerCount || 0}`,
+        lastStreamedAt: new Date(),
+      })
+      .where(eq(socialIntegrations.id, data.integrationId));
+  }
+}
+
+export async function getIntegrationEvents(integrationId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select()
+    .from(integrationEvents)
+    .where(eq(integrationEvents.integrationId, integrationId))
+    .orderBy(desc(integrationEvents.createdAt))
+    .limit(limit);
+}
+
+export async function getActiveIntegrationsByPlatform(platform: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: socialIntegrations.id,
+    publicId: socialIntegrations.publicId,
+    userId: socialIntegrations.userId,
+    externalAgentId: socialIntegrations.externalAgentId,
+    platformUsername: socialIntegrations.platformUsername,
+    channelId: socialIntegrations.channelId,
+    autoStream: socialIntegrations.autoStream,
+  })
+    .from(socialIntegrations)
+    .where(and(
+      eq(socialIntegrations.platform, platform as any),
+      eq(socialIntegrations.isActive, true),
+      eq(socialIntegrations.isVerified, true)
+    ));
+}
