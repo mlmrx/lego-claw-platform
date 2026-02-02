@@ -4,15 +4,15 @@
  * 
  * AI-powered infinite stream of agent conversations.
  * Agents are real AI that generate creative messages and build designs.
+ * Features @mention highlighting and reply threading.
  */
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Agent, AgentMessage, defaultAgents, messageTypeBadges } from "@/lib/agents";
-import { ChatMessage } from "./ChatMessage";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, Pause, Play, Sparkles } from "lucide-react";
+import { MessageSquare, Pause, Play, Sparkles, Reply, AtSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 
@@ -20,6 +20,53 @@ interface ChatStreamProps {
   agents: Agent[];
   className?: string;
   onNewBrick?: (brick: AgentMessage['brickAction']) => void;
+}
+
+// Parse @mentions in message content
+function parseMentions(content: string, agents: Agent[]): React.ReactNode[] {
+  const parts: React.ReactNode[] = [];
+  const mentionRegex = /@([\w-]+)/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = mentionRegex.exec(content)) !== null) {
+    // Add text before mention
+    if (match.index > lastIndex) {
+      parts.push(content.slice(lastIndex, match.index));
+    }
+
+    // Check if this is a valid agent mention
+    const mentionName = match[1].toLowerCase();
+    const mentionedAgent = agents.find(a => 
+      a.id === mentionName || 
+      a.name.toLowerCase().replace(/\s+/g, '-') === mentionName
+    );
+
+    if (mentionedAgent) {
+      parts.push(
+        <span 
+          key={`mention-${match.index}`}
+          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md font-medium text-white"
+          style={{ backgroundColor: mentionedAgent.color }}
+        >
+          <AtSign className="w-3 h-3" />
+          {mentionedAgent.name}
+        </span>
+      );
+    } else {
+      // Not a valid agent, keep as text
+      parts.push(match[0]);
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : [content];
 }
 
 export function ChatStream({ agents, className, onNewBrick }: ChatStreamProps) {
@@ -95,6 +142,14 @@ export function ChatStream({ agents, className, onNewBrick }: ChatStreamProps) {
     return agents.find(a => a.id === agentId) || defaultAgents.find(a => a.id === agentId) || defaultAgents[0];
   };
 
+  // Get message by ID for reply context
+  const getMessage = (messageId: string): AgentMessage | undefined => {
+    return messages.find(m => m.id === messageId);
+  };
+
+  // All agents for mention parsing
+  const allAgents = [...defaultAgents, ...agents.filter(a => !defaultAgents.some(d => d.id === a.id))];
+
   return (
     <div className={cn("flex flex-col h-full", className)}>
       {/* Header */}
@@ -143,6 +198,9 @@ export function ChatStream({ agents, className, onNewBrick }: ChatStreamProps) {
           <AnimatePresence mode="popLayout">
             {messages.map((message) => {
               const agent = getAgent(message.agentId);
+              const replyToMessage = message.replyTo ? getMessage(message.replyTo) : undefined;
+              const replyToAgent = replyToMessage ? getAgent(replyToMessage.agentId) : undefined;
+              
               return (
                 <motion.div
                   key={message.id}
@@ -183,9 +241,28 @@ export function ChatStream({ agents, className, onNewBrick }: ChatStreamProps) {
                         </span>
                       )}
                     </div>
+
+                    {/* Reply indicator */}
+                    {replyToMessage && replyToAgent && (
+                      <div className="flex items-center gap-1.5 mb-1 text-xs text-muted-foreground">
+                        <Reply className="w-3 h-3" />
+                        <span>Replying to</span>
+                        <span 
+                          className="font-medium"
+                          style={{ color: replyToAgent.color }}
+                        >
+                          {replyToAgent.name}
+                        </span>
+                        <span className="truncate max-w-[150px] opacity-70">
+                          "{replyToMessage.content.slice(0, 30)}..."
+                        </span>
+                      </div>
+                    )}
                     
                     <div className="bg-muted/50 rounded-xl rounded-tl-none p-3">
-                      <p className="text-sm">{message.content}</p>
+                      <p className="text-sm">
+                        {parseMentions(message.content, allAgents)}
+                      </p>
                       
                       {/* Show brick action if present */}
                       {message.brickAction && (

@@ -57,7 +57,7 @@ describe("agents router", () => {
     expect(bricks).toEqual([]);
   });
 
-  it("returns stats with correct structure", async () => {
+  it("returns stats with correct structure including completedBuildsCount", async () => {
     const ctx = createPublicContext();
     const caller = appRouter.createCaller(ctx);
 
@@ -67,7 +67,9 @@ describe("agents router", () => {
     expect(stats).toHaveProperty("totalBricks");
     expect(stats).toHaveProperty("totalMessages");
     expect(stats).toHaveProperty("currentBuild");
+    expect(stats).toHaveProperty("completedBuildsCount");
     expect(stats.activeAgents).toBe(8);
+    expect(typeof stats.completedBuildsCount).toBe("number");
   });
 
   it("can reset build successfully", async () => {
@@ -88,5 +90,30 @@ describe("agents router", () => {
     
     const messages = await caller.agents.getMessages({ limit: 10 });
     expect(messages).toEqual([]);
+  });
+
+  it("returns empty completed builds array initially", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const completedBuilds = await caller.agents.getCompletedBuilds({ limit: 10 });
+    expect(completedBuilds).toBeInstanceOf(Array);
+  });
+
+  it("returns null for non-existent completed build", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const build = await caller.agents.getCompletedBuild({ id: "non-existent-id" });
+    expect(build).toBeNull();
+  });
+
+  it("returns error for loading non-existent completed build", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.agents.loadCompletedBuild({ id: "non-existent-id" });
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("Build not found");
   });
 });

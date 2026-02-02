@@ -6,6 +6,7 @@
  * - Header with branding
  * - Stats bar with live metrics
  * - Main content: Agent sidebar (left), Build viewer (center), Chat stream (right)
+ * - Completed builds gallery (floating button)
  */
 
 import { useState, useEffect } from "react";
@@ -14,11 +15,13 @@ import { StatsBar } from "@/components/StatsBar";
 import { AgentSidebar } from "@/components/AgentSidebar";
 import { BuildViewer } from "@/components/BuildViewer";
 import { ChatStream } from "@/components/ChatStream";
+import { CompletedBuildsGallery } from "@/components/CompletedBuildsGallery";
 import { defaultAgents, Agent } from "@/lib/agents";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export default function Home() {
   const [agents, setAgents] = useState<Agent[]>(defaultAgents);
@@ -40,6 +43,14 @@ export default function Home() {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Handle viewing a completed build
+  const handleViewCompletedBuild = (buildId: string) => {
+    toast.success("Build loaded!", {
+      description: "The completed build is now displayed in the 3D viewer."
+    });
+    // In a full implementation, this would load the build into the 3D viewer
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -119,6 +130,9 @@ export default function Home() {
           <ChatStream agents={agents} />
         </motion.aside>
       </main>
+
+      {/* Completed Builds Gallery */}
+      <CompletedBuildsGallery onViewBuild={handleViewCompletedBuild} />
 
       {/* Mobile Chat Toggle - Shows chat in modal on smaller screens */}
       <div className="xl:hidden fixed bottom-4 left-4 z-50">

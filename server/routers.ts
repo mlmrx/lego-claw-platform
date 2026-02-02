@@ -13,8 +13,20 @@ import {
   type AgentMessage,
 } from "./ai-agents";
 
+// Completed build type
+interface CompletedBuild {
+  id: string;
+  name: string;
+  description: string;
+  theme: string;
+  style: string;
+  bricks: DesignBrick[];
+  contributors: string[];  // Agent IDs who contributed
+  completedAt: number;
+  messageCount: number;
+}
+
 // In-memory state for the current build session
-// In production, this would be stored in a database
 let currentDesign: {
   id: string;
   name: string;
@@ -26,8 +38,18 @@ let currentDesign: {
   startedAt: number;
 } | null = null;
 
+// Completed builds gallery (in production, store in database)
+let completedBuilds: CompletedBuild[] = [];
+
 // Message ID counter
 let messageIdCounter = 0;
+
+// Helper to extract unique contributors from bricks
+function getContributors(bricks: DesignBrick[]): string[] {
+  const contributors = new Set<string>();
+  bricks.forEach(b => contributors.add(b.placedBy));
+  return Array.from(contributors);
+}
 
 export const appRouter = router({
   system: systemRouter,
@@ -97,6 +119,26 @@ export const appRouter = router({
 
     // Start a new build with AI-generated concept
     startNewBuild: publicProcedure.mutation(async () => {
+      // If there's an existing build with bricks, save it to gallery
+      if (currentDesign && currentDesign.bricks.length > 0) {
+        completedBuilds.push({
+          id: currentDesign.id,
+          name: currentDesign.name,
+          description: currentDesign.description,
+          theme: currentDesign.theme,
+          style: currentDesign.style,
+          bricks: [...currentDesign.bricks],
+          contributors: getContributors(currentDesign.bricks),
+          completedAt: Date.now(),
+          messageCount: currentDesign.messages.length,
+        });
+        
+        // Keep only last 20 completed builds
+        if (completedBuilds.length > 20) {
+          completedBuilds = completedBuilds.slice(-20);
+        }
+      }
+
       const concept = await generateDesignConcept();
       
       currentDesign = {
@@ -129,7 +171,7 @@ export const appRouter = router({
       };
     }),
 
-    // Generate next agent action (message + optional brick)
+    // Generate next agent action (message + optional brick) with @mention support
     generateNextAction: publicProcedure.mutation(async () => {
       // Start a new build if none exists
       if (!currentDesign) {
@@ -146,13 +188,34 @@ export const appRouter = router({
         };
       }
 
-      // Pick a random agent
-      const agent = getRandomAgent();
+      // Pick a random agent, but sometimes pick one that was recently mentioned
+      let agent = getRandomAgent();
+      const recentMessages = currentDesign.messages.slice(-5);
+      
+      // Check if any recent message mentions another agent
+      const mentionedAgentIds = recentMessages
+        .flatMap(m => {
+          const mentions = m.content.match(/@(\w+[-\w]*)/g) || [];
+          return mentions.map(mention => mention.slice(1).toLowerCase());
+        })
+        .filter(id => AI_AGENTS.some(a => a.id === id || a.name.toLowerCase().replace(/\s+/g, '-') === id));
+      
+      // 40% chance to have a mentioned agent respond
+      if (mentionedAgentIds.length > 0 && Math.random() < 0.4) {
+        const mentionedId = mentionedAgentIds[mentionedAgentIds.length - 1];
+        const mentionedAgent = AI_AGENTS.find(a => 
+          a.id === mentionedId || 
+          a.name.toLowerCase().replace(/\s+/g, '-') === mentionedId
+        );
+        if (mentionedAgent) {
+          agent = mentionedAgent;
+        }
+      }
       
       // Calculate build progress (assume ~50 bricks for a complete build)
       const buildProgress = Math.min(100, Math.round((currentDesign.bricks.length / 50) * 100));
 
-      // Generate agent message
+      // Generate agent message with @mention context
       const result = await generateAgentMessage(agent, {
         designConcept: {
           name: currentDesign.name,
@@ -165,14 +228,28 @@ export const appRouter = router({
         buildProgress,
       });
 
-      // Create message
+      // Sometimes add @mention to the message (30% chance)
+      let content = result.content;
+      if (Math.random() < 0.3 && recentMessages.length > 0) {
+        const lastMessage = recentMessages[recentMessages.length - 1];
+        const lastAgent = getAgentById(lastMessage.agentId);
+        if (lastAgent && lastAgent.id !== agent.id) {
+          // Add @mention at the start of the message
+          content = `@${lastAgent.name.replace(/\s+/g, '-')} ${content}`;
+        }
+      }
+
+      // Create message with potential replyTo
       const message: AgentMessage = {
         id: `msg-${++messageIdCounter}`,
         agentId: agent.id,
-        content: result.content,
+        content,
         type: result.type,
         timestamp: Date.now(),
         brickAction: result.brickAction,
+        replyTo: recentMessages.length > 0 && Math.random() < 0.25 
+          ? recentMessages[recentMessages.length - 1].id 
+          : undefined,
       };
 
       // Add message to history
@@ -181,6 +258,49 @@ export const appRouter = router({
       // Add brick if action includes one
       if (result.brickAction?.brick) {
         currentDesign.bricks.push(result.brickAction.brick);
+      }
+
+      // Check if build is complete (50+ bricks) and auto-save to gallery
+      if (currentDesign.bricks.length >= 50) {
+        completedBuilds.push({
+          id: currentDesign.id,
+          name: currentDesign.name,
+          description: currentDesign.description,
+          theme: currentDesign.theme,
+          style: currentDesign.style,
+          bricks: [...currentDesign.bricks],
+          contributors: getContributors(currentDesign.bricks),
+          completedAt: Date.now(),
+          messageCount: currentDesign.messages.length,
+        });
+        
+        // Keep only last 20 completed builds
+        if (completedBuilds.length > 20) {
+          completedBuilds = completedBuilds.slice(-20);
+        }
+
+        // Start a new build automatically
+        const newConcept = await generateDesignConcept();
+        currentDesign = {
+          id: `build-${Date.now()}`,
+          name: newConcept.name,
+          description: newConcept.description,
+          theme: newConcept.theme,
+          style: newConcept.style,
+          bricks: [],
+          messages: [],
+          startedAt: Date.now(),
+        };
+
+        // Add celebration message for completed build
+        const celebrator = getRandomAgent();
+        currentDesign.messages.push({
+          id: `msg-${++messageIdCounter}`,
+          agentId: celebrator.id,
+          content: `🎊 Build complete! Starting new project: "${newConcept.name}"! ${newConcept.description}`,
+          type: 'celebration',
+          timestamp: Date.now(),
+        });
       }
 
       // Get agent info for response
@@ -195,9 +315,10 @@ export const appRouter = router({
       return {
         message,
         agent: agentInfo,
-        buildProgress,
+        buildProgress: Math.min(100, Math.round((currentDesign.bricks.length / 50) * 100)),
         totalBricks: currentDesign.bricks.length,
         newBrick: result.brickAction?.brick || null,
+        buildComplete: currentDesign.bricks.length === 0 && completedBuilds.length > 0,
       };
     }),
 
@@ -218,8 +339,72 @@ export const appRouter = router({
           name: currentDesign.name,
           theme: currentDesign.theme,
         } : null,
+        completedBuildsCount: completedBuilds.length,
       };
     }),
+
+    // Get completed builds gallery
+    getCompletedBuilds: publicProcedure
+      .input(z.object({
+        limit: z.number().min(1).max(50).default(10),
+      }))
+      .query(({ input }) => {
+        return completedBuilds
+          .slice(-input.limit)
+          .reverse()
+          .map(build => ({
+            id: build.id,
+            name: build.name,
+            description: build.description,
+            theme: build.theme,
+            style: build.style,
+            brickCount: build.bricks.length,
+            contributors: build.contributors,
+            completedAt: build.completedAt,
+            messageCount: build.messageCount,
+          }));
+      }),
+
+    // Get a specific completed build with all bricks
+    getCompletedBuild: publicProcedure
+      .input(z.object({
+        id: z.string(),
+      }))
+      .query(({ input }) => {
+        const build = completedBuilds.find(b => b.id === input.id);
+        if (!build) return null;
+        
+        return {
+          id: build.id,
+          name: build.name,
+          description: build.description,
+          theme: build.theme,
+          style: build.style,
+          bricks: build.bricks,
+          contributors: build.contributors,
+          completedAt: build.completedAt,
+          messageCount: build.messageCount,
+        };
+      }),
+
+    // Load a completed build into the 3D viewer
+    loadCompletedBuild: publicProcedure
+      .input(z.object({
+        id: z.string(),
+      }))
+      .mutation(({ input }) => {
+        const build = completedBuilds.find(b => b.id === input.id);
+        if (!build) {
+          return { success: false, error: 'Build not found' };
+        }
+        
+        return {
+          success: true,
+          bricks: build.bricks,
+          name: build.name,
+          description: build.description,
+        };
+      }),
   }),
 });
 
