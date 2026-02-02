@@ -5,20 +5,34 @@
  */
 
 import { cn } from "@/lib/utils";
-import { LegoProject, agents } from "@/lib/agents";
+import { Agent, BuildState, defaultAgents } from "@/lib/agents";
 import { AgentAvatarGroup } from "./AgentAvatar";
 import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
-import { Puzzle, Users } from "lucide-react";
+import { Puzzle, Users, Sparkles } from "lucide-react";
+
+// Project display interface
+interface ProjectDisplay {
+  id: string;
+  name: string;
+  description: string;
+  theme: string;
+  image?: string;
+  progress: number;
+  piecesPlaced: number;
+  totalPieces: number;
+  contributors: string[];
+}
 
 interface ProjectCardProps {
-  project: LegoProject;
+  project: ProjectDisplay;
   isActive?: boolean;
   className?: string;
 }
 
 export function ProjectCard({ project, isActive = false, className }: ProjectCardProps) {
-  const contributorAgents = agents.filter(a => project.contributors.includes(a.id));
+  // Get contributor agents from the default agents list
+  const contributorAgents = defaultAgents.filter(a => project.contributors.includes(a.id));
 
   return (
     <motion.div
@@ -41,20 +55,30 @@ export function ProjectCard({ project, isActive = false, className }: ProjectCar
           <motion.div
             animate={{ scale: [1, 1.2, 1] }}
             transition={{ repeat: Infinity, duration: 2 }}
-            className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-bold"
+            className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center gap-1"
           >
-            LIVE
+            <Sparkles className="w-3 h-3" />
+            AI LIVE
           </motion.div>
         </div>
       )}
 
-      {/* Project Image */}
+      {/* Project Image / Theme Display */}
       <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-muted to-muted/50">
-        <img 
-          src={project.image} 
-          alt={project.name}
-          className="w-full h-full object-contain p-4"
-        />
+        {project.image ? (
+          <img 
+            src={project.image} 
+            alt={project.name}
+            className="w-full h-full object-contain p-4"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="text-center p-4">
+              <div className="text-6xl mb-2">🧱</div>
+              <div className="text-sm font-medium text-muted-foreground">{project.theme}</div>
+            </div>
+          </div>
+        )}
         
         {/* Floating pieces animation overlay */}
         {isActive && (
@@ -115,11 +139,54 @@ export function ProjectCard({ project, isActive = false, className }: ProjectCar
         <div className="flex items-center justify-between pt-2 border-t border-border">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Users className="w-4 h-4" />
-            <span>{contributorAgents.length} agents</span>
+            <span>{contributorAgents.length > 0 ? `${contributorAgents.length} agents` : 'AI agents'}</span>
           </div>
-          <AgentAvatarGroup agents={contributorAgents} max={3} size="sm" />
+          {contributorAgents.length > 0 ? (
+            <AgentAvatarGroup agents={contributorAgents} max={3} size="sm" />
+          ) : (
+            <div className="flex -space-x-2">
+              {defaultAgents.slice(0, 3).map((agent) => (
+                <div
+                  key={agent.id}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center text-lg ring-2 ring-white"
+                  style={{ backgroundColor: agent.color }}
+                >
+                  {agent.emoji}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </motion.div>
   );
+}
+
+// Helper to convert BuildState to ProjectDisplay
+export function buildStateToProject(build: BuildState | null, brickCount: number = 0): ProjectDisplay {
+  if (!build) {
+    return {
+      id: 'new',
+      name: 'Starting New Build...',
+      description: 'AI agents are designing something amazing',
+      theme: 'creative',
+      progress: 0,
+      piecesPlaced: 0,
+      totalPieces: 50,
+      contributors: []
+    };
+  }
+  
+  const progress = Math.min(100, Math.round((brickCount / 50) * 100));
+  
+  return {
+    id: build.id,
+    name: build.name,
+    description: build.description,
+    theme: build.theme,
+    progress,
+    piecesPlaced: brickCount,
+    totalPieces: 50,
+    contributors: []
+  };
 }

@@ -14,14 +14,14 @@ import { StatsBar } from "@/components/StatsBar";
 import { AgentSidebar } from "@/components/AgentSidebar";
 import { BuildViewer } from "@/components/BuildViewer";
 import { ChatStream } from "@/components/ChatStream";
-import { agents as initialAgents, Agent } from "@/lib/agents";
+import { defaultAgents, Agent } from "@/lib/agents";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
-  const [agents, setAgents] = useState<Agent[]>(initialAgents);
+  const [agents, setAgents] = useState<Agent[]>(defaultAgents);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Simulate agent status changes

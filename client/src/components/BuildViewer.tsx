@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { agents } from "@/lib/agents";
+import { defaultAgents } from "@/lib/agents";
 import { AgentAvatarGroup } from "./AgentAvatar";
 import { Progress } from "@/components/ui/progress";
 import { LegoScene3D, BUILD_STRUCTURES } from "./LegoScene3D";
@@ -64,7 +64,7 @@ export function BuildViewer({ className }: BuildViewerProps) {
 
   // Get current building agent
   const buildingAgents = useMemo(() => {
-    return agents.filter(a => a.status === 'building' || a.status === 'thinking');
+    return defaultAgents.filter(a => a.status === 'building' || a.status === 'thinking');
   }, []);
 
   const currentAgent = buildingAgents[currentAgentIndex % buildingAgents.length];

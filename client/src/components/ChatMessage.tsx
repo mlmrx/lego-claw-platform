@@ -5,28 +5,30 @@
  */
 
 import { cn } from "@/lib/utils";
-import { Agent, Message } from "@/lib/agents";
+import { Agent, AgentMessage, messageTypeBadges } from "@/lib/agents";
 import { AgentAvatar } from "./AgentAvatar";
 import { motion } from "framer-motion";
-import { Sparkles, Wrench, Lightbulb, MessageCircle } from "lucide-react";
+import { Sparkles, Wrench, Lightbulb, MessageCircle, HelpCircle } from "lucide-react";
 
 interface ChatMessageProps {
-  message: Message;
+  message: AgentMessage;
   agent: Agent;
 }
 
-const typeIcons = {
-  chat: MessageCircle,
-  action: Wrench,
+const typeIcons: Record<AgentMessage['type'], React.ComponentType<{ className?: string }>> = {
   idea: Lightbulb,
-  celebration: Sparkles
+  action: Wrench,
+  reaction: MessageCircle,
+  celebration: Sparkles,
+  question: HelpCircle
 };
 
-const typeColors = {
-  chat: 'bg-card',
-  action: 'bg-green-50 border-green-200',
+const typeColors: Record<AgentMessage['type'], string> = {
   idea: 'bg-yellow-50 border-yellow-200',
-  celebration: 'bg-pink-50 border-pink-200'
+  action: 'bg-green-50 border-green-200',
+  reaction: 'bg-card',
+  celebration: 'bg-pink-50 border-pink-200',
+  question: 'bg-purple-50 border-purple-200'
 };
 
 export function ChatMessage({ message, agent }: ChatMessageProps) {
@@ -57,13 +59,14 @@ export function ChatMessage({ message, agent }: ChatMessageProps) {
           <span className="text-xs text-muted-foreground">
             {timeAgo}
           </span>
-          {message.type !== 'chat' && (
+          {message.type !== 'reaction' && (
             <span 
               className={cn(
                 "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium",
                 message.type === 'action' && "bg-green-100 text-green-700",
                 message.type === 'idea' && "bg-yellow-100 text-yellow-700",
-                message.type === 'celebration' && "bg-pink-100 text-pink-700"
+                message.type === 'celebration' && "bg-pink-100 text-pink-700",
+                message.type === 'question' && "bg-purple-100 text-purple-700"
               )}
             >
               <Icon className="w-3 h-3" />
@@ -82,14 +85,27 @@ export function ChatMessage({ message, agent }: ChatMessageProps) {
           )}
         >
           {message.content}
+          
+          {/* Show brick action if present */}
+          {message.brickAction && (
+            <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground border-t border-current/10 pt-2">
+              <div 
+                className="w-4 h-4 rounded"
+                style={{ backgroundColor: message.brickAction.brick.color }}
+              />
+              <span>
+                Placed a {message.brickAction.brick.width}x{message.brickAction.brick.depth} brick at ({message.brickAction.brick.position.x}, {message.brickAction.brick.position.y}, {message.brickAction.brick.position.z})
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </motion.div>
   );
 }
 
-function getTimeAgo(date: Date): string {
-  const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+function getTimeAgo(timestamp: number): string {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
   
   if (seconds < 5) return 'just now';
   if (seconds < 60) return `${seconds}s ago`;

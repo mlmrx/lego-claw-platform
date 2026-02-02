@@ -5,7 +5,7 @@
  */
 
 import { cn } from "@/lib/utils";
-import { Agent } from "@/lib/agents";
+import { Agent, skillDescriptions } from "@/lib/agents";
 import { AgentAvatar } from "./AgentAvatar";
 import { motion } from "framer-motion";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -26,10 +26,10 @@ export function AgentSidebar({ agents, className }: AgentSidebarProps) {
   // Sort agents by status: building first, then chatting, thinking, idle
   const sortedAgents = [...agents].sort((a, b) => {
     const order = { building: 0, chatting: 1, thinking: 2, idle: 3 };
-    return order[a.status] - order[b.status];
+    return order[a.status || 'idle'] - order[b.status || 'idle'];
   });
 
-  const activeCount = agents.filter(a => a.status !== 'idle').length;
+  const activeCount = agents.filter(a => a.status && a.status !== 'idle').length;
 
   return (
     <div className={cn("flex flex-col h-full", className)}>
@@ -88,6 +88,9 @@ export function AgentSidebar({ agents, className }: AgentSidebarProps) {
 }
 
 function AgentCard({ agent }: { agent: Agent }) {
+  const status = agent.status || 'idle';
+  const specialty = skillDescriptions[agent.skill] || agent.skill;
+  
   return (
     <motion.div
       whileHover={{ x: 4 }}
@@ -96,7 +99,7 @@ function AgentCard({ agent }: { agent: Agent }) {
         "bg-card border border-border",
         "hover:border-primary/30 hover:shadow-sm",
         "transition-all duration-200",
-        agent.status === 'idle' && "opacity-60"
+        status === 'idle' && "opacity-60"
       )}
     >
       <AgentAvatar agent={agent} size="md" />
@@ -111,10 +114,10 @@ function AgentCard({ agent }: { agent: Agent }) {
           </span>
         </div>
         <div className="text-xs text-muted-foreground truncate">
-          {agent.specialty}
+          {specialty}
         </div>
         <div className="text-xs mt-1">
-          {statusLabels[agent.status]}
+          {statusLabels[status]}
         </div>
       </div>
     </motion.div>

@@ -41,6 +41,8 @@ export function AgentAvatar({
   showStatus = true,
   className 
 }: AgentAvatarProps) {
+  const status = agent.status || 'idle';
+  
   return (
     <motion.div 
       className={cn("relative", className)}
@@ -55,19 +57,19 @@ export function AgentAvatar({
         )}
         style={{ backgroundColor: agent.color }}
       >
-        <span className="drop-shadow-sm">{agent.avatar}</span>
+        <span className="drop-shadow-sm">{agent.emoji}</span>
       </div>
       
       {showStatus && (
         <motion.div 
           className={cn(
             "absolute -bottom-1 -right-1 rounded-full border-2 border-white",
-            statusColors[agent.status],
+            statusColors[status],
             size === 'sm' ? 'w-3 h-3' : size === 'md' ? 'w-4 h-4' : 'w-5 h-5'
           )}
-          animate={agent.status === 'building' ? { scale: [1, 1.2, 1] } : {}}
+          animate={status === 'building' ? { scale: [1, 1.2, 1] } : {}}
           transition={{ repeat: Infinity, duration: 1 }}
-          title={statusLabels[agent.status]}
+          title={statusLabels[status]}
         />
       )}
     </motion.div>
