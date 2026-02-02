@@ -1,17 +1,17 @@
 /**
  * BuildViewer Component
  * Design: Isometric LEGO Playground
- * Main visualization area showing LEGO builds in progress
+ * Main visualization area showing LEGO builds in progress with live animations
  */
 
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { LegoProject, sampleProjects, agents } from "@/lib/agents";
-import { ProjectCard } from "./ProjectCard";
 import { AgentAvatarGroup } from "./AgentAvatar";
 import { Progress } from "@/components/ui/progress";
+import { LiveBuildingAnimation, BuildingActivityIndicator } from "./LiveBuildingAnimation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Puzzle, Zap, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Puzzle, Zap, Clock, Hammer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface BuildViewerProps {
@@ -21,30 +21,27 @@ interface BuildViewerProps {
 export function BuildViewer({ className }: BuildViewerProps) {
   const [projects, setProjects] = useState<LegoProject[]>(sampleProjects);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [buildingAnimation, setBuildingAnimation] = useState(false);
+  const [recentlyPlaced, setRecentlyPlaced] = useState(0);
+  const [buildingPulse, setBuildingPulse] = useState(false);
 
   const activeProject = projects[activeIndex];
   const contributorAgents = agents.filter(a => 
     activeProject.contributors.includes(a.id)
   );
 
-  // Simulate building progress
+  // Simulate building progress with visible feedback
   useEffect(() => {
     const interval = setInterval(() => {
+      const piecesToAdd = Math.floor(Math.random() * 3) + 1;
+      
       setProjects(prev => prev.map((project, idx) => {
         if (idx !== activeIndex) return project;
         
         const newPiecesPlaced = Math.min(
-          project.piecesPlaced + Math.floor(Math.random() * 3) + 1,
+          project.piecesPlaced + piecesToAdd,
           project.totalPieces
         );
         const newProgress = Math.round((newPiecesPlaced / project.totalPieces) * 100);
-        
-        // Trigger animation
-        if (newPiecesPlaced !== project.piecesPlaced) {
-          setBuildingAnimation(true);
-          setTimeout(() => setBuildingAnimation(false), 300);
-        }
         
         return {
           ...project,
@@ -52,17 +49,34 @@ export function BuildViewer({ className }: BuildViewerProps) {
           progress: newProgress
         };
       }));
-    }, 3000);
+
+      // Update recently placed counter
+      setRecentlyPlaced(prev => prev + piecesToAdd);
+      
+      // Trigger pulse animation
+      setBuildingPulse(true);
+      setTimeout(() => setBuildingPulse(false), 300);
+    }, 2000);
 
     return () => clearInterval(interval);
   }, [activeIndex]);
 
+  // Reset recently placed counter periodically
+  useEffect(() => {
+    const resetInterval = setInterval(() => {
+      setRecentlyPlaced(0);
+    }, 10000);
+    return () => clearInterval(resetInterval);
+  }, []);
+
   const nextProject = () => {
     setActiveIndex((prev) => (prev + 1) % projects.length);
+    setRecentlyPlaced(0);
   };
 
   const prevProject = () => {
     setActiveIndex((prev) => (prev - 1 + projects.length) % projects.length);
+    setRecentlyPlaced(0);
   };
 
   return (
@@ -75,9 +89,7 @@ export function BuildViewer({ className }: BuildViewerProps) {
           </div>
           <div>
             <h2 className="font-heading font-bold text-lg">Build Zone</h2>
-            <p className="text-xs text-muted-foreground">
-              Watch agents create amazing LEGO builds
-            </p>
+            <BuildingActivityIndicator isActive={true} />
           </div>
         </div>
         
@@ -105,64 +117,88 @@ export function BuildViewer({ className }: BuildViewerProps) {
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="h-full flex flex-col"
           >
-            {/* Build Image */}
+            {/* Build Image with Live Animation Overlay */}
             <div className="relative flex-1 rounded-2xl overflow-hidden bg-gradient-to-br from-muted to-muted/30 border-2 border-border">
+              {/* Base image */}
               <motion.img
                 src={activeProject.image}
                 alt={activeProject.name}
                 className="w-full h-full object-contain p-8"
-                animate={buildingAnimation ? { scale: [1, 1.02, 1] } : {}}
+                animate={buildingPulse ? { 
+                  scale: [1, 1.01, 1],
+                  filter: ['brightness(1)', 'brightness(1.05)', 'brightness(1)']
+                } : {}}
                 transition={{ duration: 0.3 }}
               />
               
-              {/* Floating LEGO pieces animation */}
-              <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                {buildingAnimation && (
-                  <>
-                    {[...Array(5)].map((_, i) => (
-                      <motion.div
-                        key={i}
-                        className="absolute w-3 h-3 rounded-sm"
-                        style={{
-                          backgroundColor: ['#E3000B', '#0055BF', '#FFD700', '#00852B', '#FF6B00'][i],
-                          left: `${Math.random() * 80 + 10}%`,
-                          top: '-20px'
-                        }}
-                        initial={{ y: -20, opacity: 1, rotate: 0 }}
-                        animate={{ 
-                          y: 300, 
-                          opacity: 0, 
-                          rotate: 360 
-                        }}
-                        transition={{ 
-                          duration: 1.5, 
-                          delay: i * 0.1,
-                          ease: "easeIn"
-                        }}
-                      />
-                    ))}
-                  </>
-                )}
-              </div>
+              {/* Live building animation overlay */}
+              <LiveBuildingAnimation />
 
-              {/* Live indicator */}
+              {/* Live indicator - top left */}
               <div className="absolute top-4 left-4">
                 <motion.div
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ repeat: Infinity, duration: 2 }}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-lg"
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-green-500 text-white text-sm font-bold shadow-lg"
                 >
-                  <Zap className="w-4 h-4" />
+                  <motion.div
+                    animate={{ rotate: [0, 360] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                  >
+                    <Hammer className="w-4 h-4" />
+                  </motion.div>
                   BUILDING LIVE
                 </motion.div>
               </div>
 
-              {/* Contributors overlay */}
+              {/* Recently placed indicator - top right */}
+              <AnimatePresence>
+                {recentlyPlaced > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -20, scale: 0.8 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="absolute top-4 right-4"
+                  >
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-400 text-yellow-900 text-sm font-bold shadow-lg">
+                      <Zap className="w-4 h-4" />
+                      +{recentlyPlaced} pieces just placed!
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Contributors overlay - bottom left */}
               <div className="absolute bottom-4 left-4 flex items-center gap-3 px-4 py-2 rounded-xl bg-white/90 backdrop-blur-sm shadow-lg">
                 <AgentAvatarGroup agents={contributorAgents} max={4} size="sm" />
                 <span className="text-sm font-medium text-foreground">
                   {contributorAgents.length} agents building
                 </span>
+              </div>
+
+              {/* Live progress mini-bar - bottom right */}
+              <div className="absolute bottom-4 right-4 w-48">
+                <div className="bg-white/90 backdrop-blur-sm rounded-xl p-3 shadow-lg">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium text-muted-foreground">Progress</span>
+                    <motion.span 
+                      className="text-sm font-bold text-primary"
+                      key={activeProject.progress}
+                      initial={{ scale: 1.3 }}
+                      animate={{ scale: 1 }}
+                    >
+                      {activeProject.progress}%
+                    </motion.span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-primary to-green-500 rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${activeProject.progress}%` }}
+                      transition={{ duration: 0.5, ease: "easeOut" }}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -178,9 +214,14 @@ export function BuildViewer({ className }: BuildViewerProps) {
                   </p>
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl font-bold font-heading text-primary">
+                  <motion.div 
+                    className="text-3xl font-bold font-heading text-primary"
+                    key={activeProject.progress}
+                    initial={{ scale: 1.2 }}
+                    animate={{ scale: 1 }}
+                  >
                     {activeProject.progress}%
-                  </div>
+                  </motion.div>
                   <div className="text-xs text-muted-foreground">Complete</div>
                 </div>
               </div>
@@ -188,13 +229,19 @@ export function BuildViewer({ className }: BuildViewerProps) {
               <div className="space-y-2">
                 <Progress value={activeProject.progress} className="h-3" />
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1">
+                  <motion.span 
+                    className="flex items-center gap-1"
+                    key={activeProject.piecesPlaced}
+                    initial={{ color: '#22c55e' }}
+                    animate={{ color: '#6b7280' }}
+                    transition={{ duration: 1 }}
+                  >
                     <Puzzle className="w-4 h-4" />
                     {activeProject.piecesPlaced.toLocaleString()} / {activeProject.totalPieces.toLocaleString()} pieces
-                  </span>
+                  </motion.span>
                   <span className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
-                    ~{Math.ceil((activeProject.totalPieces - activeProject.piecesPlaced) / 2)} min remaining
+                    ~{Math.ceil((activeProject.totalPieces - activeProject.piecesPlaced) / 3)} min remaining
                   </span>
                 </div>
               </div>
@@ -209,11 +256,14 @@ export function BuildViewer({ className }: BuildViewerProps) {
           {projects.map((project, index) => (
             <motion.button
               key={project.id}
-              onClick={() => setActiveIndex(index)}
+              onClick={() => {
+                setActiveIndex(index);
+                setRecentlyPlaced(0);
+              }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className={cn(
-                "flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all",
+                "flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all relative",
                 index === activeIndex 
                   ? "border-primary ring-2 ring-primary/30" 
                   : "border-border hover:border-primary/50"
@@ -224,6 +274,13 @@ export function BuildViewer({ className }: BuildViewerProps) {
                 alt={project.name}
                 className="w-full h-full object-contain bg-muted p-1"
               />
+              {index === activeIndex && (
+                <motion.div
+                  className="absolute inset-0 bg-primary/10"
+                  animate={{ opacity: [0.2, 0.4, 0.2] }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                />
+              )}
             </motion.button>
           ))}
         </div>
