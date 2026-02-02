@@ -28,13 +28,50 @@ import {
   Award,
   Target,
   Clock,
-  ExternalLink
+  ExternalLink,
+  Blocks,
+  Radio,
+  CheckCircle,
+  XCircle,
+  Eye
 } from "lucide-react";
+
+// Helper functions for streaming platforms
+function getPlatformColor(platform: string): string {
+  const colors: Record<string, string> = {
+    twitch: '#9146FF',
+    youtube: '#FF0000',
+    twitter: '#000000',
+    discord: '#5865F2',
+    kick: '#53FC18',
+    tiktok: '#000000',
+    facebook: '#1877F2',
+    instagram: '#E4405F',
+    custom: '#6B7280',
+  };
+  return colors[platform] || '#6B7280';
+}
+
+function getPlatformIcon(platform: string): string {
+  const icons: Record<string, string> = {
+    twitch: '📺',
+    youtube: '▶️',
+    twitter: '𝕏',
+    discord: '💬',
+    kick: '🎮',
+    tiktok: '🎵',
+    facebook: '📘',
+    instagram: '📷',
+    custom: '🔧',
+  };
+  return icons[platform] || '🔧';
+}
 
 export default function UserProfile() {
   const { userId } = useParams<{ userId: string }>();
   const { user: currentUser } = useAuth();
   const parsedUserId = parseInt(userId || "0");
+  const isOwnProfile = currentUser?.id === parsedUserId;
   
   // Fetch user profile data
   const { data: profileData, isLoading } = trpc.userProfile.byId.useQuery(
@@ -53,8 +90,18 @@ export default function UserProfile() {
     { userId: parsedUserId },
     { enabled: !!parsedUserId }
   );
-
-  const isOwnProfile = currentUser?.id === parsedUserId;
+  
+  // Fetch user's showcase builds (projects)
+  const { data: builds = [] } = trpc.projects.byCreator.useQuery(
+    { creatorId: parsedUserId },
+    { enabled: !!parsedUserId }
+  );
+  
+  // Fetch user's streaming integrations (only if own profile)
+  const { data: integrations = [] } = trpc.integrations.myIntegrations.useQuery(
+    undefined,
+    { enabled: isOwnProfile }
+  );
 
   if (isLoading) {
     return (
@@ -227,19 +274,29 @@ export default function UserProfile() {
 
         {/* Tabs */}
         <Tabs defaultValue="agents" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className={`grid w-full ${isOwnProfile ? 'grid-cols-5' : 'grid-cols-4'}`}>
             <TabsTrigger value="agents" className="gap-2">
               <Bot className="w-4 h-4" />
-              Agents ({agents.length})
+              <span className="hidden sm:inline">Agents</span> ({agents.length})
+            </TabsTrigger>
+            <TabsTrigger value="builds" className="gap-2">
+              <Blocks className="w-4 h-4" />
+              <span className="hidden sm:inline">Builds</span> ({builds.length})
             </TabsTrigger>
             <TabsTrigger value="challenges" className="gap-2">
               <Trophy className="w-4 h-4" />
-              Challenges ({challenges.length})
+              <span className="hidden sm:inline">Challenges</span> ({challenges.length})
             </TabsTrigger>
             <TabsTrigger value="badges" className="gap-2">
               <Award className="w-4 h-4" />
-              Badges ({badges.length})
+              <span className="hidden sm:inline">Badges</span> ({badges.length})
             </TabsTrigger>
+            {isOwnProfile && (
+              <TabsTrigger value="streaming" className="gap-2">
+                <Radio className="w-4 h-4" />
+                <span className="hidden sm:inline">Streaming</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* Agents Tab */}
@@ -301,6 +358,76 @@ export default function UserProfile() {
                               </Badge>
                             </div>
                           </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Builds Tab */}
+          <TabsContent value="builds">
+            {builds.length === 0 ? (
+              <Card className="p-12 text-center">
+                <Blocks className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Showcase Builds</h3>
+                <p className="text-muted-foreground mb-4">
+                  {isOwnProfile 
+                    ? "Start a build project to showcase your creations!"
+                    : "This user hasn't created any showcase builds yet."}
+                </p>
+                {isOwnProfile && (
+                  <Button asChild>
+                    <Link href="/">Start Building</Link>
+                  </Button>
+                )}
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {builds.map((build: any, i: number) => (
+                  <motion.div
+                    key={build.publicId}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                  >
+                    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+                      <div 
+                        className="h-32 flex items-center justify-center"
+                        style={{ 
+                          background: `linear-gradient(135deg, ${build.theme === 'space' ? '#1a1a2e' : build.theme === 'medieval' ? '#4a3728' : build.theme === 'nature' ? '#1a472a' : '#2d3436'} 0%, ${build.theme === 'space' ? '#16213e' : build.theme === 'medieval' ? '#5c4033' : build.theme === 'nature' ? '#2d5a3d' : '#636e72'} 100%)`
+                        }}
+                      >
+                        <Blocks className="w-12 h-12 text-white/30" />
+                      </div>
+                      <CardContent className="pt-4">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h3 className="font-semibold line-clamp-1">{build.name}</h3>
+                          <Badge 
+                            variant={build.status === 'completed' ? 'default' : 'secondary'}
+                            className="capitalize text-xs"
+                          >
+                            {build.status}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                          {build.description || "A LEGO creation"}
+                        </p>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Box className="w-3 h-3" />
+                            {build.totalBricks?.toLocaleString() || 0} bricks
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            {build.participantCount || 0}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Star className="w-3 h-3" />
+                            {build.likes || 0}
+                          </span>
                         </div>
                       </CardContent>
                     </Card>
@@ -387,6 +514,87 @@ export default function UserProfile() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Streaming Tab (only for own profile) */}
+          {isOwnProfile && (
+            <TabsContent value="streaming">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Linked Streaming Accounts</CardTitle>
+                      <CardDescription>
+                        Connect your streaming platforms to share your builds live
+                      </CardDescription>
+                    </div>
+                    <Button asChild>
+                      <Link href="/integrations">
+                        <Radio className="w-4 h-4 mr-2" />
+                        Manage Integrations
+                      </Link>
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {integrations.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Radio className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
+                      <h3 className="font-semibold mb-2">No Streaming Accounts Linked</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Connect your Twitch, YouTube, or other streaming platforms
+                      </p>
+                      <Button asChild>
+                        <Link href="/integrations">Connect Platform</Link>
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {integrations.map((integration: any) => (
+                        <Card key={integration.publicId} className="bg-muted/30">
+                          <CardContent className="pt-4">
+                            <div className="flex items-center gap-4">
+                              <div 
+                                className="w-12 h-12 rounded-lg flex items-center justify-center text-xl"
+                                style={{ backgroundColor: getPlatformColor(integration.platform) + '20' }}
+                              >
+                                {getPlatformIcon(integration.platform)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-medium">{integration.platformName}</h4>
+                                  {integration.isVerified ? (
+                                    <CheckCircle className="w-4 h-4 text-green-500" />
+                                  ) : (
+                                    <XCircle className="w-4 h-4 text-yellow-500" />
+                                  )}
+                                </div>
+                                <p className="text-sm text-muted-foreground truncate">
+                                  {integration.platformUsername || integration.channelUrl || 'Connected'}
+                                </p>
+                                <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <Radio className="w-3 h-3" />
+                                    {integration.totalStreams || 0} streams
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Eye className="w-3 h-3" />
+                                    {integration.totalViewers?.toLocaleString() || 0} viewers
+                                  </span>
+                                </div>
+                              </div>
+                              <Badge variant={integration.isActive ? 'default' : 'secondary'}>
+                                {integration.isActive ? 'Active' : 'Inactive'}
+                              </Badge>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>

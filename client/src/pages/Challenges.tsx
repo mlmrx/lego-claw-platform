@@ -2,7 +2,7 @@
  * Challenges Page - Timed building challenges
  */
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,13 +22,60 @@ import { Link } from "wouter";
 import { toast } from "sonner";
 import { ChallengeCreator } from "@/components/ChallengeCreator";
 import { SocialShare } from "@/components/SocialShare";
+import { SearchFilter, FilterConfig, SortOption } from "@/components/SearchFilter";
 import { SAMPLE_CHALLENGES } from "@/lib/sample-data";
+
+// Filter and sort configuration for challenges
+const CHALLENGE_FILTERS: FilterConfig[] = [
+  {
+    id: "type",
+    label: "Challenge Type",
+    options: [
+      { id: "speed", label: "Speed" },
+      { id: "creativity", label: "Creativity" },
+      { id: "collaboration", label: "Collaboration" },
+      { id: "precision", label: "Precision" },
+      { id: "themed", label: "Themed" },
+    ],
+    multiple: true,
+  },
+  {
+    id: "mode",
+    label: "Mode",
+    options: [
+      { id: "solo", label: "Solo" },
+      { id: "team", label: "Team" },
+      { id: "versus", label: "Versus" },
+    ],
+    multiple: true,
+  },
+  {
+    id: "difficulty",
+    label: "Difficulty",
+    options: [
+      { id: "beginner", label: "Beginner (Lv 1-5)" },
+      { id: "intermediate", label: "Intermediate (Lv 6-15)" },
+      { id: "advanced", label: "Advanced (Lv 16+)" },
+    ],
+    multiple: true,
+  },
+];
+
+const CHALLENGE_SORT_OPTIONS: SortOption[] = [
+  { id: "participants", label: "Most Participants" },
+  { id: "rewards", label: "Highest Rewards" },
+  { id: "ending", label: "Ending Soon" },
+  { id: "newest", label: "Newest First" },
+];
 
 export default function Challenges() {
   const { isAuthenticated } = useAuth();
   const [joinDialogOpen, setJoinDialogOpen] = useState(false);
   const [selectedChallenge, setSelectedChallenge] = useState<any>(null);
   const [selectedAgent, setSelectedAgent] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
+  const [sortBy, setSortBy] = useState("participants");
 
   // Fetch challenges
   const { data: dbActiveChallenges = [], isLoading: loadingActive } = trpc.challenges.active.useQuery();
@@ -40,9 +87,86 @@ export default function Challenges() {
   const sampleUpcoming = SAMPLE_CHALLENGES.filter(c => c.status === 'upcoming');
   const sampleCompleted = SAMPLE_CHALLENGES.filter(c => c.status === 'completed');
   
-  const activeChallenges = dbActiveChallenges.length > 0 ? dbActiveChallenges : sampleActive;
-  const upcomingChallenges = dbUpcomingChallenges.length > 0 ? dbUpcomingChallenges : sampleUpcoming;
-  const completedChallenges = dbCompletedChallenges.length > 0 ? dbCompletedChallenges : sampleCompleted;
+  const rawActiveChallenges = dbActiveChallenges.length > 0 ? dbActiveChallenges : sampleActive;
+  const rawUpcomingChallenges = dbUpcomingChallenges.length > 0 ? dbUpcomingChallenges : sampleUpcoming;
+  const rawCompletedChallenges = dbCompletedChallenges.length > 0 ? dbCompletedChallenges : sampleCompleted;
+
+  // Memoized handlers
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+  }, []);
+
+  const handleFilterChange = useCallback((filters: Record<string, string[]>) => {
+    setActiveFilters(filters);
+  }, []);
+
+  const handleSortChange = useCallback((sort: string) => {
+    setSortBy(sort);
+  }, []);
+
+  // Filter and sort function
+  const filterAndSortChallenges = useCallback((challenges: typeof rawActiveChallenges) => {
+    let result = [...challenges];
+
+    // Apply search
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(c => 
+        c.name.toLowerCase().includes(query) ||
+        c.description?.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply type filter
+    if (activeFilters.type?.length) {
+      result = result.filter(c => activeFilters.type.includes(c.challengeType));
+    }
+
+    // Apply mode filter
+    if (activeFilters.mode?.length) {
+      result = result.filter(c => activeFilters.mode.includes(c.mode));
+    }
+
+    // Apply difficulty filter
+    if (activeFilters.difficulty?.length) {
+      result = result.filter(c => {
+        const level = c.minLevel;
+        return activeFilters.difficulty.some(d => {
+          if (d === "beginner") return level <= 5;
+          if (d === "intermediate") return level > 5 && level <= 15;
+          if (d === "advanced") return level > 15;
+          return true;
+        });
+      });
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case "participants":
+          return b.participantCount - a.participantCount;
+        case "rewards":
+          return (b.experienceReward + b.reputationReward) - (a.experienceReward + a.reputationReward);
+        case "ending":
+          if (!a.endsAt) return 1;
+          if (!b.endsAt) return -1;
+          return new Date(a.endsAt).getTime() - new Date(b.endsAt).getTime();
+        case "newest":
+          return 0; // Would need createdAt
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [searchQuery, activeFilters, sortBy]);
+
+  // Apply filters to each challenge list
+  const activeChallenges = useMemo(() => filterAndSortChallenges(rawActiveChallenges), [filterAndSortChallenges, rawActiveChallenges]);
+  const upcomingChallenges = useMemo(() => filterAndSortChallenges(rawUpcomingChallenges), [filterAndSortChallenges, rawUpcomingChallenges]);
+  const completedChallenges = useMemo(() => filterAndSortChallenges(rawCompletedChallenges), [filterAndSortChallenges, rawCompletedChallenges]);
+  
+  const totalFilteredCount = activeChallenges.length + upcomingChallenges.length + completedChallenges.length;
   
   // Fetch user's agents for joining
   const { data: myAgents = [] } = trpc.registeredAgents.myAgents.useQuery(undefined, {
@@ -145,6 +269,19 @@ export default function Challenges() {
             </div>
           )}
         </div>
+
+        {/* Search and Filter */}
+        <SearchFilter
+          placeholder="Search challenges by name or description..."
+          filters={CHALLENGE_FILTERS}
+          sortOptions={CHALLENGE_SORT_OPTIONS}
+          defaultSort="participants"
+          onSearch={handleSearch}
+          onFilterChange={handleFilterChange}
+          onSortChange={handleSortChange}
+          resultCount={totalFilteredCount}
+          className="mb-6"
+        />
 
         {/* Stats Banner */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">

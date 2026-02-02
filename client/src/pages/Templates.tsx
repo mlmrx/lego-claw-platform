@@ -2,7 +2,7 @@
  * Templates Page - Browse and manage build templates
  */
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,11 +22,59 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
+import { SearchFilter, FilterConfig, SortOption } from "@/components/SearchFilter";
 import { SAMPLE_TEMPLATES } from "@/lib/sample-data";
+
+// Filter and sort configuration for templates
+const TEMPLATE_FILTERS: FilterConfig[] = [
+  {
+    id: "difficulty",
+    label: "Difficulty",
+    options: [
+      { id: "beginner", label: "Beginner" },
+      { id: "intermediate", label: "Intermediate" },
+      { id: "advanced", label: "Advanced" },
+      { id: "expert", label: "Expert" },
+    ],
+    multiple: true,
+  },
+  {
+    id: "theme",
+    label: "Theme",
+    options: [
+      { id: "space", label: "Space" },
+      { id: "medieval", label: "Medieval" },
+      { id: "city", label: "City" },
+      { id: "nature", label: "Nature" },
+      { id: "vehicles", label: "Vehicles" },
+      { id: "fantasy", label: "Fantasy" },
+    ],
+    multiple: true,
+  },
+  {
+    id: "size",
+    label: "Build Size",
+    options: [
+      { id: "small", label: "Small (< 100 bricks)" },
+      { id: "medium", label: "Medium (100-500 bricks)" },
+      { id: "large", label: "Large (500+ bricks)" },
+    ],
+    multiple: true,
+  },
+];
+
+const TEMPLATE_SORT_OPTIONS: SortOption[] = [
+  { id: "popular", label: "Most Popular" },
+  { id: "likes", label: "Most Liked" },
+  { id: "bricks", label: "Most Bricks" },
+  { id: "newest", label: "Newest First" },
+];
 
 export default function Templates() {
   const { isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
+  const [sortBy, setSortBy] = useState("popular");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newTemplate, setNewTemplate] = useState({
     name: "",
@@ -43,8 +91,83 @@ export default function Templates() {
   });
   
   // Use sample data as fallback when database is empty
-  const publicTemplates = dbPublicTemplates.length > 0 ? dbPublicTemplates : SAMPLE_TEMPLATES;
+  const rawPublicTemplates = dbPublicTemplates.length > 0 ? dbPublicTemplates : SAMPLE_TEMPLATES;
   const featuredTemplates = dbFeaturedTemplates.length > 0 ? dbFeaturedTemplates : SAMPLE_TEMPLATES.filter(t => t.isFeatured);
+
+  // Memoized handlers
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+  }, []);
+
+  const handleFilterChange = useCallback((filters: Record<string, string[]>) => {
+    setActiveFilters(filters);
+  }, []);
+
+  const handleSortChange = useCallback((sort: string) => {
+    setSortBy(sort);
+  }, []);
+
+  // Filter and sort templates
+  const publicTemplates = useMemo(() => {
+    let result = [...rawPublicTemplates];
+
+    // Apply search
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(t => 
+        t.name.toLowerCase().includes(query) ||
+        t.theme?.toLowerCase().includes(query) ||
+        t.description?.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply difficulty filter
+    if (activeFilters.difficulty?.length) {
+      result = result.filter(t => 
+        t.difficulty && activeFilters.difficulty.includes(t.difficulty)
+      );
+    }
+
+    // Apply theme filter
+    if (activeFilters.theme?.length) {
+      result = result.filter(t => 
+        t.theme && activeFilters.theme.some(theme => 
+          t.theme?.toLowerCase().includes(theme.toLowerCase())
+        )
+      );
+    }
+
+    // Apply size filter
+    if (activeFilters.size?.length) {
+      result = result.filter(t => {
+        const bricks = t.totalBricks;
+        return activeFilters.size.some(size => {
+          if (size === "small") return bricks < 100;
+          if (size === "medium") return bricks >= 100 && bricks < 500;
+          if (size === "large") return bricks >= 500;
+          return true;
+        });
+      });
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case "popular":
+          return b.usageCount - a.usageCount;
+        case "likes":
+          return b.likes - a.likes;
+        case "bricks":
+          return b.totalBricks - a.totalBricks;
+        case "newest":
+          return 0; // Would need createdAt
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [rawPublicTemplates, searchQuery, activeFilters, sortBy]);
 
   // Mutations
   const useTemplateMutation = trpc.templates.use.useMutation({
@@ -59,10 +182,7 @@ export default function Templates() {
     },
   });
 
-  const filteredTemplates = publicTemplates.filter(t => 
-    t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.theme?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredTemplates = publicTemplates;
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -239,21 +359,18 @@ export default function Templates() {
           </section>
         )}
 
-        {/* Search and Tabs */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search templates..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <Button variant="outline" size="icon">
-            <Filter className="w-4 h-4" />
-          </Button>
-        </div>
+        {/* Search and Filters */}
+        <SearchFilter
+          placeholder="Search templates by name, theme, or description..."
+          filters={TEMPLATE_FILTERS}
+          sortOptions={TEMPLATE_SORT_OPTIONS}
+          defaultSort="popular"
+          onSearch={handleSearch}
+          onFilterChange={handleFilterChange}
+          onSortChange={handleSortChange}
+          resultCount={filteredTemplates.length}
+          className="mb-6"
+        />
 
         <Tabs defaultValue="all" className="space-y-6">
           <TabsList>

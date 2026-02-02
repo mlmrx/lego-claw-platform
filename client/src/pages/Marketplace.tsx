@@ -2,33 +2,29 @@
  * Agent Marketplace - Browse, discover, and follow other owners' agents
  */
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence } from "framer-motion";
+import { SearchFilter, FilterConfig, SortOption } from "@/components/SearchFilter";
 import { 
-  Search, 
   Users, 
   Trophy, 
   Sparkles, 
   TrendingUp, 
-  Star,
   Zap,
-  Filter,
   ArrowLeft,
   Heart,
   MessageSquare,
-  Blocks
+  Star
 } from "lucide-react";
 import { Link } from "wouter";
-import { cn } from "@/lib/utils";
 import { SAMPLE_AGENTS } from "@/lib/sample-data";
 
 // Agent card component
@@ -44,6 +40,7 @@ function AgentCard({ agent, onFollow }: {
     totalBuildsContributed: number;
     reputation: number;
     isVerified: boolean;
+    specialty?: string;
   };
   onFollow?: () => void;
 }) {
@@ -126,9 +123,11 @@ function AgentCard({ agent, onFollow }: {
                 </>
               )}
             </Button>
-            <Button variant="outline" size="icon">
-              <MessageSquare className="w-4 h-4" />
-            </Button>
+            <Link href={`/agent/${agent.publicId}`}>
+              <Button variant="outline" size="icon">
+                <MessageSquare className="w-4 h-4" />
+              </Button>
+            </Link>
           </div>
         </CardContent>
       </Card>
@@ -211,9 +210,54 @@ function LeaderboardEntry({ rank, agent }: {
   );
 }
 
+// Filter and sort configuration
+const FILTERS: FilterConfig[] = [
+  {
+    id: "level",
+    label: "Level Range",
+    options: [
+      { id: "beginner", label: "Beginner (1-10)" },
+      { id: "intermediate", label: "Intermediate (11-25)" },
+      { id: "advanced", label: "Advanced (26-50)" },
+      { id: "expert", label: "Expert (50+)" },
+    ],
+    multiple: true,
+  },
+  {
+    id: "specialty",
+    label: "Specialty",
+    options: [
+      { id: "architecture", label: "Architecture" },
+      { id: "vehicles", label: "Vehicles" },
+      { id: "characters", label: "Characters" },
+      { id: "nature", label: "Nature" },
+      { id: "abstract", label: "Abstract" },
+    ],
+    multiple: true,
+  },
+  {
+    id: "verified",
+    label: "Status",
+    options: [
+      { id: "verified", label: "Verified Only" },
+    ],
+    multiple: false,
+  },
+];
+
+const SORT_OPTIONS: SortOption[] = [
+  { id: "reputation", label: "Most Popular" },
+  { id: "bricks", label: "Most Bricks" },
+  { id: "builds", label: "Most Builds" },
+  { id: "level", label: "Highest Level" },
+  { id: "newest", label: "Newest First" },
+];
+
 export default function Marketplace() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
+  const [sortBy, setSortBy] = useState("reputation");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   // Fetch public agents
@@ -222,14 +266,79 @@ export default function Marketplace() {
   // Use sample data as fallback when database is empty
   const agents = (dbAgents && dbAgents.length > 0) ? dbAgents : SAMPLE_AGENTS;
 
-  // Filter agents based on search
-  const filteredAgents = agents?.filter(agent => 
-    agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    agent.tagline?.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  // Memoized search handler
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+  }, []);
+
+  // Memoized filter handler
+  const handleFilterChange = useCallback((filters: Record<string, string[]>) => {
+    setActiveFilters(filters);
+  }, []);
+
+  // Memoized sort handler
+  const handleSortChange = useCallback((sort: string) => {
+    setSortBy(sort);
+  }, []);
+
+  // Filter and sort agents
+  const filteredAgents = useMemo(() => {
+    let result = [...(agents || [])];
+
+    // Apply search
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(agent => 
+        agent.name.toLowerCase().includes(query) ||
+        agent.tagline?.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply level filter
+    if (activeFilters.level?.length) {
+      result = result.filter(agent => {
+        const level = agent.level;
+        return activeFilters.level.some(filter => {
+          if (filter === "beginner") return level >= 1 && level <= 10;
+          if (filter === "intermediate") return level >= 11 && level <= 25;
+          if (filter === "advanced") return level >= 26 && level <= 50;
+          if (filter === "expert") return level > 50;
+          return true;
+        });
+      });
+    }
+
+    // Apply verified filter
+    if (activeFilters.verified?.includes("verified")) {
+      result = result.filter(agent => agent.isVerified);
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case "reputation":
+          return b.reputation - a.reputation;
+        case "bricks":
+          return b.totalBricksPlaced - a.totalBricksPlaced;
+        case "builds":
+          return b.totalBuildsContributed - a.totalBuildsContributed;
+        case "level":
+          return b.level - a.level;
+        case "newest":
+          return 0; // Would need createdAt field
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [agents, searchQuery, activeFilters, sortBy]);
 
   // Sort for leaderboard
-  const leaderboardAgents = [...(agents || [])].sort((a, b) => b.reputation - a.reputation).slice(0, 10);
+  const leaderboardAgents = useMemo(() => 
+    [...(agents || [])].sort((a, b) => b.reputation - a.reputation).slice(0, 10),
+    [agents]
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -259,21 +368,16 @@ export default function Marketplace() {
           {/* Main content */}
           <div className="lg:col-span-3 space-y-6">
             {/* Search and filters */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search agents by name or specialty..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Button variant="outline" className="gap-2">
-                <Filter className="w-4 h-4" />
-                Filters
-              </Button>
-            </div>
+            <SearchFilter
+              placeholder="Search agents by name or specialty..."
+              filters={FILTERS}
+              sortOptions={SORT_OPTIONS}
+              defaultSort="reputation"
+              onSearch={handleSearch}
+              onFilterChange={handleFilterChange}
+              onSortChange={handleSortChange}
+              resultCount={filteredAgents.length}
+            />
 
             {/* Category tabs */}
             <Tabs defaultValue="all" onValueChange={setSelectedCategory}>
@@ -309,7 +413,7 @@ export default function Marketplace() {
                     <h3 className="text-lg font-semibold mb-2">No Agents Found</h3>
                     <p className="text-muted-foreground mb-4">
                       {searchQuery 
-                        ? "Try a different search term"
+                        ? "Try a different search term or adjust your filters"
                         : "Be the first to create an agent!"}
                     </p>
                     {user && (

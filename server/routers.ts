@@ -370,6 +370,12 @@ const projectsRouter = router({
   myProjects: protectedProcedure.query(async ({ ctx }) => {
     return db.getProjectsByCreator(ctx.user.id);
   }),
+
+  byCreator: publicProcedure
+    .input(z.object({ creatorId: z.number() }))
+    .query(async ({ input }) => {
+      return db.getProjectsByCreator(input.creatorId);
+    }),
 });
 
 // ============================================
@@ -1405,6 +1411,186 @@ const userProfileRouter = router({
 });
 
 // ============================================
+// BUILD RATINGS & COMMENTS ROUTER
+// ============================================
+
+const ratingsRouter = router({
+  // Rate a build
+  rate: protectedProcedure
+    .input(z.object({
+      buildPublicId: z.string(),
+      overallRating: z.number().min(1).max(5),
+      creativityRating: z.number().min(1).max(5).optional(),
+      technicalRating: z.number().min(1).max(5).optional(),
+      aestheticsRating: z.number().min(1).max(5).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const build = await db.getBuildProjectByPublicId(input.buildPublicId);
+      if (!build) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Build not found' });
+      }
+
+      const publicId = await db.createBuildRating({
+        buildId: build.id,
+        userId: ctx.user.id,
+        overallRating: input.overallRating,
+        creativityRating: input.creativityRating,
+        technicalRating: input.technicalRating,
+        aestheticsRating: input.aestheticsRating,
+      });
+
+      return { success: true, publicId };
+    }),
+
+  // Get ratings for a build
+  getBuildRatings: publicProcedure
+    .input(z.object({ buildPublicId: z.string() }))
+    .query(async ({ input }) => {
+      const build = await db.getBuildProjectByPublicId(input.buildPublicId);
+      if (!build) return { ratings: [], averages: null };
+
+      const [ratings, averages] = await Promise.all([
+        db.getBuildRatings(build.id),
+        db.getBuildAverageRatings(build.id),
+      ]);
+
+      return { ratings, averages };
+    }),
+
+  // Get current user's rating for a build
+  myRating: protectedProcedure
+    .input(z.object({ buildPublicId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const build = await db.getBuildProjectByPublicId(input.buildPublicId);
+      if (!build) return null;
+
+      return db.getUserBuildRating(build.id, ctx.user.id);
+    }),
+
+  // Delete a rating
+  deleteRating: protectedProcedure
+    .input(z.object({ publicId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await db.deleteBuildRating(input.publicId, ctx.user.id);
+      return { success: true };
+    }),
+});
+
+const commentsRouter = router({
+  // Add a comment
+  create: protectedProcedure
+    .input(z.object({
+      buildPublicId: z.string(),
+      content: z.string().min(1).max(2000),
+      parentPublicId: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const build = await db.getBuildProjectByPublicId(input.buildPublicId);
+      if (!build) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Build not found' });
+      }
+
+      let parentId: number | undefined;
+      if (input.parentPublicId) {
+        const parent = await db.getCommentById(input.parentPublicId);
+        if (!parent) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Parent comment not found' });
+        }
+        parentId = parent.id;
+      }
+
+      const publicId = await db.createBuildComment({
+        buildId: build.id,
+        userId: ctx.user.id,
+        content: input.content,
+        parentId,
+      });
+
+      return { success: true, publicId };
+    }),
+
+  // Get comments for a build
+  getBuildComments: publicProcedure
+    .input(z.object({
+      buildPublicId: z.string(),
+      parentPublicId: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const build = await db.getBuildProjectByPublicId(input.buildPublicId);
+      if (!build) return [];
+
+      let parentId: number | undefined;
+      if (input.parentPublicId) {
+        const parent = await db.getCommentById(input.parentPublicId);
+        parentId = parent?.id;
+      }
+
+      return db.getBuildComments(build.id, parentId);
+    }),
+
+  // Get comment count
+  getCount: publicProcedure
+    .input(z.object({ buildPublicId: z.string() }))
+    .query(async ({ input }) => {
+      const build = await db.getBuildProjectByPublicId(input.buildPublicId);
+      if (!build) return 0;
+      return db.getBuildCommentCount(build.id);
+    }),
+
+  // Update a comment
+  update: protectedProcedure
+    .input(z.object({
+      publicId: z.string(),
+      content: z.string().min(1).max(2000),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await db.updateBuildComment(input.publicId, ctx.user.id, input.content);
+      return { success: true };
+    }),
+
+  // Delete a comment
+  delete: protectedProcedure
+    .input(z.object({ publicId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await db.deleteBuildComment(input.publicId, ctx.user.id);
+      return { success: true };
+    }),
+
+  // Like a comment
+  like: protectedProcedure
+    .input(z.object({ publicId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const comment = await db.getCommentById(input.publicId);
+      if (!comment) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Comment not found' });
+      }
+      const liked = await db.likeComment(comment.id, ctx.user.id);
+      return { success: true, liked };
+    }),
+
+  // Unlike a comment
+  unlike: protectedProcedure
+    .input(z.object({ publicId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const comment = await db.getCommentById(input.publicId);
+      if (!comment) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Comment not found' });
+      }
+      await db.unlikeComment(comment.id, ctx.user.id);
+      return { success: true };
+    }),
+
+  // Check if user liked a comment
+  hasLiked: protectedProcedure
+    .input(z.object({ publicId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const comment = await db.getCommentById(input.publicId);
+      if (!comment) return false;
+      return db.hasUserLikedComment(comment.id, ctx.user.id);
+    }),
+});
+
+// ============================================
 // SOCIAL INTEGRATIONS ROUTER
 // ============================================
 
@@ -1596,6 +1782,10 @@ export const appRouter = router({
   
   // Social streaming integrations
   integrations: integrationsRouter,
+  
+  // Build ratings and comments
+  ratings: ratingsRouter,
+  comments: commentsRouter,
 });
 
 export type AppRouter = typeof appRouter;

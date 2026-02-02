@@ -1766,3 +1766,286 @@ export async function getActiveIntegrationsByPlatform(platform: string) {
       eq(socialIntegrations.isVerified, true)
     ));
 }
+
+
+// ============================================
+// BUILD RATINGS & COMMENTS
+// ============================================
+
+import { buildRatings, buildComments, commentLikes, InsertBuildRating, InsertBuildComment } from "../drizzle/schema";
+
+// Ratings
+
+export async function createBuildRating(data: {
+  buildId: number;
+  userId: number;
+  overallRating: number;
+  creativityRating?: number;
+  technicalRating?: number;
+  aestheticsRating?: number;
+}) {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const publicId = nanoid(16);
+  
+  await db.insert(buildRatings).values({
+    publicId,
+    buildId: data.buildId,
+    userId: data.userId,
+    overallRating: data.overallRating,
+    creativityRating: data.creativityRating,
+    technicalRating: data.technicalRating,
+    aestheticsRating: data.aestheticsRating,
+  }).onDuplicateKeyUpdate({
+    set: {
+      overallRating: data.overallRating,
+      creativityRating: data.creativityRating,
+      technicalRating: data.technicalRating,
+      aestheticsRating: data.aestheticsRating,
+      updatedAt: new Date(),
+    }
+  });
+
+  return publicId;
+}
+
+export async function getBuildRatings(buildId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select({
+    id: buildRatings.id,
+    publicId: buildRatings.publicId,
+    userId: buildRatings.userId,
+    overallRating: buildRatings.overallRating,
+    creativityRating: buildRatings.creativityRating,
+    technicalRating: buildRatings.technicalRating,
+    aestheticsRating: buildRatings.aestheticsRating,
+    createdAt: buildRatings.createdAt,
+    userName: users.name,
+    userDisplayName: users.displayName,
+  })
+    .from(buildRatings)
+    .leftJoin(users, eq(buildRatings.userId, users.id))
+    .where(eq(buildRatings.buildId, buildId))
+    .orderBy(desc(buildRatings.createdAt));
+}
+
+export async function getBuildAverageRatings(buildId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.select({
+    avgOverall: sql<number>`AVG(${buildRatings.overallRating})`,
+    avgCreativity: sql<number>`AVG(${buildRatings.creativityRating})`,
+    avgTechnical: sql<number>`AVG(${buildRatings.technicalRating})`,
+    avgAesthetics: sql<number>`AVG(${buildRatings.aestheticsRating})`,
+    totalRatings: sql<number>`COUNT(*)`,
+  })
+    .from(buildRatings)
+    .where(eq(buildRatings.buildId, buildId));
+
+  return result[0] || null;
+}
+
+export async function getUserBuildRating(buildId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select()
+    .from(buildRatings)
+    .where(and(
+      eq(buildRatings.buildId, buildId),
+      eq(buildRatings.userId, userId)
+    ))
+    .limit(1);
+
+  return result[0];
+}
+
+export async function deleteBuildRating(publicId: string, userId: number) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.delete(buildRatings)
+    .where(and(
+      eq(buildRatings.publicId, publicId),
+      eq(buildRatings.userId, userId)
+    ));
+}
+
+// Comments
+
+export async function createBuildComment(data: {
+  buildId: number;
+  userId: number;
+  content: string;
+  parentId?: number;
+}) {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const publicId = nanoid(16);
+  
+  const result = await db.insert(buildComments).values({
+    publicId,
+    buildId: data.buildId,
+    userId: data.userId,
+    content: data.content,
+    parentId: data.parentId,
+  });
+
+  // Update reply count on parent if this is a reply
+  if (data.parentId) {
+    await db.update(buildComments)
+      .set({ replyCount: sql`${buildComments.replyCount} + 1` })
+      .where(eq(buildComments.id, data.parentId));
+  }
+
+  return publicId;
+}
+
+export async function getBuildComments(buildId: number, parentId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const condition = parentId 
+    ? and(eq(buildComments.buildId, buildId), eq(buildComments.parentId, parentId), eq(buildComments.isDeleted, false))
+    : and(eq(buildComments.buildId, buildId), sql`${buildComments.parentId} IS NULL`, eq(buildComments.isDeleted, false));
+
+  return db.select({
+    id: buildComments.id,
+    publicId: buildComments.publicId,
+    userId: buildComments.userId,
+    content: buildComments.content,
+    isEdited: buildComments.isEdited,
+    likes: buildComments.likes,
+    replyCount: buildComments.replyCount,
+    createdAt: buildComments.createdAt,
+    updatedAt: buildComments.updatedAt,
+    userName: users.name,
+    userDisplayName: users.displayName,
+    userAvatarUrl: users.avatarUrl,
+  })
+    .from(buildComments)
+    .leftJoin(users, eq(buildComments.userId, users.id))
+    .where(condition)
+    .orderBy(desc(buildComments.createdAt));
+}
+
+export async function getCommentById(publicId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select()
+    .from(buildComments)
+    .where(eq(buildComments.publicId, publicId))
+    .limit(1);
+
+  return result[0];
+}
+
+export async function updateBuildComment(publicId: string, userId: number, content: string) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(buildComments)
+    .set({ 
+      content, 
+      isEdited: true,
+      updatedAt: new Date() 
+    })
+    .where(and(
+      eq(buildComments.publicId, publicId),
+      eq(buildComments.userId, userId)
+    ));
+}
+
+export async function deleteBuildComment(publicId: string, userId: number) {
+  const db = await getDb();
+  if (!db) return;
+
+  // Soft delete - mark as deleted but keep for reply count integrity
+  await db.update(buildComments)
+    .set({ 
+      isDeleted: true,
+      content: "[Comment deleted]",
+      updatedAt: new Date() 
+    })
+    .where(and(
+      eq(buildComments.publicId, publicId),
+      eq(buildComments.userId, userId)
+    ));
+}
+
+export async function likeComment(commentId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return false;
+
+  try {
+    await db.insert(commentLikes).values({
+      commentId,
+      userId,
+    });
+
+    // Increment like count
+    await db.update(buildComments)
+      .set({ likes: sql`${buildComments.likes} + 1` })
+      .where(eq(buildComments.id, commentId));
+
+    return true;
+  } catch (error) {
+    // Duplicate - user already liked
+    return false;
+  }
+}
+
+export async function unlikeComment(commentId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return false;
+
+  const result = await db.delete(commentLikes)
+    .where(and(
+      eq(commentLikes.commentId, commentId),
+      eq(commentLikes.userId, userId)
+    ));
+
+  // Decrement like count if we deleted something
+  await db.update(buildComments)
+    .set({ likes: sql`GREATEST(${buildComments.likes} - 1, 0)` })
+    .where(eq(buildComments.id, commentId));
+
+  return true;
+}
+
+export async function hasUserLikedComment(commentId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return false;
+
+  const result = await db.select()
+    .from(commentLikes)
+    .where(and(
+      eq(commentLikes.commentId, commentId),
+      eq(commentLikes.userId, userId)
+    ))
+    .limit(1);
+
+  return result.length > 0;
+}
+
+export async function getBuildCommentCount(buildId: number) {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const result = await db.select({
+    count: sql<number>`COUNT(*)`,
+  })
+    .from(buildComments)
+    .where(and(
+      eq(buildComments.buildId, buildId),
+      eq(buildComments.isDeleted, false)
+    ));
+
+  return result[0]?.count || 0;
+}

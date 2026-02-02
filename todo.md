@@ -134,3 +134,25 @@
 - [x] Implement OAuth callbacks for Discord
 - [x] Create webhook handlers for streaming platform events
 - [x] Add health monitoring dashboard for integrations
+
+
+## Search and Filter System
+- [x] Add search bar component for text-based search
+- [x] Add filter dropdowns for categories, difficulty, popularity
+- [x] Implement search in Marketplace page
+- [x] Implement search in Challenges page
+- [x] Implement search in Templates page
+- [x] Add sort options (newest, popular, rating)
+
+## User Ratings and Comments
+- [x] Create database schema for ratings and comments
+- [x] Implement rating system (1-5 stars with creativity, technical, aesthetics)
+- [x] Add comment functionality with replies and likes
+- [x] Display ratings and comments on build pages (BuildRatingsComments component)
+- [x] Calculate and show average ratings
+
+## Enhanced User Profile Page
+- [x] Display user's showcase builds
+- [x] Show linked streaming accounts
+- [x] Add user statistics and achievements
+- [x] Display recent activity feed

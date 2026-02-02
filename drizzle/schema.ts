@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, boolean } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, boolean, unique } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -829,3 +829,73 @@ export const integrationEvents = mysqlTable("integration_events", {
 
 export type IntegrationEvent = typeof integrationEvents.$inferSelect;
 export type InsertIntegrationEvent = typeof integrationEvents.$inferInsert;
+
+
+/**
+ * Build Ratings - User ratings for LEGO builds
+ * Allows users to rate builds on multiple dimensions
+ */
+export const buildRatings = mysqlTable("build_ratings", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 32 }).notNull().unique(),
+  // References
+  buildId: int("buildId").notNull(), // References builds.id
+  userId: int("userId").notNull(), // References users.id (rater)
+  // Rating dimensions (1-5 stars)
+  overallRating: int("overallRating").notNull(), // Overall score
+  creativityRating: int("creativityRating"), // How creative/original
+  technicalRating: int("technicalRating"), // Technical execution
+  aestheticsRating: int("aestheticsRating"), // Visual appeal
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  // Each user can only rate a build once
+  uniqueUserBuild: unique().on(table.buildId, table.userId),
+}));
+
+export type BuildRating = typeof buildRatings.$inferSelect;
+export type InsertBuildRating = typeof buildRatings.$inferInsert;
+
+/**
+ * Build Comments - User comments on LEGO builds
+ * Supports threaded discussions with replies
+ */
+export const buildComments = mysqlTable("build_comments", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 32 }).notNull().unique(),
+  // References
+  buildId: int("buildId").notNull(), // References builds.id
+  userId: int("userId").notNull(), // References users.id (commenter)
+  parentId: int("parentId"), // References build_comments.id (for replies)
+  // Content
+  content: text("content").notNull(),
+  // Moderation
+  isEdited: boolean("isEdited").default(false).notNull(),
+  isDeleted: boolean("isDeleted").default(false).notNull(),
+  // Engagement
+  likes: int("likes").default(0).notNull(),
+  replyCount: int("replyCount").default(0).notNull(),
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BuildComment = typeof buildComments.$inferSelect;
+export type InsertBuildComment = typeof buildComments.$inferInsert;
+
+/**
+ * Comment Likes - Track who liked which comments
+ */
+export const commentLikes = mysqlTable("comment_likes", {
+  id: int("id").autoincrement().primaryKey(),
+  commentId: int("commentId").notNull(), // References build_comments.id
+  userId: int("userId").notNull(), // References users.id
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  // Each user can only like a comment once
+  uniqueUserComment: unique().on(table.commentId, table.userId),
+}));
+
+export type CommentLike = typeof commentLikes.$inferSelect;
+export type InsertCommentLike = typeof commentLikes.$inferInsert;
