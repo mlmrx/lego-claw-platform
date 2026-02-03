@@ -1,295 +1,540 @@
 /**
- * Live Build Page
- * Watch AI agents collaborate and build LEGO creations in real-time
+ * Live Build Page - Autonomous AI Agent Collaboration
+ * Watch AI agents collaborate, discuss, and build LEGO creations in real-time
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRoute, Link } from "wouter";
 import { Header } from "@/components/Header";
-import { BuildViewer } from "@/components/BuildViewer";
-import { ChatStream } from "@/components/ChatStream";
-import { UserChat } from "@/components/UserChat";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AgentSidebar } from "@/components/AgentSidebar";
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
-import { defaultAgents, type Agent } from "@/lib/agents";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Play, 
   Pause, 
   RotateCcw, 
-  Camera, 
   Users, 
   Puzzle, 
   Clock,
   ArrowLeft,
   Sparkles,
-  Image as ImageIcon,
-  Menu,
-  X,
   Bot,
-  MessageCircle
+  MessageCircle,
+  Lightbulb,
+  CheckCircle,
+  XCircle,
+  Hammer,
+  PartyPopper,
+  Brain,
+  Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Action type icons
+const ACTION_ICONS: Record<string, React.ReactNode> = {
+  think: <Brain className="w-4 h-4 text-purple-500" />,
+  speak: <MessageCircle className="w-4 h-4 text-blue-500" />,
+  propose: <Lightbulb className="w-4 h-4 text-yellow-500" />,
+  agree: <CheckCircle className="w-4 h-4 text-green-500" />,
+  disagree: <XCircle className="w-4 h-4 text-red-500" />,
+  build: <Hammer className="w-4 h-4 text-orange-500" />,
+  react: <Zap className="w-4 h-4 text-cyan-500" />,
+  celebrate: <PartyPopper className="w-4 h-4 text-pink-500" />,
+};
+
+// Action type labels
+const ACTION_LABELS: Record<string, string> = {
+  think: "Thinking",
+  speak: "Speaking",
+  propose: "Proposing",
+  agree: "Agrees",
+  disagree: "Disagrees",
+  build: "Building",
+  react: "Reacting",
+  celebrate: "Celebrating",
+};
+
+interface AgentAction {
+  type: string;
+  agentId: string;
+  agentName: string;
+  agentEmoji: string;
+  content: string;
+  timestamp: number;
+  brickData?: {
+    x: number;
+    y: number;
+    z: number;
+    color: string;
+    type: string;
+    reasoning: string;
+  };
+  targetAgentName?: string;
+}
+
+interface BrickPlacement {
+  x: number;
+  y: number;
+  z: number;
+  color: string;
+  type: string;
+  placedBy: string;
+  timestamp: number;
+}
+
 export default function LiveBuild() {
-  const [, params] = useRoute("/live/:projectId");
-  const projectId = params?.projectId;
+  const [, params] = useRoute("/live/:sessionId");
+  const sessionIdFromUrl = params?.sessionId;
   
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [agents, setAgents] = useState<Agent[]>(defaultAgents);
+  const [sessionId, setSessionId] = useState<string | null>(sessionIdFromUrl || null);
+  const [lastPollTime, setLastPollTime] = useState(0);
+  const [actions, setActions] = useState<AgentAction[]>([]);
+  const [bricks, setBricks] = useState<BrickPlacement[]>([]);
+  const [isStarting, setIsStarting] = useState(false);
+  const actionsEndRef = useRef<HTMLDivElement>(null);
 
-  // Fetch project details if we have a projectId
-  const { data: project, isLoading: projectLoading } = trpc.projects.byId.useQuery(
-    { publicId: projectId || "" },
-    { enabled: !!projectId }
-  );
-
-  // Get live build state
-  const { data: buildState } = trpc.agents.getCurrentBuild.useQuery(undefined, {
-    refetchInterval: isPlaying ? 2000 : false,
+  // Start demo session mutation
+  const startDemo = trpc.liveBuild.startDemoSession.useMutation({
+    onSuccess: (data) => {
+      setSessionId(data.sessionId);
+      setLastPollTime(Date.now());
+      setActions([]);
+      setBricks([]);
+    },
   });
 
-  // Generate next action mutation
-  const generateAction = trpc.agents.generateNextAction.useMutation();
+  // Get session state
+  const { data: sessionState, refetch: refetchState } = trpc.liveBuild.getSessionState.useQuery(
+    { sessionId: sessionId || "" },
+    { 
+      enabled: !!sessionId,
+      refetchInterval: false,
+    }
+  );
 
-  // Auto-generate actions when playing
+  // Poll for new actions
+  const { data: pollData } = trpc.liveBuild.pollActions.useQuery(
+    { sessionId: sessionId || "", afterTimestamp: lastPollTime },
+    { 
+      enabled: !!sessionId && lastPollTime > 0,
+      refetchInterval: 1500,
+    }
+  );
+
+  // Process poll data
   useEffect(() => {
-    if (!isPlaying) return;
+    if (pollData && pollData.actions.length > 0) {
+      setActions(prev => [...prev, ...pollData.actions]);
+      setLastPollTime(Date.now());
+    }
+    if (pollData && pollData.bricks.length > 0) {
+      setBricks(prev => [...prev, ...pollData.bricks]);
+    }
+  }, [pollData]);
 
-    const interval = setInterval(() => {
-      generateAction.mutate();
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [isPlaying]);
-
-  // Simulate agent status changes
+  // Auto-scroll to bottom of actions
   useEffect(() => {
-    const interval = setInterval(() => {
-      setAgents(prev => prev.map(agent => {
-        if (Math.random() > 0.85) {
-          const statuses: typeof agent.status[] = ['building', 'thinking', 'chatting', 'idle'];
-          const newStatus = statuses[Math.floor(Math.random() * statuses.length)];
-          return { ...agent, status: newStatus };
-        }
-        return agent;
-      }));
-    }, 5000);
+    actionsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [actions]);
 
-    return () => clearInterval(interval);
-  }, []);
+  // Load initial session state
+  useEffect(() => {
+    if (sessionState && actions.length === 0) {
+      setActions(sessionState.recentActions || []);
+      setBricks(sessionState.bricks || []);
+      setLastPollTime(Date.now());
+    }
+  }, [sessionState]);
 
-  const handleReset = () => {
-    // Reset build state
-    trpc.agents.resetBuild.useMutation().mutate();
+  const handleStartDemo = async () => {
+    setIsStarting(true);
+    try {
+      await startDemo.mutateAsync();
+    } finally {
+      setIsStarting(false);
+    }
   };
 
-  // Calculate progress
-  const progress = buildState?.brickCount 
-    ? Math.min(100, Math.round((buildState.brickCount / 50) * 100))
-    : 0;
+  const totalBricks = pollData?.totalBricks || sessionState?.totalBricks || bricks.length;
+  const currentPhase = pollData?.phase || sessionState?.phase || "planning";
+  const isActive = pollData?.isActive ?? sessionState?.isActive ?? false;
+
+  // Phase progress
+  const phaseProgress: Record<string, number> = {
+    planning: 10,
+    foundation: 30,
+    structure: 60,
+    details: 85,
+    finishing: 100,
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
 
-      {/* Mobile Menu Toggle */}
-      <div className="lg:hidden fixed bottom-4 right-4 z-50">
-        <Button
-          size="icon"
-          className="w-14 h-14 rounded-full shadow-lg"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-        >
-          {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </Button>
-      </div>
-
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Agent Sidebar - Left */}
-        <motion.aside
-          initial={{ x: -300 }}
-          animate={{ x: 0 }}
-          className={cn(
-            "w-72 border-r border-border bg-card flex-shrink-0",
-            "hidden lg:flex flex-col"
-          )}
-        >
-          <AgentSidebar agents={agents} />
-        </motion.aside>
-
-        {/* Mobile Sidebar Overlay */}
-        <AnimatePresence>
-          {sidebarOpen && (
+      <main className="flex-1 container py-4 sm:py-6">
+        {/* No active session - show start screen */}
+        {!sessionId && (
+          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 lg:hidden"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="max-w-2xl"
             >
-              <div 
-                className="absolute inset-0 bg-black/50"
-                onClick={() => setSidebarOpen(false)}
-              />
-              <motion.div
-                initial={{ x: -300 }}
-                animate={{ x: 0 }}
-                exit={{ x: -300 }}
-                className="absolute left-0 top-0 bottom-0 w-72 bg-card border-r border-border"
-              >
-                <AgentSidebar agents={agents} />
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                <Bot className="w-12 h-12 text-primary" />
+              </div>
+              
+              <h1 className="text-3xl sm:text-4xl font-heading font-bold mb-4">
+                Autonomous AI Agent Collaboration
+              </h1>
+              
+              <p className="text-lg text-muted-foreground mb-8">
+                Watch AI agents with unique personalities collaborate, discuss design decisions, 
+                and build amazing LEGO creations together. Each agent brings their own skills 
+                and creative perspective to the build.
+              </p>
 
-        {/* Center Content */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Project Header (if viewing a specific project) */}
-          {projectId && project && (
-            <div className="border-b border-border p-3 sm:p-4 bg-card/50">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                <Link href="/live">
-                  <Button variant="ghost" size="sm" className="w-fit">
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    All Builds
-                  </Button>
-                </Link>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h1 className="text-lg sm:text-xl font-heading font-bold truncate">
-                      {project.name}
-                    </h1>
-                    {project.sourceImageUrl && (
-                      <Badge variant="secondary" className="flex-shrink-0">
-                        <ImageIcon className="w-3 h-3 mr-1" />
-                        From Image
-                      </Badge>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+                <Card className="p-4 text-center">
+                  <div className="text-2xl mb-1">🏗️</div>
+                  <div className="text-sm font-medium">Archie</div>
+                  <div className="text-xs text-muted-foreground">Architect</div>
+                </Card>
+                <Card className="p-4 text-center">
+                  <div className="text-2xl mb-1">🎨</div>
+                  <div className="text-sm font-medium">Palette</div>
+                  <div className="text-xs text-muted-foreground">Artist</div>
+                </Card>
+                <Card className="p-4 text-center">
+                  <div className="text-2xl mb-1">🔍</div>
+                  <div className="text-sm font-medium">Pixel</div>
+                  <div className="text-xs text-muted-foreground">Detailer</div>
+                </Card>
+                <Card className="p-4 text-center">
+                  <div className="text-2xl mb-1">🚀</div>
+                  <div className="text-sm font-medium">Nova</div>
+                  <div className="text-xs text-muted-foreground">Innovator</div>
+                </Card>
+              </div>
+
+              <Button 
+                size="lg" 
+                onClick={handleStartDemo}
+                disabled={isStarting}
+                className="px-8"
+              >
+                {isStarting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                    Starting Session...
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-5 h-5 mr-2" />
+                    Start Live Build Session
+                  </>
+                )}
+              </Button>
+              
+              <p className="text-sm text-muted-foreground mt-4">
+                The agents will autonomously collaborate and build without human intervention
+              </p>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Active session */}
+        {sessionId && (
+          <div className="space-y-4">
+            {/* Session Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl sm:text-2xl font-heading font-bold">
+                    {sessionState?.projectName || "Community LEGO Build"}
+                  </h1>
+                  <Badge variant={isActive ? "default" : "secondary"}>
+                    {isActive ? "Live" : "Completed"}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {sessionState?.projectDescription || "AI agents collaborating to create something amazing"}
+                </p>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleStartDemo}
+                  disabled={isStarting}
+                >
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  New Session
+                </Button>
+              </div>
+            </div>
+
+            {/* Progress Bar */}
+            <Card className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="capitalize">
+                    {currentPhase}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    Phase {Object.keys(phaseProgress).indexOf(currentPhase) + 1} of 5
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 text-sm">
+                  <div className="flex items-center gap-1">
+                    <Puzzle className="w-4 h-4 text-primary" />
+                    <span className="font-medium">{totalBricks}</span>
+                    <span className="text-muted-foreground">bricks</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Users className="w-4 h-4 text-primary" />
+                    <span className="font-medium">{sessionState?.agents?.length || 4}</span>
+                    <span className="text-muted-foreground">agents</span>
+                  </div>
+                </div>
+              </div>
+              <Progress value={phaseProgress[currentPhase] || 0} className="h-2" />
+            </Card>
+
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Agent Activity Feed */}
+              <Card className="lg:col-span-2">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-primary" />
+                    Agent Collaboration
+                  </CardTitle>
+                  <CardDescription>
+                    Watch AI agents discuss, debate, and build together in real-time
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[400px] sm:h-[500px] pr-4">
+                    <div className="space-y-3">
+                      <AnimatePresence mode="popLayout">
+                        {actions.map((action, index) => (
+                          <motion.div
+                            key={`${action.timestamp}-${index}`}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className={cn(
+                              "p-3 rounded-lg border",
+                              action.type === "think" && "bg-purple-500/5 border-purple-500/20",
+                              action.type === "speak" && "bg-blue-500/5 border-blue-500/20",
+                              action.type === "propose" && "bg-yellow-500/5 border-yellow-500/20",
+                              action.type === "agree" && "bg-green-500/5 border-green-500/20",
+                              action.type === "disagree" && "bg-red-500/5 border-red-500/20",
+                              action.type === "build" && "bg-orange-500/5 border-orange-500/20",
+                              action.type === "react" && "bg-cyan-500/5 border-cyan-500/20",
+                              action.type === "celebrate" && "bg-pink-500/5 border-pink-500/20",
+                            )}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="text-2xl flex-shrink-0">
+                                {action.agentEmoji}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                  <span className="font-medium">{action.agentName}</span>
+                                  <Badge variant="outline" className="text-xs flex items-center gap-1">
+                                    {ACTION_ICONS[action.type]}
+                                    {ACTION_LABELS[action.type] || action.type}
+                                  </Badge>
+                                  {action.targetAgentName && (
+                                    <span className="text-xs text-muted-foreground">
+                                      → {action.targetAgentName}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-sm">{action.content}</p>
+                                
+                                {/* Brick placement details */}
+                                {action.brickData && (
+                                  <div className="mt-2 p-2 rounded bg-background/50 text-xs">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span 
+                                        className="w-4 h-4 rounded border"
+                                        style={{ backgroundColor: action.brickData.color }}
+                                      />
+                                      <span className="font-mono">
+                                        {action.brickData.type} at ({action.brickData.x}, {action.brickData.y}, {action.brickData.z})
+                                      </span>
+                                    </div>
+                                    <p className="text-muted-foreground mt-1 italic">
+                                      "{action.brickData.reasoning}"
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                              <span className="text-xs text-muted-foreground flex-shrink-0">
+                                {new Date(action.timestamp).toLocaleTimeString()}
+                              </span>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                      
+                      {actions.length === 0 && (
+                        <div className="text-center py-12 text-muted-foreground">
+                          <Bot className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                          <p>Waiting for agents to start collaborating...</p>
+                          <p className="text-sm mt-1">This may take a few seconds</p>
+                        </div>
+                      )}
+                      
+                      {isActive && actions.length > 0 && (
+                        <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                          <span className="text-sm">Agents are collaborating...</span>
+                        </div>
+                      )}
+                      
+                      <div ref={actionsEndRef} />
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+
+              {/* Agents Panel */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Users className="w-5 h-5 text-primary" />
+                    Active Agents
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {(sessionState?.agents || []).map((agent) => (
+                      <div 
+                        key={agent.id}
+                        className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div 
+                            className="w-10 h-10 rounded-full flex items-center justify-center text-xl"
+                            style={{ backgroundColor: `${agent.color}20` }}
+                          >
+                            {agent.emoji}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium">{agent.name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {getAgentRole(agent.id)}
+                            </div>
+                          </div>
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {(!sessionState?.agents || sessionState.agents.length === 0) && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">Loading agents...</p>
+                      </div>
                     )}
                   </div>
-                  <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                    {project.description}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
 
-          {/* Build Info Bar */}
-          <div className="border-b border-border p-3 sm:p-4 bg-muted/30">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-4 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <Badge variant={isPlaying ? "default" : "secondary"} className="animate-pulse">
-                    {isPlaying ? "LIVE" : "PAUSED"}
-                  </Badge>
-                  <span className="text-sm font-medium">
-                    {buildState?.name || "Starting new build..."}
-                  </span>
-                </div>
-                <div className="flex items-center gap-4 text-xs sm:text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Puzzle className="w-3.5 h-3.5" />
-                    {buildState?.brickCount || 0} bricks
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Users className="w-3.5 h-3.5" />
-                    {agents.filter(a => a.status !== 'idle').length} active
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant={isPlaying ? "outline" : "default"}
-                  onClick={() => setIsPlaying(!isPlaying)}
-                  className="h-8"
-                >
-                  {isPlaying ? (
-                    <>
-                      <Pause className="w-3.5 h-3.5 mr-1.5" />
-                      Pause
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-3.5 h-3.5 mr-1.5" />
-                      Resume
-                    </>
+                  {/* Build Stats */}
+                  <div className="mt-6 pt-4 border-t space-y-3">
+                    <h4 className="font-medium text-sm">Build Statistics</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="p-2 rounded bg-muted/50">
+                        <div className="text-muted-foreground text-xs">Total Bricks</div>
+                        <div className="font-bold text-lg">{totalBricks}</div>
+                      </div>
+                      <div className="p-2 rounded bg-muted/50">
+                        <div className="text-muted-foreground text-xs">Actions</div>
+                        <div className="font-bold text-lg">{actions.length}</div>
+                      </div>
+                      <div className="p-2 rounded bg-muted/50">
+                        <div className="text-muted-foreground text-xs">Proposals</div>
+                        <div className="font-bold text-lg">
+                          {actions.filter(a => a.type === "propose").length}
+                        </div>
+                      </div>
+                      <div className="p-2 rounded bg-muted/50">
+                        <div className="text-muted-foreground text-xs">Agreements</div>
+                        <div className="font-bold text-lg">
+                          {actions.filter(a => a.type === "agree").length}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Brick Visualization (simplified) */}
+            {bricks.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Puzzle className="w-5 h-5 text-primary" />
+                    Brick Placements
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {bricks.slice(-20).map((brick, index) => (
+                      <motion.div
+                        key={`${brick.timestamp}-${index}`}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="p-2 rounded border bg-card text-xs"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span 
+                            className="w-4 h-4 rounded border"
+                            style={{ backgroundColor: brick.color }}
+                          />
+                          <span className="font-mono">
+                            {brick.type}
+                          </span>
+                          <span className="text-muted-foreground">
+                            by {brick.placedBy}
+                          </span>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                  {bricks.length > 20 && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Showing last 20 of {bricks.length} bricks
+                    </p>
                   )}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleReset}
-                  className="h-8"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-                  New Build
-                </Button>
-              </div>
-            </div>
-            
-            {/* Progress Bar */}
-            <div className="mt-3">
-              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                <span>Build Progress</span>
-                <span>{progress}%</span>
-              </div>
-              <Progress value={progress} className="h-2" />
-            </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
-
-          {/* Build Viewer */}
-          <div className="flex-1 min-h-0 p-3 sm:p-4">
-            <BuildViewer />
-          </div>
-        </div>
-
-        {/* Chat Panel - Right */}
-        <motion.aside
-          initial={{ x: 300 }}
-          animate={{ x: 0 }}
-          className="w-full lg:w-80 xl:w-96 border-t lg:border-t-0 lg:border-l border-border bg-card flex-shrink-0 h-80 lg:h-auto flex flex-col"
-        >
-          <Tabs defaultValue="agents" className="flex-1 flex flex-col h-full">
-            <TabsList className="w-full justify-start rounded-none border-b border-border h-10 px-2 bg-transparent">
-              <TabsTrigger value="agents" className="gap-1.5 text-xs data-[state=active]:bg-muted">
-                <Bot className="w-3.5 h-3.5" />
-                Agent Chat
-              </TabsTrigger>
-              <TabsTrigger value="users" className="gap-1.5 text-xs data-[state=active]:bg-muted">
-                <MessageCircle className="w-3.5 h-3.5" />
-                Live Chat
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="agents" className="flex-1 m-0 overflow-hidden">
-              <ChatStream agents={agents} />
-            </TabsContent>
-            <TabsContent value="users" className="flex-1 m-0 overflow-hidden">
-              <UserChat projectId={projectId} />
-            </TabsContent>
-          </Tabs>
-        </motion.aside>
+        )}
       </main>
-
-      {/* Start Build CTA (when no specific project) */}
-      {!projectId && (
-        <div className="fixed bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 z-30">
-          <Link href="/start-build">
-            <Button size="lg" className="shadow-lg gap-2">
-              <Camera className="w-5 h-5" />
-              Upload Your Own LEGO Set
-            </Button>
-          </Link>
-        </div>
-      )}
     </div>
   );
+}
+
+// Helper to get agent role description
+function getAgentRole(agentId: string): string {
+  const roles: Record<string, string> = {
+    system_architect: "Structural Expert",
+    system_artist: "Color & Aesthetics",
+    system_detailer: "Fine Details",
+    system_innovator: "Creative Ideas",
+  };
+  return roles[agentId] || "LEGO Builder";
 }

@@ -247,3 +247,18 @@
 - [x] Create sample agent templates users can start from (Brick Master, Color Expert, etc.)
 - [x] Add clear success feedback after agent creation
 - [x] Show newly created agent with confirmation message
+
+
+## Autonomous AI Agent Collaboration System
+- [x] Create Agent Brain module - LLM-powered autonomous decision making for each agent
+- [x] Implement agent personality injection (bio, traits, skills affect LLM responses)
+- [x] Build Multi-Agent Collaboration Engine for agent-to-agent communication
+- [x] Create agent conversation/debate system for design decisions
+- [x] Implement Creative LEGO Generation - agents propose novel brick placements
+- [x] Build brick placement algorithm based on agent skills and creativity
+- [x] Create Live Build Orchestrator to run autonomous build sessions
+- [x] Implement turn-based agent actions (think → discuss → build → react)
+- [x] Add emergent behavior tracking (novel designs, unexpected collaborations)
+- [x] Update Live Build page to show real autonomous agent activity
+- [ ] Store agent conversations and build decisions in database
+- [ ] Add build history replay functionality
