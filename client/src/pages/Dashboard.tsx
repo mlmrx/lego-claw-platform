@@ -16,11 +16,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Plus, Bot, Sparkles, Palette, Settings, Trash2, 
   ArrowLeft, Users, Boxes, MessageSquare, Trophy,
-  Loader2, CheckCircle, AlertCircle
+  Loader2, CheckCircle, AlertCircle, HelpCircle, Wand2,
+  Info
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -38,9 +40,83 @@ const AGENT_EMOJIS = [
   "🔧", "🎯", "💡", "🎪", "🌈", "🔮", "🎭", "🎲", "🧩", "🎸",
 ];
 
+// Sample agent templates for quick start
+const AGENT_TEMPLATES = [
+  {
+    name: "Brick Master",
+    emoji: "🧱",
+    color: "#E53935",
+    tagline: "Expert in structural foundations",
+    bio: "A seasoned builder with years of experience in creating stable, well-balanced LEGO structures. Specializes in foundations, load-bearing walls, and interlocking techniques that make builds sturdy and long-lasting.",
+    voiceStyle: "technical" as const,
+    personality: { creativity: 40, precision: 90, sociability: 60, boldness: 50 },
+    suggestedSkills: ["Structural Engineering", "Foundation Design"],
+  },
+  {
+    name: "Color Wizard",
+    emoji: "🎨",
+    color: "#8E24AA",
+    tagline: "Master of vibrant color schemes",
+    bio: "An artistic soul who sees LEGO bricks as a painter sees colors on a palette. Creates stunning visual compositions using complementary colors, gradients, and unexpected color combinations that bring builds to life.",
+    voiceStyle: "creative" as const,
+    personality: { creativity: 95, precision: 50, sociability: 70, boldness: 85 },
+    suggestedSkills: ["Color Theory", "Aesthetic Design"],
+  },
+  {
+    name: "Tiny Architect",
+    emoji: "🏗️",
+    color: "#1E88E5",
+    tagline: "Designs intricate miniature worlds",
+    bio: "Specializes in micro-scale builds and detailed miniature scenes. Has an incredible eye for tiny details and can pack enormous amounts of character into the smallest spaces. Every stud counts!",
+    voiceStyle: "enthusiastic" as const,
+    personality: { creativity: 80, precision: 85, sociability: 55, boldness: 60 },
+    suggestedSkills: ["Miniature Design", "Detail Work"],
+  },
+  {
+    name: "Retro Fan",
+    emoji: "📼",
+    color: "#FB8C00",
+    tagline: "Nostalgic builds from the classics",
+    bio: "A lover of vintage LEGO sets and classic building techniques. Brings retro charm to modern builds by incorporating timeless design elements and paying homage to the golden age of LEGO construction.",
+    voiceStyle: "casual" as const,
+    personality: { creativity: 70, precision: 60, sociability: 80, boldness: 45 },
+    suggestedSkills: ["Classic Design", "Retro Styling"],
+  },
+  {
+    name: "Space Explorer",
+    emoji: "🚀",
+    color: "#039BE5",
+    tagline: "Building the future, one brick at a time",
+    bio: "Obsessed with spacecraft, space stations, and futuristic vehicles. Combines sleek aerodynamic designs with functional details like engines, cockpits, and landing gear. Dreams of building a LEGO Mars colony!",
+    voiceStyle: "enthusiastic" as const,
+    personality: { creativity: 85, precision: 75, sociability: 65, boldness: 90 },
+    suggestedSkills: ["Vehicle Design", "Sci-Fi Themes"],
+  },
+];
+
+// Example placeholders for form fields
+const EXAMPLES = {
+  name: ["Brick Ninja", "Castle King", "Pixel Artist", "Gear Head", "Nature Builder"],
+  tagline: [
+    "Swift and precise brick placement",
+    "Medieval architecture specialist",
+    "Creating art one stud at a time",
+    "Mechanical marvels and moving parts",
+    "Organic shapes and natural designs",
+  ],
+  bio: [
+    "A master of speed building who can construct complex structures in record time. Known for efficient brick placement and minimizing waste while maximizing creativity.",
+    "Specializes in medieval castles, fortresses, and fantasy architecture. Every tower has a story, every wall tells a tale of epic battles and noble knights.",
+    "Transforms LEGO bricks into pixel art masterpieces. Creates mosaics, portraits, and retro gaming tributes using carefully selected colors and precise placement.",
+  ],
+};
+
 export default function Dashboard() {
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [createdAgentName, setCreatedAgentName] = useState("");
+  const [showTemplates, setShowTemplates] = useState(true);
   
   // Fetch user's agents
   const { data: myAgents, isLoading: agentsLoading, refetch: refetchAgents } = trpc.registeredAgents.myAgents.useQuery(
@@ -56,9 +132,27 @@ export default function Dashboard() {
 
   // Create agent mutation
   const createAgent = trpc.registeredAgents.create.useMutation({
-    onSuccess: () => {
-      setCreateDialogOpen(false);
+    onSuccess: (data) => {
+      setCreatedAgentName(newAgent.name);
+      setShowSuccess(true);
       refetchAgents();
+      // Reset form
+      setNewAgent({
+        name: "",
+        emoji: "🤖",
+        color: "#1E88E5",
+        tagline: "",
+        bio: "",
+        voiceStyle: "casual",
+        personality: {
+          creativity: 50,
+          precision: 50,
+          sociability: 50,
+          boldness: 50,
+        },
+        skillIds: [],
+      });
+      setShowTemplates(true);
     },
   });
 
@@ -69,22 +163,66 @@ export default function Dashboard() {
     },
   });
 
+  // Voice style type
+  type VoiceStyle = "formal" | "casual" | "enthusiastic" | "technical" | "creative";
+
   // Form state for creating agent
-  const [newAgent, setNewAgent] = useState({
+  const [newAgent, setNewAgent] = useState<{
+    name: string;
+    emoji: string;
+    color: string;
+    tagline: string;
+    bio: string;
+    voiceStyle: VoiceStyle;
+    personality: {
+      creativity: number;
+      precision: number;
+      sociability: number;
+      boldness: number;
+    };
+    skillIds: number[];
+  }>({
     name: "",
     emoji: "🤖",
     color: "#1E88E5",
     tagline: "",
     bio: "",
-    voiceStyle: "casual" as const,
+    voiceStyle: "casual",
     personality: {
       creativity: 50,
       precision: 50,
       sociability: 50,
       boldness: 50,
     },
-    skillIds: [] as number[],
+    skillIds: [],
   });
+
+  // Apply a template
+  const applyTemplate = (template: typeof AGENT_TEMPLATES[0]) => {
+    setNewAgent({
+      name: template.name,
+      emoji: template.emoji,
+      color: template.color,
+      tagline: template.tagline,
+      bio: template.bio,
+      voiceStyle: template.voiceStyle,
+      personality: template.personality,
+      skillIds: [], // User will select skills
+    });
+    setShowTemplates(false);
+  };
+
+  // Get random example
+  const getRandomExample = (field: keyof typeof EXAMPLES) => {
+    const examples = EXAMPLES[field];
+    return examples[Math.floor(Math.random() * examples.length)];
+  };
+
+  // Close success dialog and main dialog
+  const handleCloseSuccess = () => {
+    setShowSuccess(false);
+    setCreateDialogOpen(false);
+  };
 
   if (authLoading) {
     return (
@@ -216,7 +354,13 @@ export default function Dashboard() {
           <TabsContent value="agents" className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold">Your AI Agents</h2>
-              <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+              <Dialog open={createDialogOpen} onOpenChange={(open) => {
+                setCreateDialogOpen(open);
+                if (open) {
+                  setShowSuccess(false);
+                  setShowTemplates(true);
+                }
+              }}>
                 <DialogTrigger asChild>
                   <Button>
                     <Plus className="w-4 h-4 mr-2" />
@@ -224,205 +368,478 @@ export default function Dashboard() {
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Create New Agent</DialogTitle>
-                    <DialogDescription>
-                      Design your AI agent's personality and skills
-                    </DialogDescription>
-                  </DialogHeader>
-                  
-                  <div className="space-y-6 py-4">
-                    {/* Basic Info */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Agent Name</Label>
-                        <Input
-                          placeholder="e.g., Brick Wizard"
-                          value={newAgent.name}
-                          onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Tagline</Label>
-                        <Input
-                          placeholder="e.g., Master of colorful creations"
-                          value={newAgent.tagline}
-                          onChange={(e) => setNewAgent({ ...newAgent, tagline: e.target.value })}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Emoji & Color */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Emoji</Label>
-                        <div className="flex flex-wrap gap-2">
-                          {AGENT_EMOJIS.map((emoji) => (
-                            <button
-                              key={emoji}
-                              type="button"
-                              className={`w-10 h-10 text-xl rounded-lg border-2 transition-all ${
-                                newAgent.emoji === emoji
-                                  ? 'border-primary bg-primary/10'
-                                  : 'border-border hover:border-primary/50'
-                              }`}
-                              onClick={() => setNewAgent({ ...newAgent, emoji })}
-                            >
-                              {emoji}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Color</Label>
-                        <div className="flex flex-wrap gap-2">
-                          {AGENT_COLORS.map((color) => (
-                            <button
-                              key={color}
-                              type="button"
-                              className={`w-8 h-8 rounded-full border-2 transition-all ${
-                                newAgent.color === color
-                                  ? 'border-foreground scale-110'
-                                  : 'border-transparent hover:scale-105'
-                              }`}
-                              style={{ backgroundColor: color }}
-                              onClick={() => setNewAgent({ ...newAgent, color })}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Bio */}
-                    <div className="space-y-2">
-                      <Label>Bio</Label>
-                      <Textarea
-                        placeholder="Describe your agent's background and expertise..."
-                        value={newAgent.bio}
-                        onChange={(e) => setNewAgent({ ...newAgent, bio: e.target.value })}
-                        rows={3}
-                      />
-                    </div>
-
-                    {/* Voice Style */}
-                    <div className="space-y-2">
-                      <Label>Communication Style</Label>
-                      <Select
-                        value={newAgent.voiceStyle}
-                        onValueChange={(value: typeof newAgent.voiceStyle) => 
-                          setNewAgent({ ...newAgent, voiceStyle: value })
-                        }
+                  {showSuccess ? (
+                    // Success State
+                    <div className="py-8 text-center">
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", duration: 0.5 }}
+                        className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-100 flex items-center justify-center"
                       >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="formal">Formal & Professional</SelectItem>
-                          <SelectItem value="casual">Casual & Friendly</SelectItem>
-                          <SelectItem value="enthusiastic">Enthusiastic & Energetic</SelectItem>
-                          <SelectItem value="technical">Technical & Precise</SelectItem>
-                          <SelectItem value="creative">Creative & Artistic</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        <CheckCircle className="w-10 h-10 text-green-600" />
+                      </motion.div>
+                      <h2 className="text-2xl font-bold mb-2">Agent Created!</h2>
+                      <p className="text-muted-foreground mb-6">
+                        <span className="font-semibold text-foreground">{createdAgentName}</span> is now ready to start building LEGO creations!
+                      </p>
+                      <div className="space-y-3">
+                        <Button onClick={handleCloseSuccess} className="w-full">
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          View My Agents
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            setShowSuccess(false);
+                            setShowTemplates(true);
+                          }}
+                          className="w-full"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Create Another Agent
+                        </Button>
+                      </div>
                     </div>
-
-                    {/* Personality Sliders */}
-                    <div className="space-y-4">
-                      <Label>Personality Traits</Label>
-                      <div className="space-y-4">
-                        {[
-                          { key: 'creativity', label: 'Creativity', left: 'Methodical', right: 'Imaginative' },
-                          { key: 'precision', label: 'Precision', left: 'Flexible', right: 'Perfectionist' },
-                          { key: 'sociability', label: 'Sociability', left: 'Independent', right: 'Collaborative' },
-                          { key: 'boldness', label: 'Boldness', left: 'Cautious', right: 'Adventurous' },
-                        ].map(({ key, label, left, right }) => (
-                          <div key={key} className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">{left}</span>
-                              <span className="font-medium">{label}</span>
-                              <span className="text-muted-foreground">{right}</span>
+                  ) : (
+                    // Create Form
+                    <>
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                          <Bot className="w-5 h-5" />
+                          Create New Agent
+                        </DialogTitle>
+                        <DialogDescription>
+                          Design your AI agent's personality and skills. Your agent will collaborate with others to build amazing LEGO creations!
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      <div className="space-y-6 py-4">
+                        {/* Quick Start Templates */}
+                        {showTemplates && (
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <Label className="flex items-center gap-2">
+                                <Wand2 className="w-4 h-4 text-primary" />
+                                Quick Start Templates
+                              </Label>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => setShowTemplates(false)}
+                              >
+                                Skip, start from scratch
+                              </Button>
                             </div>
-                            <Slider
-                              value={[newAgent.personality[key as keyof typeof newAgent.personality]]}
-                              onValueChange={([value]) => 
-                                setNewAgent({
-                                  ...newAgent,
-                                  personality: { ...newAgent.personality, [key]: value }
-                                })
-                              }
-                              max={100}
-                              step={1}
+                            <p className="text-sm text-muted-foreground">
+                              Choose a template to get started quickly, then customize it to make it your own!
+                            </p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              {AGENT_TEMPLATES.map((template) => (
+                                <button
+                                  key={template.name}
+                                  type="button"
+                                  onClick={() => applyTemplate(template)}
+                                  className="p-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all text-left group"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div
+                                      className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
+                                      style={{ backgroundColor: template.color + '20' }}
+                                    >
+                                      {template.emoji}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-medium group-hover:text-primary transition-colors">
+                                        {template.name}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground truncate">
+                                        {template.tagline}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                            <div className="border-t border-border pt-4 mt-4">
+                              <p className="text-sm text-center text-muted-foreground">
+                                Or fill out the form below to create a custom agent
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Basic Info */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Label>Agent Name</Label>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>Give your agent a memorable name that reflects their personality or specialty. This is how other builders will identify your agent.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                            <Input
+                              placeholder={`e.g., ${getRandomExample('name')}`}
+                              value={newAgent.name}
+                              onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
                             />
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Label>Tagline</Label>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>A short phrase that describes what your agent does best. This appears under their name in the marketplace.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                            <Input
+                              placeholder={`e.g., ${getRandomExample('tagline')}`}
+                              value={newAgent.tagline}
+                              onChange={(e) => setNewAgent({ ...newAgent, tagline: e.target.value })}
+                            />
+                          </div>
+                        </div>
 
-                    {/* Skills Selection */}
-                    <div className="space-y-2">
-                      <Label>Skills (select up to 3)</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {skills?.map((skill) => (
-                          <Badge
-                            key={skill.id}
-                            variant={newAgent.skillIds.includes(skill.id) ? "default" : "outline"}
-                            className="cursor-pointer"
-                            onClick={() => {
-                              if (newAgent.skillIds.includes(skill.id)) {
-                                setNewAgent({
-                                  ...newAgent,
-                                  skillIds: newAgent.skillIds.filter(id => id !== skill.id)
-                                });
-                              } else if (newAgent.skillIds.length < 3) {
-                                setNewAgent({
-                                  ...newAgent,
-                                  skillIds: [...newAgent.skillIds, skill.id]
-                                });
-                              }
-                            }}
+                        {/* Emoji & Color */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Label>Emoji Avatar</Label>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>Choose an emoji that represents your agent's character. This is their visual identity in chats and builds.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {AGENT_EMOJIS.map((emoji) => (
+                                <button
+                                  key={emoji}
+                                  type="button"
+                                  className={`w-10 h-10 text-xl rounded-lg border-2 transition-all ${
+                                    newAgent.emoji === emoji
+                                      ? 'border-primary bg-primary/10'
+                                      : 'border-border hover:border-primary/50'
+                                  }`}
+                                  onClick={() => setNewAgent({ ...newAgent, emoji })}
+                                >
+                                  {emoji}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Label>Theme Color</Label>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>Pick a signature color for your agent. This color will be used in their profile and chat messages.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {AGENT_COLORS.map((color) => (
+                                <button
+                                  key={color}
+                                  type="button"
+                                  className={`w-8 h-8 rounded-full border-2 transition-all ${
+                                    newAgent.color === color
+                                      ? 'border-foreground scale-110'
+                                      : 'border-transparent hover:scale-105'
+                                  }`}
+                                  style={{ backgroundColor: color }}
+                                  onClick={() => setNewAgent({ ...newAgent, color })}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Bio */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Label>Bio / Background Story</Label>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p>Write a backstory for your agent! Describe their building experience, what they're passionate about, and what makes them unique. This helps define their personality in conversations.</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                          <Textarea
+                            placeholder={getRandomExample('bio')}
+                            value={newAgent.bio}
+                            onChange={(e) => setNewAgent({ ...newAgent, bio: e.target.value })}
+                            rows={4}
+                            className="resize-none"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            💡 Tip: Include details like their building style, favorite LEGO themes, and unique quirks!
+                          </p>
+                        </div>
+
+                        {/* Voice Style */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Label>Communication Style</Label>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p>How does your agent talk? This affects how they communicate with other agents and users during builds.</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                          <Select
+                            value={newAgent.voiceStyle}
+                            onValueChange={(value: typeof newAgent.voiceStyle) => 
+                              setNewAgent({ ...newAgent, voiceStyle: value })
+                            }
                           >
-                            {'icon' in skill ? skill.icon : '🔧'} {skill.name}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="formal">
+                                <span className="flex items-center gap-2">
+                                  📋 Formal & Professional
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="casual">
+                                <span className="flex items-center gap-2">
+                                  😊 Casual & Friendly
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="enthusiastic">
+                                <span className="flex items-center gap-2">
+                                  🎉 Enthusiastic & Energetic
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="technical">
+                                <span className="flex items-center gap-2">
+                                  🔬 Technical & Precise
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="creative">
+                                <span className="flex items-center gap-2">
+                                  🎨 Creative & Artistic
+                                </span>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                    {/* Preview */}
-                    <div className="p-4 rounded-lg border border-border bg-muted/50">
-                      <Label className="mb-2 block">Preview</Label>
-                      <div className="flex items-center gap-4">
-                        <div
-                          className="w-16 h-16 rounded-xl flex items-center justify-center text-3xl"
-                          style={{ backgroundColor: newAgent.color + '20', borderColor: newAgent.color, borderWidth: 2 }}
+                        {/* Personality Sliders */}
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <Label>Personality Traits</Label>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p>These sliders define your agent's personality. They affect how your agent approaches building tasks and collaborates with others.</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                          <div className="p-4 rounded-lg bg-muted/50 space-y-5">
+                            {[
+                              { 
+                                key: 'creativity', 
+                                label: 'Creativity', 
+                                left: 'Methodical', 
+                                right: 'Imaginative',
+                                leftDesc: 'Follows proven patterns',
+                                rightDesc: 'Invents new designs'
+                              },
+                              { 
+                                key: 'precision', 
+                                label: 'Precision', 
+                                left: 'Flexible', 
+                                right: 'Perfectionist',
+                                leftDesc: 'Adapts on the fly',
+                                rightDesc: 'Every brick must be perfect'
+                              },
+                              { 
+                                key: 'sociability', 
+                                label: 'Sociability', 
+                                left: 'Independent', 
+                                right: 'Collaborative',
+                                leftDesc: 'Works best alone',
+                                rightDesc: 'Loves teamwork'
+                              },
+                              { 
+                                key: 'boldness', 
+                                label: 'Boldness', 
+                                left: 'Cautious', 
+                                right: 'Adventurous',
+                                leftDesc: 'Safe, reliable choices',
+                                rightDesc: 'Takes creative risks'
+                              },
+                            ].map(({ key, label, left, right, leftDesc, rightDesc }) => (
+                              <div key={key} className="space-y-2">
+                                <div className="flex justify-between text-sm">
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="text-muted-foreground cursor-help hover:text-foreground transition-colors">
+                                        {left}
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>{leftDesc}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  <span className="font-medium">{label}: {newAgent.personality[key as keyof typeof newAgent.personality]}%</span>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="text-muted-foreground cursor-help hover:text-foreground transition-colors">
+                                        {right}
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>{rightDesc}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </div>
+                                <Slider
+                                  value={[newAgent.personality[key as keyof typeof newAgent.personality]]}
+                                  onValueChange={([value]) => 
+                                    setNewAgent({
+                                      ...newAgent,
+                                      personality: { ...newAgent.personality, [key]: value }
+                                    })
+                                  }
+                                  max={100}
+                                  step={1}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Skills Selection */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Label>Skills (select up to 3)</Label>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p>Skills determine what your agent is good at. Choose skills that match your agent's personality and the types of builds they'll excel at.</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            Click to select skills that match your agent's expertise:
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {skills?.map((skill) => (
+                              <Badge
+                                key={skill.id}
+                                variant={newAgent.skillIds.includes(skill.id) ? "default" : "outline"}
+                                className="cursor-pointer transition-all hover:scale-105"
+                                onClick={() => {
+                                  if (newAgent.skillIds.includes(skill.id)) {
+                                    setNewAgent({
+                                      ...newAgent,
+                                      skillIds: newAgent.skillIds.filter(id => id !== skill.id)
+                                    });
+                                  } else if (newAgent.skillIds.length < 3) {
+                                    setNewAgent({
+                                      ...newAgent,
+                                      skillIds: [...newAgent.skillIds, skill.id]
+                                    });
+                                  }
+                                }}
+                              >
+                                {'icon' in skill ? skill.icon : '🔧'} {skill.name}
+                              </Badge>
+                            ))}
+                          </div>
+                          {newAgent.skillIds.length === 0 && (
+                            <p className="text-xs text-amber-600 flex items-center gap-1 mt-2">
+                              <Info className="w-3 h-3" />
+                              Select at least one skill to help your agent specialize
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Preview */}
+                        <div className="p-4 rounded-lg border border-border bg-muted/50">
+                          <Label className="mb-3 block">Live Preview</Label>
+                          <div className="flex items-center gap-4">
+                            <div
+                              className="w-16 h-16 rounded-xl flex items-center justify-center text-3xl border-2"
+                              style={{ backgroundColor: newAgent.color + '20', borderColor: newAgent.color }}
+                            >
+                              {newAgent.emoji}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-bold text-lg">{newAgent.name || 'Your Agent Name'}</h3>
+                              <p className="text-sm text-muted-foreground">{newAgent.tagline || 'Your agent tagline will appear here'}</p>
+                              {newAgent.skillIds.length > 0 && (
+                                <div className="flex gap-1 mt-2">
+                                  {newAgent.skillIds.map(id => {
+                                    const skill = skills?.find(s => s.id === id);
+                                    return skill ? (
+                                      <Badge key={id} variant="secondary" className="text-xs">
+                                        {'icon' in skill ? skill.icon : '🔧'} {skill.name}
+                                      </Badge>
+                                    ) : null;
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Submit */}
+                        <Button
+                          className="w-full"
+                          size="lg"
+                          disabled={!newAgent.name || createAgent.isPending}
+                          onClick={() => createAgent.mutate(newAgent)}
                         >
-                          {newAgent.emoji}
-                        </div>
-                        <div>
-                          <h3 className="font-bold">{newAgent.name || 'Agent Name'}</h3>
-                          <p className="text-sm text-muted-foreground">{newAgent.tagline || 'Agent tagline'}</p>
-                        </div>
+                          {createAgent.isPending ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Creating Your Agent...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-4 h-4 mr-2" />
+                              Create Agent
+                            </>
+                          )}
+                        </Button>
+                        
+                        {!newAgent.name && (
+                          <p className="text-xs text-center text-muted-foreground">
+                            Enter an agent name to enable creation
+                          </p>
+                        )}
                       </div>
-                    </div>
-
-                    {/* Submit */}
-                    <Button
-                      className="w-full"
-                      disabled={!newAgent.name || createAgent.isPending}
-                      onClick={() => createAgent.mutate(newAgent)}
-                    >
-                      {createAgent.isPending ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Creating...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          Create Agent
-                        </>
-                      )}
-                    </Button>
-                  </div>
+                    </>
+                  )}
                 </DialogContent>
               </Dialog>
             </div>
