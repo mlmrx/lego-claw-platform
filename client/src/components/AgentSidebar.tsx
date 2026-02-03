@@ -2,6 +2,7 @@
  * AgentSidebar Component
  * Design: Isometric LEGO Playground
  * Shows all active agents with their status and specialty
+ * Fully responsive for mobile devices
  */
 
 import { cn } from "@/lib/utils";
@@ -34,16 +35,16 @@ export function AgentSidebar({ agents, className }: AgentSidebarProps) {
   return (
     <div className={cn("flex flex-col h-full", className)}>
       {/* Header */}
-      <div className="p-4 border-b border-border">
+      <div className="p-3 sm:p-4 border-b border-border">
         <div className="flex items-center justify-between">
-          <h2 className="font-heading font-bold text-lg">Agents</h2>
-          <div className="flex items-center gap-2">
+          <h2 className="font-heading font-bold text-base sm:text-lg">Agents</h2>
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <motion.div
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ repeat: Infinity, duration: 2 }}
-              className="w-2 h-2 rounded-full bg-green-500"
+              className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500"
             />
-            <span className="text-sm text-muted-foreground">
+            <span className="text-xs sm:text-sm text-muted-foreground">
               {activeCount} active
             </span>
           </div>
@@ -52,7 +53,7 @@ export function AgentSidebar({ agents, className }: AgentSidebarProps) {
 
       {/* Agent List */}
       <ScrollArea className="flex-1">
-        <div className="p-3 space-y-2">
+        <div className="p-2 sm:p-3 space-y-1.5 sm:space-y-2">
           {sortedAgents.map((agent, index) => (
             <motion.div
               key={agent.id}
@@ -67,19 +68,19 @@ export function AgentSidebar({ agents, className }: AgentSidebarProps) {
       </ScrollArea>
 
       {/* Stats Footer */}
-      <div className="p-4 border-t border-border bg-muted/50">
-        <div className="grid grid-cols-2 gap-3 text-center">
+      <div className="p-3 sm:p-4 border-t border-border bg-muted/50">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 text-center">
           <div>
-            <div className="text-2xl font-bold font-heading text-primary">
+            <div className="text-xl sm:text-2xl font-bold font-heading text-primary">
               {agents.length}
             </div>
-            <div className="text-xs text-muted-foreground">Total Agents</div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground">Total Agents</div>
           </div>
           <div>
-            <div className="text-2xl font-bold font-heading text-green-600">
+            <div className="text-xl sm:text-2xl font-bold font-heading text-green-600">
               {agents.filter(a => a.status === 'building').length}
             </div>
-            <div className="text-xs text-muted-foreground">Building Now</div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground">Building Now</div>
           </div>
         </div>
       </div>
@@ -95,7 +96,7 @@ function AgentCard({ agent }: { agent: Agent }) {
     <motion.div
       whileHover={{ x: 4 }}
       className={cn(
-        "flex items-center gap-3 p-3 rounded-xl",
+        "flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl",
         "bg-card border border-border",
         "hover:border-primary/30 hover:shadow-sm",
         "transition-all duration-200",
@@ -107,16 +108,16 @@ function AgentCard({ agent }: { agent: Agent }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span 
-            className="font-heading font-bold text-sm truncate"
+            className="font-heading font-bold text-xs sm:text-sm truncate"
             style={{ color: agent.color }}
           >
             {agent.name}
           </span>
         </div>
-        <div className="text-xs text-muted-foreground truncate">
+        <div className="text-[10px] sm:text-xs text-muted-foreground truncate">
           {specialty}
         </div>
-        <div className="text-xs mt-1">
+        <div className="text-[10px] sm:text-xs mt-0.5 sm:mt-1">
           {statusLabels[status]}
         </div>
       </div>

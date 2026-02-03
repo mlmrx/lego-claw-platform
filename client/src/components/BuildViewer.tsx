@@ -2,6 +2,7 @@
  * BuildViewer Component
  * Design: Isometric LEGO Playground
  * Main visualization area showing 3D LEGO builds in progress
+ * Fully responsive for mobile devices
  */
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
@@ -161,51 +162,52 @@ export function BuildViewer({ className }: BuildViewerProps) {
   return (
     <div className={cn("flex flex-col h-full", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-primary/10">
-            <Puzzle className="w-5 h-5 text-primary" />
+      <div className="flex items-center justify-between p-2 sm:p-4 border-b border-border">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="p-1.5 sm:p-2 rounded-xl bg-primary/10">
+            <Puzzle className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
           </div>
           <div>
-            <h2 className="font-heading font-bold text-lg">3D Build Zone</h2>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <h2 className="font-heading font-bold text-sm sm:text-lg">3D Build Zone</h2>
+            <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
               <Eye className="w-4 h-4" />
               <span>Drag to rotate • Scroll to zoom</span>
             </div>
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={prevProject}>
-            <ChevronLeft className="w-5 h-5" />
+        <div className="flex items-center gap-1 sm:gap-2">
+          <Button variant="ghost" size="icon" onClick={prevProject} className="w-8 h-8 sm:w-9 sm:h-9">
+            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </Button>
-          <span className="text-sm text-muted-foreground">
+          <span className="text-xs sm:text-sm text-muted-foreground">
             {activeIndex + 1} / {BUILD_STRUCTURES.length}
           </span>
-          <Button variant="ghost" size="icon" onClick={nextProject}>
-            <ChevronRight className="w-5 h-5" />
+          <Button variant="ghost" size="icon" onClick={nextProject} className="w-8 h-8 sm:w-9 sm:h-9">
+            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
           </Button>
         </div>
       </div>
 
-      {/* Controls Bar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b border-border flex-wrap gap-2">
-        <div className="flex items-center gap-2">
+      {/* Controls Bar - Responsive */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-2 sm:px-4 py-2 bg-muted/50 border-b border-border gap-2">
+        {/* Primary Controls */}
+        <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
           <Button
             variant={isBuilding ? "default" : "secondary"}
             size="sm"
             onClick={() => setIsBuilding(!isBuilding)}
-            className="gap-2"
+            className="gap-1 sm:gap-2 h-8 text-xs sm:text-sm px-2 sm:px-3"
           >
             {isBuilding ? (
               <>
-                <Pause className="w-4 h-4" />
-                Pause
+                <Pause className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">Pause</span>
               </>
             ) : (
               <>
-                <Play className="w-4 h-4" />
-                Resume
+                <Play className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">Resume</span>
               </>
             )}
           </Button>
@@ -214,39 +216,39 @@ export function BuildViewer({ className }: BuildViewerProps) {
             variant="outline"
             size="sm"
             onClick={resetBuild}
-            className="gap-2"
+            className="gap-1 sm:gap-2 h-8 text-xs sm:text-sm px-2 sm:px-3"
           >
-            <RotateCcw className="w-4 h-4" />
-            Reset
+            <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden xs:inline">Reset</span>
           </Button>
           
           <Button
             variant={autoRotate ? "secondary" : "outline"}
             size="sm"
             onClick={() => setAutoRotate(!autoRotate)}
-            className="gap-2"
+            className="gap-1 sm:gap-2 h-8 text-xs sm:text-sm px-2 sm:px-3 hidden sm:flex"
           >
-            <RotateCcw className={cn("w-4 h-4", autoRotate && "animate-spin")} style={{ animationDuration: '3s' }} />
-            Auto-Rotate
+            <RotateCcw className={cn("w-3 h-3 sm:w-4 sm:h-4", autoRotate && "animate-spin")} style={{ animationDuration: '3s' }} />
+            <span className="hidden md:inline">Auto-Rotate</span>
           </Button>
 
           <Button
             variant={soundEnabled ? "secondary" : "outline"}
             size="sm"
             onClick={() => setSoundEnabled(!soundEnabled)}
-            className="gap-2"
+            className="gap-1 h-8 w-8 sm:w-auto sm:gap-2 text-xs sm:text-sm px-2 sm:px-3"
           >
             {soundEnabled ? (
-              <Volume2 className="w-4 h-4" />
+              <Volume2 className="w-3 h-3 sm:w-4 sm:h-4" />
             ) : (
-              <VolumeX className="w-4 h-4" />
+              <VolumeX className="w-3 h-3 sm:w-4 sm:h-4" />
             )}
-            Sound
+            <span className="hidden sm:inline">Sound</span>
           </Button>
         </div>
 
-        {/* Speed Control */}
-        <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-white/80 border border-border">
+        {/* Speed Control - Hidden on very small screens */}
+        <div className="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-white/80 border border-border">
           <Gauge className="w-4 h-4 text-muted-foreground" />
           <div className="flex items-center gap-2 min-w-[140px]">
             <Slider
@@ -263,12 +265,12 @@ export function BuildViewer({ className }: BuildViewerProps) {
           </div>
         </div>
 
-        {/* Current agent building */}
+        {/* Current agent building - Hidden on mobile */}
         {currentAgent && isBuilding && nextBrickIndex < totalBricks && (
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 text-green-800"
+            className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 text-green-800"
           >
             <motion.div
               animate={{ rotate: [0, 360] }}
@@ -282,7 +284,7 @@ export function BuildViewer({ className }: BuildViewerProps) {
       </div>
 
       {/* 3D Scene */}
-      <div className="flex-1 relative bg-gradient-to-br from-slate-100 to-slate-200">
+      <div className="flex-1 relative bg-gradient-to-br from-slate-100 to-slate-200 min-h-[250px] sm:min-h-[300px]">
         <LegoScene3D
           bricks={placedBricks}
           nextBrickPosition={nextBrick?.position}
@@ -293,56 +295,57 @@ export function BuildViewer({ className }: BuildViewerProps) {
         />
 
         {/* Live indicator */}
-        <div className="absolute top-4 left-4">
+        <div className="absolute top-2 sm:top-4 left-2 sm:left-4">
           <motion.div
             animate={isBuilding ? { scale: [1, 1.05, 1] } : {}}
             transition={{ repeat: Infinity, duration: 1.5 }}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold shadow-lg",
+              "flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1 sm:py-2 rounded-full text-xs sm:text-sm font-bold shadow-lg",
               isBuilding 
                 ? "bg-green-500 text-white" 
                 : "bg-gray-400 text-white"
             )}
           >
             <span className={cn(
-              "w-2 h-2 rounded-full",
+              "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full",
               isBuilding ? "bg-white animate-pulse" : "bg-gray-300"
             )} />
-            {isBuilding ? "BUILDING LIVE" : "PAUSED"}
+            <span className="hidden xs:inline">{isBuilding ? "BUILDING LIVE" : "PAUSED"}</span>
+            <span className="xs:hidden">{isBuilding ? "LIVE" : "PAUSED"}</span>
           </motion.div>
         </div>
 
         {/* Brick counter */}
-        <div className="absolute top-4 right-4">
+        <div className="absolute top-2 sm:top-4 right-2 sm:right-4">
           <AnimatePresence mode="wait">
             <motion.div
               key={placedBricks.length}
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
-              className="bg-white/95 backdrop-blur-sm px-4 py-2 rounded-xl shadow-lg"
+              className="bg-white/95 backdrop-blur-sm px-2 sm:px-4 py-1 sm:py-2 rounded-xl shadow-lg"
             >
               <div className="text-center">
-                <div className="text-2xl font-bold text-primary">{placedBricks.length}</div>
-                <div className="text-xs text-muted-foreground">bricks placed</div>
+                <div className="text-lg sm:text-2xl font-bold text-primary">{placedBricks.length}</div>
+                <div className="text-[10px] sm:text-xs text-muted-foreground">bricks</div>
               </div>
             </motion.div>
           </AnimatePresence>
         </div>
 
-        {/* Contributors */}
-        <div className="absolute bottom-4 left-4">
-          <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/95 backdrop-blur-sm shadow-lg">
+        {/* Contributors - Hidden on very small screens */}
+        <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 hidden xs:block">
+          <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-1 sm:py-2 rounded-xl bg-white/95 backdrop-blur-sm shadow-lg">
             <AgentAvatarGroup agents={buildingAgents.slice(0, 4)} max={4} size="sm" />
-            <span className="text-sm font-medium text-foreground">
-              {buildingAgents.length} agents building
+            <span className="text-xs sm:text-sm font-medium text-foreground">
+              {buildingAgents.length} agents
             </span>
           </div>
         </div>
 
-        {/* Sound indicator */}
+        {/* Sound indicator - Hidden on mobile */}
         {soundEnabled && (
-          <div className="absolute bottom-4 right-4">
+          <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 hidden sm:block">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/95 backdrop-blur-sm shadow-lg">
               <Volume2 className="w-4 h-4 text-green-600" />
               <span className="text-xs text-muted-foreground">Sound On</span>
@@ -352,37 +355,37 @@ export function BuildViewer({ className }: BuildViewerProps) {
       </div>
 
       {/* Build Info */}
-      <div className="p-4 border-t border-border bg-card">
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <h3 className="font-heading font-bold text-xl">
+      <div className="p-2 sm:p-4 border-t border-border bg-card">
+        <div className="flex items-start justify-between mb-2 sm:mb-3">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-heading font-bold text-base sm:text-xl truncate">
               {activeStructure.name}
             </h3>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1 sm:line-clamp-none">
               {activeStructure.description}
             </p>
           </div>
-          <div className="text-right">
+          <div className="text-right ml-2 flex-shrink-0">
             <motion.div 
-              className="text-3xl font-bold font-heading text-primary"
+              className="text-xl sm:text-3xl font-bold font-heading text-primary"
               key={progress}
               initial={{ scale: 1.2 }}
               animate={{ scale: 1 }}
             >
               {progress}%
             </motion.div>
-            <div className="text-xs text-muted-foreground">Complete</div>
+            <div className="text-[10px] sm:text-xs text-muted-foreground">Complete</div>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Progress value={progress} className="h-3" />
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <div className="space-y-1 sm:space-y-2">
+          <Progress value={progress} className="h-2 sm:h-3" />
+          <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
-              <Puzzle className="w-4 h-4" />
-              {placedBricks.length} / {totalBricks} bricks
+              <Puzzle className="w-3 h-3 sm:w-4 sm:h-4" />
+              {placedBricks.length} / {totalBricks}
             </span>
-            <span>
+            <span className="text-[10px] sm:text-sm">
               {nextBrickIndex < totalBricks 
                 ? estimatedTimeRemaining
                 : "Complete! 🎉"
@@ -393,8 +396,8 @@ export function BuildViewer({ className }: BuildViewerProps) {
       </div>
 
       {/* Project Thumbnails */}
-      <div className="p-4 border-t border-border">
-        <div className="flex gap-3 overflow-x-auto pb-2">
+      <div className="p-2 sm:p-4 border-t border-border">
+        <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 scrollbar-hide">
           {BUILD_STRUCTURES.map((structure, index) => (
             <motion.button
               key={structure.name}
@@ -402,14 +405,14 @@ export function BuildViewer({ className }: BuildViewerProps) {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className={cn(
-                "flex-shrink-0 px-4 py-3 rounded-xl border-2 transition-all text-left min-w-[140px]",
+                "flex-shrink-0 px-2 sm:px-4 py-2 sm:py-3 rounded-xl border-2 transition-all text-left min-w-[100px] sm:min-w-[140px]",
                 index === activeIndex 
                   ? "border-primary bg-primary/5 ring-2 ring-primary/30" 
                   : "border-border hover:border-primary/50 bg-card"
               )}
             >
-              <div className="font-heading font-bold text-sm">{structure.name}</div>
-              <div className="text-xs text-muted-foreground">{structure.bricks.length} bricks</div>
+              <div className="font-heading font-bold text-xs sm:text-sm truncate">{structure.name}</div>
+              <div className="text-[10px] sm:text-xs text-muted-foreground">{structure.bricks.length} bricks</div>
             </motion.button>
           ))}
         </div>
