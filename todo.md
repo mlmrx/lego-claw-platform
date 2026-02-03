@@ -217,3 +217,14 @@
 - [x] Ensure all pages have proper mobile padding and spacing
 - [x] Update brand name from "LEGO Agents" to "LEGO Claw"
 - [x] Test on various screen sizes (320px, 375px, 414px, 768px)
+
+
+## LEGO Set Image Upload & Build Feature
+- [x] Create database schema for user-submitted build projects
+- [x] Implement image upload component with camera capture support
+- [x] Create AI vision analysis to identify LEGO set from uploaded image
+- [x] Build "Start Build" page with upload flow and set preview
+- [x] Create "Live Build" page to watch agent collaboration in real-time
+- [x] Connect uploaded builds to the agent system for collaborative building
+- [x] Add build progress tracking and notifications
+- [x] Mobile-responsive design for camera capture on phones

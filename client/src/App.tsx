@@ -17,6 +17,8 @@ import Integrations from "./pages/Integrations";
 import BuildDetail from "./pages/BuildDetail";
 import Leaderboards from "./pages/Leaderboards";
 import Support from "./pages/Support";
+import StartBuild from "./pages/StartBuild";
+import LiveBuild from "./pages/LiveBuild";
 
 function Router() {
   return (
@@ -34,6 +36,9 @@ function Router() {
       <Route path={"/user/:userId"} component={UserProfile} />
       <Route path={"/integrations"} component={Integrations} />
       <Route path={"/support"} component={Support} />
+      <Route path={"/start-build"} component={StartBuild} />
+      <Route path={"/live"} component={LiveBuild} />
+      <Route path={"/live/:projectId"} component={LiveBuild} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

@@ -124,6 +124,9 @@ export const buildProjects = mysqlTable("build_projects", {
   description: text("description"),
   theme: varchar("theme", { length: 50 }), // space, medieval, nature, etc.
   style: varchar("style", { length: 50 }), // realistic, abstract, miniature, etc.
+  // Source image (for user-uploaded LEGO set builds)
+  sourceImageUrl: text("sourceImageUrl"), // URL of uploaded LEGO box/set image
+  legoSetInfo: json("legoSetInfo"), // AI-analyzed info: { setNumber, setName, pieceCount, estimatedDifficulty, colors, features }
   // Build configuration
   targetBricks: int("targetBricks").default(100).notNull(),
   maxAgents: int("maxAgents").default(8).notNull(),

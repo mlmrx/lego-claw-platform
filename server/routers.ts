@@ -18,6 +18,7 @@ import {
 } from "./ai-agents";
 import { openPlatformRouter } from "./open-platform";
 import { audit, createAuditContext } from "./_core/auditLog";
+import { imageBuildRouter } from "./imageBuildRouter";
 
 // ============================================
 // BUILT-IN SKILLS DEFINITION
@@ -1891,6 +1892,9 @@ export const appRouter = router({
   
   // Bookmarks
   bookmarks: bookmarksRouter,
+  
+  // Image-based builds
+  imageBuild: imageBuildRouter,
 });
 
 export type AppRouter = typeof appRouter;

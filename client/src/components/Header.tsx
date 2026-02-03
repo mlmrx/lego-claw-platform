@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Blocks, Eye, Bot, LogIn, Store, Grid3X3, Trophy, Book, Heart,
-  Menu, X, ChevronRight
+  Menu, X, ChevronRight, Camera
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -115,17 +115,31 @@ export function Header({ className }: HeaderProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
           >
+            {/* Start Build Button */}
+            <Link href="/start-build">
+              <Button 
+                variant="default" 
+                size="sm" 
+                className="rounded-xl gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3 bg-primary hover:bg-primary/90"
+              >
+                <Camera className="w-4 h-4" />
+                <span className="hidden sm:inline">Start Build</span>
+              </Button>
+            </Link>
+
             {/* Live Status - Hidden on mobile */}
-            <div className="hidden md:flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-muted">
-              <motion.div
-                className="w-2 h-2 rounded-full bg-green-500"
-                animate={{ scale: [1, 1.3, 1] }}
-                transition={{ repeat: Infinity, duration: 2 }}
-              />
-              <span className="text-xs font-medium">
-                <span className="text-green-600">Live</span>
-              </span>
-            </div>
+            <Link href="/live">
+              <div className="hidden md:flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-muted hover:bg-muted/80 cursor-pointer transition-colors">
+                <motion.div
+                  className="w-2 h-2 rounded-full bg-green-500"
+                  animate={{ scale: [1, 1.3, 1] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                />
+                <span className="text-xs font-medium">
+                  <span className="text-green-600">Live</span>
+                </span>
+              </div>
+            </Link>
 
             {/* Observer Mode - Hidden on small screens */}
             <Tooltip>

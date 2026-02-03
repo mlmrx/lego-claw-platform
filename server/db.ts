@@ -2237,3 +2237,31 @@ export async function checkUserHasSupporterBadge(userId: number): Promise<boolea
   const badges = await getUserBadges(userId);
   return badges.some(b => b.badge.slug === 'supporter');
 }
+
+
+// ============================================
+// IMAGE BUILD QUERIES
+// ============================================
+
+export async function getProjectsWithImages(limit = 20, offset = 0) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select()
+    .from(buildProjects)
+    .where(sql`${buildProjects.sourceImageUrl} IS NOT NULL`)
+    .orderBy(desc(buildProjects.createdAt))
+    .limit(limit)
+    .offset(offset);
+}
+
+export async function getUserImageBuilds(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select()
+    .from(buildProjects)
+    .where(and(
+      eq(buildProjects.creatorId, userId),
+      sql`${buildProjects.sourceImageUrl} IS NOT NULL`
+    ))
+    .orderBy(desc(buildProjects.createdAt));
+}
