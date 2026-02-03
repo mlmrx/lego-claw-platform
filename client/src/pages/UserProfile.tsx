@@ -33,7 +33,10 @@ import {
   Radio,
   CheckCircle,
   XCircle,
-  Eye
+  Eye,
+  Camera,
+  Image as ImageIcon,
+  History
 } from "lucide-react";
 
 // Helper functions for streaming platforms
@@ -274,26 +277,38 @@ export default function UserProfile() {
 
         {/* Tabs */}
         <Tabs defaultValue="agents" className="space-y-6">
-          <TabsList className={`grid w-full ${isOwnProfile ? 'grid-cols-5' : 'grid-cols-4'}`}>
-            <TabsTrigger value="agents" className="gap-2">
-              <Bot className="w-4 h-4" />
-              <span className="hidden sm:inline">Agents</span> ({agents.length})
+          <TabsList className={`grid w-full ${isOwnProfile ? 'grid-cols-6' : 'grid-cols-5'}`}>
+            <TabsTrigger value="agents" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Bot className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Agents</span>
+              <span className="sm:hidden">{agents.length}</span>
+              <span className="hidden sm:inline">({agents.length})</span>
             </TabsTrigger>
-            <TabsTrigger value="builds" className="gap-2">
-              <Blocks className="w-4 h-4" />
-              <span className="hidden sm:inline">Builds</span> ({builds.length})
+            <TabsTrigger value="builds" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Blocks className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Builds</span>
+              <span className="sm:hidden">{builds.length}</span>
+              <span className="hidden sm:inline">({builds.length})</span>
             </TabsTrigger>
-            <TabsTrigger value="challenges" className="gap-2">
-              <Trophy className="w-4 h-4" />
-              <span className="hidden sm:inline">Challenges</span> ({challenges.length})
+            <TabsTrigger value="submitted" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Camera className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Submitted</span>
             </TabsTrigger>
-            <TabsTrigger value="badges" className="gap-2">
-              <Award className="w-4 h-4" />
-              <span className="hidden sm:inline">Badges</span> ({badges.length})
+            <TabsTrigger value="challenges" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Trophy className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Challenges</span>
+              <span className="sm:hidden">{challenges.length}</span>
+              <span className="hidden sm:inline">({challenges.length})</span>
+            </TabsTrigger>
+            <TabsTrigger value="badges" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Award className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Badges</span>
+              <span className="sm:hidden">{badges.length}</span>
+              <span className="hidden sm:inline">({badges.length})</span>
             </TabsTrigger>
             {isOwnProfile && (
-              <TabsTrigger value="streaming" className="gap-2">
-                <Radio className="w-4 h-4" />
+              <TabsTrigger value="streaming" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+                <Radio className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span className="hidden sm:inline">Streaming</span>
               </TabsTrigger>
             )}
@@ -433,6 +448,130 @@ export default function UserProfile() {
                     </Card>
                   </motion.div>
                 ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Submitted Builds Tab - Image-based builds from user uploads */}
+          <TabsContent value="submitted">
+            {builds.filter((b: any) => b.sourceImageUrl).length === 0 ? (
+              <Card className="p-12 text-center">
+                <Camera className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Submitted Builds</h3>
+                <p className="text-muted-foreground mb-4">
+                  {isOwnProfile 
+                    ? "Upload a photo of a LEGO set to start building!"
+                    : "This user hasn't submitted any image-based builds yet."}
+                </p>
+                {isOwnProfile && (
+                  <Button asChild>
+                    <Link href="/start-build">
+                      <Camera className="w-4 h-4 mr-2" />
+                      Start Build from Image
+                    </Link>
+                  </Button>
+                )}
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                {/* Build History Timeline */}
+                <div className="flex items-center gap-2 mb-4">
+                  <History className="w-5 h-5 text-primary" />
+                  <h3 className="font-semibold">Build History</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {builds.filter((b: any) => b.sourceImageUrl).map((build: any, i: number) => (
+                    <motion.div
+                      key={build.publicId}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                    >
+                      <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+                        <div className="flex">
+                          {/* Source Image */}
+                          <div className="w-32 h-32 flex-shrink-0 bg-muted relative">
+                            {build.sourceImageUrl ? (
+                              <img 
+                                src={build.sourceImageUrl} 
+                                alt={build.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <ImageIcon className="w-8 h-8 text-muted-foreground/30" />
+                              </div>
+                            )}
+                            <Badge 
+                              variant="secondary" 
+                              className="absolute top-2 left-2 text-[10px]"
+                            >
+                              <ImageIcon className="w-2.5 h-2.5 mr-1" />
+                              Source
+                            </Badge>
+                          </div>
+                          {/* Build Info */}
+                          <CardContent className="flex-1 p-4">
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <h3 className="font-semibold line-clamp-1">{build.name}</h3>
+                              <Badge 
+                                variant={build.status === 'completed' ? 'default' : build.status === 'building' ? 'secondary' : 'outline'}
+                                className="capitalize text-xs flex-shrink-0"
+                              >
+                                {build.status}
+                              </Badge>
+                            </div>
+                            {build.legoSetInfo && (
+                              <div className="text-xs text-muted-foreground mb-2">
+                                {(() => {
+                                  try {
+                                    const info = typeof build.legoSetInfo === 'string' 
+                                      ? JSON.parse(build.legoSetInfo) 
+                                      : build.legoSetInfo;
+                                    return (
+                                      <span className="flex items-center gap-2">
+                                        {info.setNumber && <span>#{info.setNumber}</span>}
+                                        {info.pieceCount && <span>{info.pieceCount} pieces</span>}
+                                        {info.estimatedDifficulty && (
+                                          <Badge variant="outline" className="text-[10px] capitalize">
+                                            {info.estimatedDifficulty}
+                                          </Badge>
+                                        )}
+                                      </span>
+                                    );
+                                  } catch {
+                                    return null;
+                                  }
+                                })()}
+                              </div>
+                            )}
+                            <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                              {build.description || "Building in progress..."}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Box className="w-3 h-3" />
+                                  {build.currentBricks || 0}/{build.targetBricks || '?'}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {new Date(build.createdAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                              <Button size="sm" variant="ghost" asChild className="h-7 text-xs">
+                                <Link href={`/live/${build.publicId}`}>
+                                  <Eye className="w-3 h-3 mr-1" />
+                                  View
+                                </Link>
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </div>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
             )}
           </TabsContent>

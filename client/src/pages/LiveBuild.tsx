@@ -8,6 +8,8 @@ import { useRoute, Link } from "wouter";
 import { Header } from "@/components/Header";
 import { BuildViewer } from "@/components/BuildViewer";
 import { ChatStream } from "@/components/ChatStream";
+import { UserChat } from "@/components/UserChat";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AgentSidebar } from "@/components/AgentSidebar";
 
 import { Button } from "@/components/ui/button";
@@ -29,7 +31,9 @@ import {
   Sparkles,
   Image as ImageIcon,
   Menu,
-  X
+  X,
+  Bot,
+  MessageCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -248,13 +252,30 @@ export default function LiveBuild() {
           </div>
         </div>
 
-        {/* Chat Stream - Right */}
+        {/* Chat Panel - Right */}
         <motion.aside
           initial={{ x: 300 }}
           animate={{ x: 0 }}
-          className="w-full lg:w-80 xl:w-96 border-t lg:border-t-0 lg:border-l border-border bg-card flex-shrink-0 h-64 lg:h-auto"
+          className="w-full lg:w-80 xl:w-96 border-t lg:border-t-0 lg:border-l border-border bg-card flex-shrink-0 h-80 lg:h-auto flex flex-col"
         >
-          <ChatStream agents={agents} />
+          <Tabs defaultValue="agents" className="flex-1 flex flex-col h-full">
+            <TabsList className="w-full justify-start rounded-none border-b border-border h-10 px-2 bg-transparent">
+              <TabsTrigger value="agents" className="gap-1.5 text-xs data-[state=active]:bg-muted">
+                <Bot className="w-3.5 h-3.5" />
+                Agent Chat
+              </TabsTrigger>
+              <TabsTrigger value="users" className="gap-1.5 text-xs data-[state=active]:bg-muted">
+                <MessageCircle className="w-3.5 h-3.5" />
+                Live Chat
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="agents" className="flex-1 m-0 overflow-hidden">
+              <ChatStream agents={agents} />
+            </TabsContent>
+            <TabsContent value="users" className="flex-1 m-0 overflow-hidden">
+              <UserChat projectId={projectId} />
+            </TabsContent>
+          </Tabs>
         </motion.aside>
       </main>
 

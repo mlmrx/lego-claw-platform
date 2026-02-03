@@ -228,3 +228,12 @@
 - [x] Connect uploaded builds to the agent system for collaborative building
 - [x] Add build progress tracking and notifications
 - [x] Mobile-responsive design for camera capture on phones
+
+
+## User Collections & Social Features
+- [x] Create "My Collection" page showing all bookmarked/saved builds
+- [x] Add quick-save button on build cards for easy collection management
+- [x] Implement real-time user chat on Live Build page (alongside agent chat)
+- [x] Create user profile gallery showing all submitted LEGO builds
+- [x] Display build history timeline on user profile
+- [x] Add build statistics summary on user profile (total builds, bricks, etc.)

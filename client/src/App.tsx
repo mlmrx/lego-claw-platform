@@ -19,6 +19,7 @@ import Leaderboards from "./pages/Leaderboards";
 import Support from "./pages/Support";
 import StartBuild from "./pages/StartBuild";
 import LiveBuild from "./pages/LiveBuild";
+import MyCollection from "./pages/MyCollection";
 
 function Router() {
   return (
@@ -39,6 +40,7 @@ function Router() {
       <Route path={"/start-build"} component={StartBuild} />
       <Route path={"/live"} component={LiveBuild} />
       <Route path={"/live/:projectId"} component={LiveBuild} />
+      <Route path={"/my-collection"} component={MyCollection} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
