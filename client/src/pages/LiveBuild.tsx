@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Lego3DViewer, convertToBrickData } from "@/components/Lego3DViewer";
+import { MultiStreamDashboard } from "@/components/MultiStreamDashboard";
 
 // Action type icons
 const ACTION_ICONS: Record<string, React.ReactNode> = {
@@ -95,6 +96,7 @@ interface BrickPlacement {
 // Streaming Controls Component
 function StreamingControls({ sessionId }: { sessionId: string }) {
   const [showStreamDialog, setShowStreamDialog] = useState(false);
+  const [showMultiStreamDialog, setShowMultiStreamDialog] = useState(false);
   const [streamData, setStreamData] = useState<{
     streamKey: string;
     viewToken: string;
@@ -133,15 +135,26 @@ function StreamingControls({ sessionId }: { sessionId: string }) {
 
   return (
     <>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleCreateStream}
-        disabled={createStream.isPending}
-      >
-        <Video className="w-4 h-4 mr-2" />
-        {createStream.isPending ? "Setting up..." : "Stream to YouTube"}
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleCreateStream}
+          disabled={createStream.isPending}
+        >
+          <Video className="w-4 h-4 mr-2" />
+          {createStream.isPending ? "Setting up..." : "YouTube"}
+        </Button>
+        <Button
+          variant="default"
+          size="sm"
+          onClick={() => setShowMultiStreamDialog(true)}
+          className="bg-gradient-to-r from-red-500 via-purple-500 to-blue-500 hover:from-red-600 hover:via-purple-600 hover:to-blue-600"
+        >
+          <Zap className="w-4 h-4 mr-2" />
+          Multi-Stream
+        </Button>
+      </div>
 
       {showStreamDialog && streamData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -203,6 +216,31 @@ function StreamingControls({ sessionId }: { sessionId: string }) {
                   Done
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Multi-Platform Streaming Dialog */}
+      {showMultiStreamDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <Card className="w-full max-w-4xl max-h-[90vh] overflow-auto">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-primary" />
+                  Multi-Platform Streaming
+                </CardTitle>
+                <CardDescription>
+                  Stream to YouTube, Twitch, TikTok, and more simultaneously
+                </CardDescription>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setShowMultiStreamDialog(false)}>
+                ✕
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <MultiStreamDashboard buildSessionId={sessionId} onClose={() => setShowMultiStreamDialog(false)} />
             </CardContent>
           </Card>
         </div>

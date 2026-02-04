@@ -21,6 +21,7 @@ import { audit, createAuditContext } from "./_core/auditLog";
 import { imageBuildRouter } from "./imageBuildRouter";
 import { liveBuildRouter } from "./liveBuildRouter";
 import { youtubeStreamingRouter } from "./youtubeStreaming";
+import { multiStreamRouter } from "./multiStreamRouter";
 
 // ============================================
 // BUILT-IN SKILLS DEFINITION
@@ -1903,6 +1904,9 @@ export const appRouter = router({
   
   // YouTube Live Streaming
   youtubeStreaming: youtubeStreamingRouter,
+  
+  // Multi-Platform Streaming
+  multiStream: multiStreamRouter,
 });
 
 export type AppRouter = typeof appRouter;
