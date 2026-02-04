@@ -273,3 +273,16 @@
 - [x] Create stream preview before going live
 - [x] Add stream status indicator (live/offline)
 - [x] Test streaming integration with YouTube Live
+
+
+## 3D LEGO Visualization (Three.js)
+- [x] Install Three.js and @react-three/fiber for React integration
+- [x] Create 3D LEGO brick model with proper studs on top
+- [x] Implement brick stacking logic (bricks connect on grid)
+- [x] Add interlocking visual feedback when bricks snap together
+- [x] Create build animation showing bricks being placed
+- [x] Add camera controls (rotate, zoom, pan)
+- [x] Replace floating brick icon with real 3D scene
+- [x] Integrate 3D viewer into Live Build page
+- [x] Integrate 3D viewer into Stream overlay
+- [x] Add lighting and shadows for realistic appearance

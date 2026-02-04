@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Box } from "lucide-react";
+import { Lego3DViewer, convertToBrickData } from "@/components/Lego3DViewer";
 
 interface Agent {
   id: string;
@@ -296,27 +297,50 @@ export function StreamOverlay({
         </div>
       )}
 
-      {/* Center Build Visualization Area */}
+      {/* Center 3D Build Visualization */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="w-[600px] h-[400px] bg-black/30 rounded-2xl border border-white/10 flex items-center justify-center">
-          <div className="text-center">
-            <motion.div
-              animate={{
-                scale: [1, 1.1, 1],
-                rotate: [0, 5, -5, 0],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-              className="text-8xl mb-4"
-            >
-              🧱
-            </motion.div>
-            <p className="text-xl font-bold">Building in Progress</p>
-            <p className="text-gray-400">{brickCount} bricks placed</p>
-          </div>
+        <div className="w-[600px] h-[400px] bg-black/30 rounded-2xl border border-white/10 overflow-hidden">
+          {actions.filter(a => a.brick).length > 0 ? (
+            <Lego3DViewer
+              bricks={convertToBrickData(
+                actions
+                  .filter(a => a.brick)
+                  .map(a => ({
+                    x: a.brick!.position.x,
+                    y: a.brick!.position.y,
+                    z: a.brick!.position.z,
+                    color: a.brick!.color,
+                    type: a.brick!.size,
+                    placedBy: a.agentName,
+                    timestamp: a.timestamp.getTime(),
+                  }))
+              )}
+              showBaseplate={true}
+              baseplateSize={16}
+              autoRotate={true}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="text-center">
+                <motion.div
+                  animate={{
+                    scale: [1, 1.1, 1],
+                    rotate: [0, 5, -5, 0],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                  className="text-8xl mb-4"
+                >
+                  🧱
+                </motion.div>
+                <p className="text-xl font-bold">Building in Progress</p>
+                <p className="text-gray-400">{brickCount} bricks placed</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
