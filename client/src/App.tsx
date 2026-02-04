@@ -20,6 +20,7 @@ import Support from "./pages/Support";
 import StartBuild from "./pages/StartBuild";
 import LiveBuild from "./pages/LiveBuild";
 import MyCollection from "./pages/MyCollection";
+import Stream from "./pages/Stream";
 
 function Router() {
   return (
@@ -41,6 +42,7 @@ function Router() {
       <Route path={"/live"} component={LiveBuild} />
       <Route path={"/live/:projectId"} component={LiveBuild} />
       <Route path={"/my-collection"} component={MyCollection} />
+      <Route path={"/stream/:viewToken"} component={Stream} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

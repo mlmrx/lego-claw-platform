@@ -20,6 +20,7 @@ import { openPlatformRouter } from "./open-platform";
 import { audit, createAuditContext } from "./_core/auditLog";
 import { imageBuildRouter } from "./imageBuildRouter";
 import { liveBuildRouter } from "./liveBuildRouter";
+import { youtubeStreamingRouter } from "./youtubeStreaming";
 
 // ============================================
 // BUILT-IN SKILLS DEFINITION
@@ -1899,6 +1900,9 @@ export const appRouter = router({
   
   // Autonomous AI Agent Collaboration
   liveBuild: liveBuildRouter,
+  
+  // YouTube Live Streaming
+  youtubeStreaming: youtubeStreamingRouter,
 });
 
 export type AppRouter = typeof appRouter;

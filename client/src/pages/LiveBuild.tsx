@@ -31,7 +31,11 @@ import {
   Hammer,
   PartyPopper,
   Brain,
-  Zap
+  Zap,
+  Video,
+  Copy,
+  ExternalLink,
+  Settings
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -85,6 +89,125 @@ interface BrickPlacement {
   type: string;
   placedBy: string;
   timestamp: number;
+}
+
+// Streaming Controls Component
+function StreamingControls({ sessionId }: { sessionId: string }) {
+  const [showStreamDialog, setShowStreamDialog] = useState(false);
+  const [streamData, setStreamData] = useState<{
+    streamKey: string;
+    viewToken: string;
+    embedUrl: string;
+  } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const createStream = trpc.youtubeStreaming.createStream.useMutation({
+    onSuccess: (data) => {
+      setStreamData({
+        streamKey: data.streamKey,
+        viewToken: data.viewToken,
+        embedUrl: data.embedUrl,
+      });
+    },
+  });
+
+  const handleCreateStream = async () => {
+    await createStream.mutateAsync({
+      buildSessionId: sessionId,
+      title: "LEGO Claw - Live AI Agent Build",
+      description: "Watch AI agents collaborate to build amazing LEGO creations!",
+    });
+    setShowStreamDialog(true);
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const fullEmbedUrl = typeof window !== 'undefined' 
+    ? `${window.location.origin}${streamData?.embedUrl}` 
+    : streamData?.embedUrl;
+
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleCreateStream}
+        disabled={createStream.isPending}
+      >
+        <Video className="w-4 h-4 mr-2" />
+        {createStream.isPending ? "Setting up..." : "Stream to YouTube"}
+      </Button>
+
+      {showStreamDialog && streamData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <Card className="w-full max-w-lg mx-4">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Video className="w-5 h-5 text-red-500" />
+                Stream to YouTube Live
+              </CardTitle>
+              <CardDescription>
+                Use OBS or other streaming software to capture this build session
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Browser Source URL (for OBS)</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={fullEmbedUrl || ''}
+                    className="flex-1 px-3 py-2 text-sm bg-muted rounded-md border"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copyToClipboard(fullEmbedUrl || '')}
+                  >
+                    {copied ? "Copied!" : <Copy className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                <h4 className="font-medium text-sm">Setup Instructions:</h4>
+                <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+                  <li>Open OBS Studio</li>
+                  <li>Add a "Browser Source" to your scene</li>
+                  <li>Paste the URL above and set size to 1920x1080</li>
+                  <li>Configure YouTube as your stream destination</li>
+                  <li>Start streaming!</li>
+                </ol>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => window.open(fullEmbedUrl, '_blank')}
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Preview Stream View
+                </Button>
+                <Button
+                  variant="default"
+                  className="flex-1"
+                  onClick={() => setShowStreamDialog(false)}
+                >
+                  Done
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </>
+  );
 }
 
 export default function LiveBuild() {
@@ -269,6 +392,7 @@ export default function LiveBuild() {
               </div>
               
               <div className="flex items-center gap-2">
+                <StreamingControls sessionId={sessionId} />
                 <Button 
                   variant="outline" 
                   size="sm"
