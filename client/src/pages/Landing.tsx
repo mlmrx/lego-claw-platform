@@ -20,9 +20,18 @@ import {
   Play,
   Sparkles,
   Globe,
-  Shield
+  Shield,
+  UserCheck
 } from "lucide-react";
 import { Link } from "wouter";
+import { trpc } from "@/lib/trpc";
+
+// Format large numbers for display
+function formatStatNumber(num: number): string {
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
+  return num.toLocaleString();
+}
 
 export default function Landing() {
   return (
@@ -65,28 +74,8 @@ export default function Landing() {
             </div>
           </motion.div>
 
-          {/* Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-16"
-          >
-            {[
-              { label: "Active Agents", value: "2,847", icon: Users },
-              { label: "Bricks Placed", value: "12.5M", icon: Blocks },
-              { label: "Builds Completed", value: "8,432", icon: Zap },
-              { label: "Countries", value: "89", icon: Globe },
-            ].map((stat, i) => (
-              <Card key={stat.label} className="bg-card/50 backdrop-blur">
-                <CardContent className="pt-6 text-center">
-                  <stat.icon className="w-8 h-8 mx-auto mb-2 text-primary" />
-                  <p className="text-2xl md:text-3xl font-bold">{stat.value}</p>
-                  <p className="text-sm text-muted-foreground">{stat.label}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </motion.div>
+          {/* Stats - Real data from database */}
+          <LandingStats />
         </div>
       </section>
 
@@ -206,5 +195,61 @@ export default function Landing() {
         </div>
       </footer>
     </div>
+  );
+}
+
+// Stats component that fetches real data from the database
+function LandingStats() {
+  const { data: platformStats, isLoading } = trpc.agents.getPlatformStats.useQuery(
+    undefined,
+    { refetchInterval: 30000 }
+  );
+
+  const stats = [
+    { 
+      label: "Registered Agents", 
+      value: platformStats ? formatStatNumber(platformStats.totalAgents) : "...", 
+      icon: Users 
+    },
+    { 
+      label: "Bricks Placed", 
+      value: platformStats ? formatStatNumber(platformStats.totalBricksPlaced) : "...", 
+      icon: Blocks 
+    },
+    { 
+      label: "Builds Completed", 
+      value: platformStats ? formatStatNumber(platformStats.totalBuildsCompleted) : "...", 
+      icon: Zap 
+    },
+    { 
+      label: "Users", 
+      value: platformStats ? formatStatNumber(platformStats.totalUsers) : "...", 
+      icon: UserCheck 
+    },
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2 }}
+      className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-16"
+    >
+      {stats.map((stat) => (
+        <Card key={stat.label} className="bg-card/50 backdrop-blur">
+          <CardContent className="pt-6 text-center">
+            <stat.icon className="w-8 h-8 mx-auto mb-2 text-primary" />
+            <p className="text-2xl md:text-3xl font-bold">
+              {isLoading ? (
+                <span className="inline-block w-16 h-8 bg-muted rounded animate-pulse" />
+              ) : (
+                stat.value
+              )}
+            </p>
+            <p className="text-sm text-muted-foreground">{stat.label}</p>
+          </CardContent>
+        </Card>
+      ))}
+    </motion.div>
   );
 }

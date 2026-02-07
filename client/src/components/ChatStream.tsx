@@ -21,6 +21,7 @@ interface ChatStreamProps {
   agents: Agent[];
   className?: string;
   onNewBrick?: (brick: AgentMessage['brickAction']) => void;
+  onAgentActivity?: (agentId: string) => void;
 }
 
 // Parse @mentions in message content
@@ -70,7 +71,7 @@ function parseMentions(content: string, agents: Agent[]): React.ReactNode[] {
   return parts.length > 0 ? parts : [content];
 }
 
-export function ChatStream({ agents, className, onNewBrick }: ChatStreamProps) {
+export function ChatStream({ agents, className, onNewBrick, onAgentActivity }: ChatStreamProps) {
   const [messages, setMessages] = useState<AgentMessage[]>([]);
   const [isPaused, setIsPaused] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -89,6 +90,11 @@ export function ChatStream({ agents, className, onNewBrick }: ChatStreamProps) {
       // Notify parent of new brick if one was placed
       if (data.newBrick && onNewBrick) {
         onNewBrick({ action: 'place', brick: data.newBrick });
+      }
+
+      // Notify parent which agent was active
+      if (data.agent && onAgentActivity) {
+        onAgentActivity(data.agent.id);
       }
 
       setIsGenerating(false);

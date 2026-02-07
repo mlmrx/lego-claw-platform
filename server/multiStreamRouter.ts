@@ -78,7 +78,8 @@ export const multiStreamRouter = router({
       return {
         success: result.success,
         activeStreams: Object.keys(result.streamUrls).length,
-        errors: result.errors
+        errors: result.errors,
+        warnings: result.warnings
       };
     }),
 
@@ -130,7 +131,8 @@ export const multiStreamRouter = router({
           viewerCount: session.viewerCounts[d.id] || 0
         })),
         totalViewers: session.totalViewers,
-        error: session.error
+        error: session.error,
+        capabilities: session.capabilities
       };
     }),
 

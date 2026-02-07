@@ -666,7 +666,7 @@ const liveAgentsRouter = router({
     }
 
     if (currentDesign.bricks.length >= 50) {
-      completedBuilds.push({
+      const completedBuild: CompletedBuild = {
         id: currentDesign.id,
         name: currentDesign.name,
         description: currentDesign.description,
@@ -676,11 +676,25 @@ const liveAgentsRouter = router({
         contributors: getContributors(currentDesign.bricks),
         completedAt: Date.now(),
         messageCount: currentDesign.messages.length,
-      });
+      };
+
+      completedBuilds.push(completedBuild);
       
       if (completedBuilds.length > 20) {
         completedBuilds = completedBuilds.slice(-20);
       }
+
+      // Persist to database (fire-and-forget, don't block the response)
+      db.saveCompletedBuild({
+        name: completedBuild.name,
+        description: completedBuild.description,
+        theme: completedBuild.theme,
+        style: completedBuild.style,
+        brickData: completedBuild.bricks,
+        currentBricks: completedBuild.bricks.length,
+        contributors: completedBuild.contributors,
+        messageCount: completedBuild.messageCount,
+      }).catch(err => console.error('[DB] Failed to persist completed build:', err));
 
       const newConcept = await generateDesignConcept();
       currentDesign = {
@@ -741,10 +755,27 @@ const liveAgentsRouter = router({
     };
   }),
 
+  // Real platform-wide statistics from database
+  getPlatformStats: publicProcedure.query(async () => {
+    const realStats = await db.getRealPlatformStats();
+    // Also include live session data
+    return {
+      totalAgents: realStats.totalAgents + AI_AGENTS.length, // DB agents + live demo agents
+      totalBricksPlaced: realStats.totalBricksPlaced + (currentDesign?.bricks.length || 0),
+      totalBuildsCompleted: realStats.totalBuildsCompleted + completedBuilds.length,
+      totalUsers: realStats.totalUsers,
+      // Live session info
+      liveAgents: AI_AGENTS.length,
+      liveBricks: currentDesign?.bricks.length || 0,
+      liveMessages: currentDesign?.messages.length || 0,
+    };
+  }),
+
   getCompletedBuilds: publicProcedure
     .input(z.object({ limit: z.number().min(1).max(50).default(10) }))
-    .query(({ input }) => {
-      return completedBuilds
+    .query(async ({ input }) => {
+      // In-memory builds from current session
+      const memoryBuilds = completedBuilds
         .slice(-input.limit)
         .reverse()
         .map(build => ({
@@ -757,7 +788,46 @@ const liveAgentsRouter = router({
           contributors: build.contributors,
           completedAt: build.completedAt,
           messageCount: build.messageCount,
+          source: 'live' as const,
         }));
+
+      // Persisted builds from database
+      const dbBuilds = await db.getCompletedBuildsFromDb(input.limit);
+      const dbBuildsMapped = dbBuilds.map(b => ({
+        id: b.publicId,
+        name: b.name,
+        description: b.description || '',
+        theme: b.theme || 'mixed',
+        style: b.style || 'creative',
+        brickCount: b.currentBricks,
+        contributors: [] as string[],
+        completedAt: b.completedAt ? b.completedAt.getTime() : b.createdAt.getTime(),
+        messageCount: b.totalMessages,
+        source: 'database' as const,
+      }));
+
+      // Merge: live builds first, then DB builds, deduplicated and limited
+      const seenIds = new Set(memoryBuilds.map(b => b.id));
+      const merged: Array<{
+        id: string;
+        name: string;
+        description: string;
+        theme: string;
+        style: string;
+        brickCount: number;
+        contributors: string[];
+        completedAt: number;
+        messageCount: number;
+        source: 'live' | 'database';
+      }> = [...memoryBuilds];
+      for (const dbBuild of dbBuildsMapped) {
+        if (!seenIds.has(dbBuild.id) && merged.length < input.limit) {
+          merged.push(dbBuild);
+          seenIds.add(dbBuild.id);
+        }
+      }
+
+      return merged.slice(0, input.limit);
     }),
 
   getCompletedBuild: publicProcedure
@@ -1715,6 +1785,31 @@ const bookmarksRouter = router({
 const integrationsRouter = router({
   // Get supported platforms
   platforms: publicProcedure.query(() => SUPPORTED_PLATFORMS),
+
+  // Check which platforms have OAuth credentials configured
+  oauthStatus: publicProcedure.query(() => {
+    const platforms = ['twitch', 'youtube', 'discord'] as const;
+    return platforms.map(platform => {
+      const clientId = process.env[`${platform.toUpperCase()}_CLIENT_ID`];
+      const clientSecret = process.env[`${platform.toUpperCase()}_CLIENT_SECRET`];
+      return {
+        platform,
+        name: platform === 'twitch' ? 'Twitch' : platform === 'youtube' ? 'YouTube' : 'Discord',
+        oauthConfigured: Boolean(clientId && clientSecret),
+        hasClientId: Boolean(clientId),
+        hasClientSecret: Boolean(clientSecret),
+        envVars: {
+          clientId: `${platform.toUpperCase()}_CLIENT_ID`,
+          clientSecret: `${platform.toUpperCase()}_CLIENT_SECRET`,
+        },
+        setupGuide: platform === 'twitch'
+          ? 'https://dev.twitch.tv/console/apps'
+          : platform === 'youtube'
+          ? 'https://console.cloud.google.com/apis/credentials'
+          : 'https://discord.com/developers/applications',
+      };
+    });
+  }),
 
   // Get user's integrations
   myIntegrations: protectedProcedure.query(async ({ ctx }) => {

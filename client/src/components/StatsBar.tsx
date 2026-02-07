@@ -1,52 +1,32 @@
 /**
  * StatsBar Component
  * Design: Isometric LEGO Playground
- * Displays live statistics about agent activity
+ * Displays REAL statistics from the database via tRPC
  * Fully responsive with horizontal scroll on mobile
  */
 
-import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { Blocks, MessageSquare, Users, Puzzle, Sparkles, LucideIcon } from "lucide-react";
+import { Blocks, Users, Puzzle, UserCheck, LucideIcon } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 
 interface StatsBarProps {
   className?: string;
 }
 
-interface Stat {
+interface StatDisplay {
   icon: LucideIcon;
   label: string;
   shortLabel: string;
   value: number;
-  suffix?: string;
   color: string;
 }
 
 export function StatsBar({ className }: StatsBarProps) {
-  const [stats, setStats] = useState<Stat[]>([
-    { icon: Users, label: 'Active Agents', shortLabel: 'Agents', value: 2847, color: 'text-primary' },
-    { icon: Blocks, label: 'Bricks Placed', shortLabel: 'Bricks', value: 12500000, color: 'text-blue-500' },
-    { icon: Puzzle, label: 'Builds Completed', shortLabel: 'Builds', value: 8432, color: 'text-yellow-600' },
-    { icon: Sparkles, label: 'Countries', shortLabel: 'Countries', value: 89, color: 'text-pink-500' },
-  ]);
-
-  // Simulate live updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setStats(prev => prev.map(stat => {
-        if (stat.label === 'Bricks Placed') {
-          return { ...stat, value: stat.value + Math.floor(Math.random() * 100) + 10 };
-        }
-        if (stat.label === 'Builds Completed') {
-          return { ...stat, value: stat.value + (Math.random() > 0.9 ? 1 : 0) };
-        }
-        return stat;
-      }));
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, []);
+  const { data: platformStats, isLoading } = trpc.agents.getPlatformStats.useQuery(
+    undefined,
+    { refetchInterval: 30000 } // Refresh every 30 seconds
+  );
 
   // Format large numbers
   const formatNumber = (num: number): string => {
@@ -58,6 +38,37 @@ export function StatsBar({ className }: StatsBarProps) {
     }
     return num.toLocaleString();
   };
+
+  const stats: StatDisplay[] = [
+    {
+      icon: Users,
+      label: 'Registered Agents',
+      shortLabel: 'Agents',
+      value: platformStats?.totalAgents ?? 0,
+      color: 'text-primary',
+    },
+    {
+      icon: Blocks,
+      label: 'Bricks Placed',
+      shortLabel: 'Bricks',
+      value: platformStats?.totalBricksPlaced ?? 0,
+      color: 'text-blue-500',
+    },
+    {
+      icon: Puzzle,
+      label: 'Builds Completed',
+      shortLabel: 'Builds',
+      value: platformStats?.totalBuildsCompleted ?? 0,
+      color: 'text-yellow-600',
+    },
+    {
+      icon: UserCheck,
+      label: 'Users',
+      shortLabel: 'Users',
+      value: platformStats?.totalUsers ?? 0,
+      color: 'text-pink-500',
+    },
+  ];
 
   return (
     <div 
@@ -79,14 +90,13 @@ export function StatsBar({ className }: StatsBarProps) {
           >
             {(() => { const Icon = stat.icon; return <Icon className={cn("w-4 h-4 sm:w-5 sm:h-5", stat.color)} />; })()}
             <div className="text-center">
-              <motion.div 
-                key={stat.value}
-                initial={{ scale: 1.2 }}
-                animate={{ scale: 1 }}
-                className="font-heading font-bold text-base sm:text-lg leading-none"
-              >
-                {formatNumber(stat.value)}
-              </motion.div>
+              <div className="font-heading font-bold text-base sm:text-lg leading-none">
+                {isLoading ? (
+                  <span className="inline-block w-8 h-4 bg-muted-foreground/20 rounded animate-pulse" />
+                ) : (
+                  formatNumber(stat.value)
+                )}
+              </div>
               <div className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">
                 <span className="sm:hidden">{stat.shortLabel}</span>
                 <span className="hidden sm:inline">{stat.label}</span>

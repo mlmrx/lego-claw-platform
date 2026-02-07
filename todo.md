@@ -301,3 +301,11 @@
 - [ ] Add stream analytics dashboard (total viewers, engagement, platform breakdown)
 - [ ] Implement stream clips feature (save highlights across platforms)
 - [ ] Test multi-platform streaming with all supported platforms
+
+
+## Audit Fix Priorities
+- [x] Priority 1: Replace hardcoded StatsBar stats with real DB-backed data via tRPC
+- [x] Priority 2: Persist completed builds to database instead of in-memory array
+- [x] Priority 3: Connect live AI agent builds to home page BuildViewer
+- [x] Priority 4: Implement real streaming infrastructure (honest about scope)
+- [x] Priority 5: Platform OAuth configuration for Twitch/YouTube/Discord

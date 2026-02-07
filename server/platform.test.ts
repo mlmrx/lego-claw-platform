@@ -22,6 +22,14 @@ vi.mock("./db", () => ({
   getProjectsByCreator: vi.fn().mockResolvedValue([]),
   getRecentActivity: vi.fn().mockResolvedValue([]),
   getActivityForProject: vi.fn().mockResolvedValue([]),
+  getRealPlatformStats: vi.fn().mockResolvedValue({
+    totalAgents: 5,
+    totalBricksPlaced: 100,
+    totalBuildsCompleted: 3,
+    totalUsers: 10,
+  }),
+  getCompletedBuildsFromDb: vi.fn().mockResolvedValue([]),
+  saveCompletedBuild: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock the LLM module

@@ -9,14 +9,15 @@
  * - Completed builds gallery (floating button)
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Header } from "@/components/Header";
 import { StatsBar } from "@/components/StatsBar";
 import { AgentSidebar } from "@/components/AgentSidebar";
 import { BuildViewer } from "@/components/BuildViewer";
 import { ChatStream } from "@/components/ChatStream";
 import { CompletedBuildsGallery } from "@/components/CompletedBuildsGallery";
-import { defaultAgents, Agent } from "@/lib/agents";
+import { defaultAgents, Agent, AgentMessage } from "@/lib/agents";
+import { BrickPlacement } from "@/components/LegoBrick3D";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
@@ -27,21 +28,62 @@ export default function Home() {
   const [agents, setAgents] = useState<Agent[]>(defaultAgents);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Simulate agent status changes
+  // Update agent statuses based on real AI activity from the ChatStream
+  // The ChatStream uses real tRPC calls (trpc.agents.generateNextAction) which
+  // returns real agent actions. We track which agents are active based on recent messages.
+  const [recentActiveAgents, setRecentActiveAgents] = useState<Set<string>>(new Set());
+
+  // Update agent statuses based on which agents have been active recently
   useEffect(() => {
     const interval = setInterval(() => {
       setAgents(prev => prev.map(agent => {
-        // Randomly change status
-        if (Math.random() > 0.85) {
-          const statuses: Agent['status'][] = ['building', 'thinking', 'chatting', 'idle'];
-          const newStatus = statuses[Math.floor(Math.random() * statuses.length)];
-          return { ...agent, status: newStatus };
+        if (recentActiveAgents.has(agent.id)) {
+          // Agent was recently active in the AI chat
+          const activeStatuses: Agent['status'][] = ['building', 'thinking', 'chatting'];
+          return { ...agent, status: activeStatuses[Math.floor(Math.random() * activeStatuses.length)] };
         }
-        return agent;
+        return { ...agent, status: 'idle' };
       }));
-    }, 5000);
+    }, 3000);
 
     return () => clearInterval(interval);
+  }, [recentActiveAgents]);
+
+  // Track live bricks from AI agent chat for the BuildViewer
+  const [liveBricks, setLiveBricks] = useState<BrickPlacement[]>([]);
+  const liveBrickIdRef = useRef(0);
+
+  // Callback when ChatStream receives a new agent action with a brick
+  const handleNewBrick = useCallback((brickAction: AgentMessage['brickAction']) => {
+    if (!brickAction?.brick) return;
+    const brick = brickAction.brick;
+    const newBrick: BrickPlacement = {
+      id: `live-brick-${++liveBrickIdRef.current}`,
+      position: [brick.position.x, brick.position.y, brick.position.z] as [number, number, number],
+      color: brick.color,
+      width: brick.width,
+      depth: brick.depth,
+      height: brick.height,
+      placedAt: Date.now(),
+    };
+    setLiveBricks(prev => [...prev, newBrick]);
+  }, []);
+
+  // Track which agents are active based on chat messages
+  const handleAgentActivity = useCallback((agentId: string) => {
+    setRecentActiveAgents(prev => {
+      const next = new Set(prev);
+      next.add(agentId);
+      // Clear after 10 seconds
+      setTimeout(() => {
+        setRecentActiveAgents(p => {
+          const updated = new Set(p);
+          updated.delete(agentId);
+          return updated;
+        });
+      }, 10000);
+      return next;
+    });
   }, []);
 
   // Handle viewing a completed build
@@ -49,7 +91,6 @@ export default function Home() {
     toast.success("Build loaded!", {
       description: "The completed build is now displayed in the 3D viewer."
     });
-    // In a full implementation, this would load the build into the 3D viewer
   };
 
   return (
@@ -114,7 +155,7 @@ export default function Home() {
           transition={{ delay: 0.1 }}
           className="flex-1 min-w-0 border-r border-border"
         >
-          <BuildViewer />
+          <BuildViewer liveBricks={liveBricks} />
         </motion.section>
 
         {/* Chat Stream - Right */}
@@ -127,7 +168,11 @@ export default function Home() {
             "hidden xl:flex flex-col"
           )}
         >
-          <ChatStream agents={agents} />
+          <ChatStream 
+            agents={agents} 
+            onNewBrick={handleNewBrick}
+            onAgentActivity={handleAgentActivity}
+          />
         </motion.aside>
       </main>
 
@@ -136,14 +181,18 @@ export default function Home() {
 
       {/* Mobile Chat Toggle - Shows chat in modal on smaller screens */}
       <div className="xl:hidden fixed bottom-4 left-4 z-50">
-        <MobileChatButton agents={agents} />
+        <MobileChatButton agents={agents} onNewBrick={handleNewBrick} onAgentActivity={handleAgentActivity} />
       </div>
     </div>
   );
 }
 
 // Mobile chat button component
-function MobileChatButton({ agents }: { agents: Agent[] }) {
+function MobileChatButton({ agents, onNewBrick, onAgentActivity }: { 
+  agents: Agent[]; 
+  onNewBrick?: (brick: AgentMessage['brickAction']) => void;
+  onAgentActivity?: (agentId: string) => void;
+}) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -174,7 +223,11 @@ function MobileChatButton({ agents }: { agents: Agent[] }) {
           >
             <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1 rounded-full bg-muted-foreground/30" />
             <div className="pt-6 h-full">
-              <ChatStream agents={agents} />
+              <ChatStream 
+                agents={agents}
+                onNewBrick={onNewBrick}
+                onAgentActivity={onAgentActivity}
+              />
             </div>
           </motion.div>
         </motion.div>

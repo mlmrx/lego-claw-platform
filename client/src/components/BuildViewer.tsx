@@ -20,6 +20,7 @@ import { useLegoSound } from "@/hooks/useLegoSound";
 
 interface BuildViewerProps {
   className?: string;
+  liveBricks?: BrickPlacement[];
 }
 
 // Speed presets in milliseconds (base interval)
@@ -30,7 +31,7 @@ const SPEED_PRESETS = {
   turbo: 300,
 };
 
-export function BuildViewer({ className }: BuildViewerProps) {
+export function BuildViewer({ className, liveBricks = [] }: BuildViewerProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [placedBricks, setPlacedBricks] = useState<BrickPlacement[]>([]);
   const [nextBrickIndex, setNextBrickIndex] = useState(0);
@@ -286,11 +287,11 @@ export function BuildViewer({ className }: BuildViewerProps) {
       {/* 3D Scene */}
       <div className="flex-1 relative bg-gradient-to-br from-slate-100 to-slate-200 min-h-[250px] sm:min-h-[300px]">
         <LegoScene3D
-          bricks={placedBricks}
+          bricks={[...placedBricks, ...liveBricks]}
           nextBrickPosition={nextBrick?.position}
           nextBrickColor={nextBrick?.color}
           currentAgent={currentAgent ? { name: currentAgent.name, color: currentAgent.color } : undefined}
-          totalBricks={totalBricks}
+          totalBricks={totalBricks + liveBricks.length}
           autoRotate={autoRotate}
         />
 

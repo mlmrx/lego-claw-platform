@@ -2265,3 +2265,91 @@ export async function getUserImageBuilds(userId: number) {
     ))
     .orderBy(desc(buildProjects.createdAt));
 }
+
+
+// ============================================
+// REAL PLATFORM STATISTICS (replaces hardcoded stats)
+// ============================================
+
+export async function getRealPlatformStats() {
+  const db = await getDb();
+  if (!db) return {
+    totalAgents: 0,
+    totalBricksPlaced: 0,
+    totalBuildsCompleted: 0,
+    totalUsers: 0,
+  };
+
+  // Count registered agents
+  const agentResult = await db.select({
+    count: sql<number>`COUNT(*)`,
+    totalBricks: sql<number>`COALESCE(SUM(${agents.totalBricksPlaced}), 0)`,
+  }).from(agents);
+
+  // Count completed builds
+  const buildResult = await db.select({
+    count: sql<number>`COUNT(*)`,
+  }).from(buildProjects).where(eq(buildProjects.status, 'completed'));
+
+  // Count total users
+  const userResult = await db.select({
+    count: sql<number>`COUNT(*)`,
+  }).from(users);
+
+  return {
+    totalAgents: Number(agentResult[0]?.count) || 0,
+    totalBricksPlaced: Number(agentResult[0]?.totalBricks) || 0,
+    totalBuildsCompleted: Number(buildResult[0]?.count) || 0,
+    totalUsers: Number(userResult[0]?.count) || 0,
+  };
+}
+
+// ============================================
+// COMPLETED BUILDS PERSISTENCE
+// ============================================
+
+export async function saveCompletedBuild(data: {
+  name: string;
+  description: string;
+  theme: string;
+  style: string;
+  brickData: any;
+  currentBricks: number;
+  contributors: string[];
+  messageCount: number;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const publicId = nanoid(16);
+
+  // We reuse buildProjects table with status='completed' and a system creator (id=0 or first admin)
+  // Use creatorId=0 for system-generated builds
+  await db.insert(buildProjects).values({
+    publicId,
+    creatorId: 0,
+    name: data.name,
+    description: data.description || '',
+    theme: data.theme,
+    style: data.style,
+    brickData: data.brickData,
+    currentBricks: data.currentBricks,
+    totalContributors: data.contributors.length,
+    totalMessages: data.messageCount,
+    status: 'completed',
+    completedAt: new Date(),
+  });
+
+  return publicId;
+}
+
+export async function getCompletedBuildsFromDb(limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select()
+    .from(buildProjects)
+    .where(eq(buildProjects.status, 'completed'))
+    .orderBy(desc(buildProjects.completedAt))
+    .limit(limit);
+}

@@ -1,15 +1,30 @@
 /**
  * Multi-Platform Streaming Service
  * 
- * Enables simultaneous streaming to multiple platforms:
- * - YouTube Live
- * - Twitch
- * - X/Twitter (via Periscope)
- * - TikTok Live
- * - Facebook Gaming
- * - Kick
+ * STATUS: Session management and configuration are functional.
+ * LIMITATION: Actual RTMP video streaming requires additional infrastructure:
+ *   - FFmpeg or node-media-server for RTMP relay
+ *   - A video source (canvas capture, screen capture, or generated frames)
+ *   - Platform API integrations for real-time chat and viewer counts
  * 
- * Each platform uses RTMP for video streaming with platform-specific configurations.
+ * What WORKS:
+ *   - Creating and managing stream sessions
+ *   - Storing platform configurations and stream keys
+ *   - Generating overlay URLs for OBS browser sources
+ *   - In-app chat aggregation (messages from the platform itself)
+ *   - Session lifecycle (create → start → stop → cleanup)
+ * 
+ * What NEEDS real infrastructure:
+ *   - Sending actual RTMP video to platforms (requires FFmpeg + video source)
+ *   - Receiving real chat from Twitch IRC / YouTube Chat API / etc.
+ *   - Real viewer count polling from platform APIs
+ *   - Stream health monitoring
+ * 
+ * To enable real streaming, you would need to:
+ *   1. Install FFmpeg: apt-get install ffmpeg
+ *   2. Create a canvas/video source from the 3D scene
+ *   3. Pipe frames through FFmpeg to RTMP endpoints
+ *   4. OR use a service like Restream.io which handles multi-platform relay
  */
 
 import { z } from "zod";
@@ -37,6 +52,7 @@ export const PLATFORM_CONFIGS: Record<StreamingPlatform, {
   supportsChat: boolean;
   chatApiEndpoint?: string;
   color: string;
+  setupGuideUrl: string;
 }> = {
   youtube: {
     name: "YouTube Live",
@@ -46,7 +62,8 @@ export const PLATFORM_CONFIGS: Record<StreamingPlatform, {
     maxBitrate: 51000,
     supportsChat: true,
     chatApiEndpoint: "/api/youtube/chat",
-    color: "#FF0000"
+    color: "#FF0000",
+    setupGuideUrl: "https://support.google.com/youtube/answer/2474026"
   },
   twitch: {
     name: "Twitch",
@@ -56,7 +73,8 @@ export const PLATFORM_CONFIGS: Record<StreamingPlatform, {
     maxBitrate: 6000,
     supportsChat: true,
     chatApiEndpoint: "/api/twitch/chat",
-    color: "#9146FF"
+    color: "#9146FF",
+    setupGuideUrl: "https://help.twitch.tv/s/article/twitch-stream-key-faq"
   },
   twitter: {
     name: "X / Twitter",
@@ -65,7 +83,8 @@ export const PLATFORM_CONFIGS: Record<StreamingPlatform, {
     aspectRatio: "16:9",
     maxBitrate: 2500,
     supportsChat: true,
-    color: "#000000"
+    color: "#000000",
+    setupGuideUrl: "https://help.twitter.com/en/using-x/x-live"
   },
   tiktok: {
     name: "TikTok Live",
@@ -74,7 +93,8 @@ export const PLATFORM_CONFIGS: Record<StreamingPlatform, {
     aspectRatio: "9:16",
     maxBitrate: 4000,
     supportsChat: true,
-    color: "#000000"
+    color: "#000000",
+    setupGuideUrl: "https://support.tiktok.com/en/live-gifts-wallet/tiktok-live/going-live"
   },
   facebook: {
     name: "Facebook Gaming",
@@ -83,7 +103,8 @@ export const PLATFORM_CONFIGS: Record<StreamingPlatform, {
     aspectRatio: "16:9",
     maxBitrate: 4000,
     supportsChat: true,
-    color: "#1877F2"
+    color: "#1877F2",
+    setupGuideUrl: "https://www.facebook.com/help/587160588142067"
   },
   kick: {
     name: "Kick",
@@ -92,7 +113,8 @@ export const PLATFORM_CONFIGS: Record<StreamingPlatform, {
     aspectRatio: "16:9",
     maxBitrate: 8000,
     supportsChat: true,
-    color: "#53FC18"
+    color: "#53FC18",
+    setupGuideUrl: "https://help.kick.com/en/articles/7104889-how-to-stream-on-kick"
   },
   custom: {
     name: "Custom RTMP",
@@ -101,7 +123,8 @@ export const PLATFORM_CONFIGS: Record<StreamingPlatform, {
     aspectRatio: "16:9",
     maxBitrate: 6000,
     supportsChat: false,
-    color: "#666666"
+    color: "#666666",
+    setupGuideUrl: ""
   }
 };
 
@@ -130,6 +153,12 @@ export interface MultiStreamSession {
   totalViewers: number;
   chatMessages: AggregatedChatMessage[];
   error?: string;
+  // Track what's actually working
+  capabilities: {
+    videoStreaming: boolean;  // Always false until FFmpeg is set up
+    chatRelay: boolean;       // True for in-app chat, false for platform chat
+    viewerTracking: boolean;  // Always false until platform APIs are connected
+  };
 }
 
 // Aggregated chat message from any platform
@@ -165,7 +194,12 @@ export function createMultiStreamSession(
     status: "idle",
     viewerCounts: {},
     totalViewers: 0,
-    chatMessages: []
+    chatMessages: [],
+    capabilities: {
+      videoStreaming: false,  // No FFmpeg/RTMP relay available
+      chatRelay: true,        // In-app chat works
+      viewerTracking: false,  // No platform API connections
+    }
   };
   
   activeStreams.set(session.id, session);
@@ -174,25 +208,45 @@ export function createMultiStreamSession(
 
 /**
  * Start streaming to all configured destinations
+ * 
+ * HONEST STATUS: This creates the session and generates RTMP URLs,
+ * but does NOT actually send video. To send video, you need:
+ * 1. A video source (canvas capture from the 3D scene)
+ * 2. FFmpeg to encode and relay to RTMP endpoints
+ * 3. Or use Restream.io/similar service as a relay
  */
 export async function startMultiStream(sessionId: string): Promise<{
   success: boolean;
   streamUrls: Record<string, string>;
   errors: Record<string, string>;
+  warnings: string[];
 }> {
   const session = activeStreams.get(sessionId);
   if (!session) {
-    return { success: false, streamUrls: {}, errors: { general: "Session not found" } };
+    return { success: false, streamUrls: {}, errors: { general: "Session not found" }, warnings: [] };
   }
   
   session.status = "starting";
   const streamUrls: Record<string, string> = {};
   const errors: Record<string, string> = {};
+  const warnings: string[] = [];
+  
+  // Warn that video streaming is not yet functional
+  warnings.push(
+    "Stream session created but actual RTMP video relay is not yet configured. " +
+    "The overlay URLs work for OBS browser sources, but no video is being sent to platforms. " +
+    "To enable real streaming, configure FFmpeg or use a relay service like Restream.io."
+  );
   
   for (const dest of session.destinations) {
     try {
       const config = PLATFORM_CONFIGS[dest.platform];
       const rtmpUrl = dest.customRtmpUrl || config.rtmpUrl;
+      
+      if (!dest.streamKey) {
+        errors[dest.id] = `No stream key provided for ${config.name}`;
+        continue;
+      }
       
       // Generate the full stream URL with key
       const fullUrl = `${rtmpUrl}/${dest.streamKey}`;
@@ -201,25 +255,27 @@ export async function startMultiStream(sessionId: string): Promise<{
       // Initialize viewer count
       session.viewerCounts[dest.id] = 0;
       
-      console.log(`[MultiStream] Configured ${config.name} stream: ${rtmpUrl}`);
+      console.log(`[MultiStream] Configured ${config.name} stream URL (video relay not active)`);
     } catch (error) {
       errors[dest.id] = error instanceof Error ? error.message : "Unknown error";
     }
   }
   
-  // If at least one destination succeeded, mark as live
+  // Mark as "live" for the session management layer
+  // (even though actual video isn't being sent)
   if (Object.keys(streamUrls).length > 0) {
     session.status = "live";
     session.startedAt = new Date();
   } else {
     session.status = "error";
-    session.error = "Failed to start any streams";
+    session.error = "No valid stream destinations configured";
   }
   
   return {
     success: session.status === "live",
     streamUrls,
-    errors
+    errors,
+    warnings
   };
 }
 
@@ -232,7 +288,7 @@ export async function stopMultiStream(sessionId: string): Promise<boolean> {
   
   session.status = "stopping";
   
-  // In a real implementation, this would stop the RTMP streams
+  // In a real implementation with FFmpeg, this would kill the FFmpeg processes
   // For now, we just update the status
   
   session.status = "idle";
@@ -247,7 +303,8 @@ export function getMultiStreamSession(sessionId: string): MultiStreamSession | u
 }
 
 /**
- * Update viewer counts (called periodically or via webhooks)
+ * Update viewer counts
+ * In production, this would be called by platform API polling or webhooks
  */
 export function updateViewerCount(
   sessionId: string,
@@ -263,6 +320,11 @@ export function updateViewerCount(
 
 /**
  * Add a chat message from any platform
+ * Currently only supports in-app messages. Platform chat integration
+ * requires connecting to each platform's chat API:
+ * - Twitch: IRC (wss://irc-ws.chat.twitch.tv)
+ * - YouTube: YouTube Data API v3 liveChatMessages
+ * - etc.
  */
 export function addChatMessage(
   sessionId: string,
@@ -330,6 +392,7 @@ export function cleanupSession(sessionId: string): void {
 
 /**
  * Generate browser source URLs for each platform's overlay
+ * These URLs work with OBS and other streaming software as browser sources
  */
 export function getOverlayUrls(
   sessionId: string,
