@@ -309,3 +309,12 @@
 - [x] Priority 3: Connect live AI agent builds to home page BuildViewer
 - [x] Priority 4: Implement real streaming infrastructure (honest about scope)
 - [x] Priority 5: Platform OAuth configuration for Twitch/YouTube/Discord
+
+## Make Templates & Challenges Fully Functional
+- [x] Audit current Templates feature (router, db, schema, frontend)
+- [x] Audit current Challenges feature (router, db, schema, frontend)
+- [x] Implement real Templates CRUD with database persistence
+- [x] Connect Templates frontend to real tRPC procedures
+- [x] Implement real Challenges CRUD with database persistence
+- [x] Connect Challenges frontend to real tRPC procedures
+- [x] Write tests for Templates and Challenges

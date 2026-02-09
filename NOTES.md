@@ -40,3 +40,19 @@ All 244 tests passing across 16 test files. No TypeScript errors. Dev server run
 - OAuth code was already well-implemented (Twitch, YouTube, Discord)
 - Added `oauthStatus` procedure to check which platforms have credentials configured
 - Each platform reports its env var names and setup guide URLs
+
+## Templates & Challenges Fix (Feb 9, 2026)
+
+### What was wrong
+- Templates page fell back to SAMPLE_TEMPLATES (hardcoded fake data with inflated numbers like 45,678 uses) when DB was empty
+- Challenges page fell back to SAMPLE_CHALLENGES (fake data with 234 participants) when DB was empty
+- "Create Template" button showed a toast saying "requires an active build" instead of actually creating
+- ChallengeCreator used `setTimeout(1500)` to simulate an API call instead of calling real tRPC mutation
+
+### What was fixed
+- Seeded 10 real templates and 7 real challenges into the database
+- Removed SAMPLE_TEMPLATES and SAMPLE_CHALLENGES fallback imports
+- Wired "Create Template" button to real `trpc.templates.create` mutation with invalidation
+- Added delete mutation for My Templates tab
+- Rewrote ChallengeCreator to use real `trpc.challenges.create` mutation
+- All 263 tests passing across 17 test files

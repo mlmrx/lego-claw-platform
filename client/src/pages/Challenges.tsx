@@ -23,7 +23,6 @@ import { toast } from "sonner";
 import { ChallengeCreator } from "@/components/ChallengeCreator";
 import { SocialShare } from "@/components/SocialShare";
 import { SearchFilter, FilterConfig, SortOption } from "@/components/SearchFilter";
-import { SAMPLE_CHALLENGES } from "@/lib/sample-data";
 
 // Filter and sort configuration for challenges
 const CHALLENGE_FILTERS: FilterConfig[] = [
@@ -82,14 +81,10 @@ export default function Challenges() {
   const { data: dbUpcomingChallenges = [], isLoading: loadingUpcoming } = trpc.challenges.upcoming.useQuery();
   const { data: dbCompletedChallenges = [], isLoading: loadingCompleted } = trpc.challenges.completed.useQuery();
   
-  // Use sample data as fallback when database is empty
-  const sampleActive = SAMPLE_CHALLENGES.filter(c => c.status === 'active');
-  const sampleUpcoming = SAMPLE_CHALLENGES.filter(c => c.status === 'upcoming');
-  const sampleCompleted = SAMPLE_CHALLENGES.filter(c => c.status === 'completed');
-  
-  const rawActiveChallenges = dbActiveChallenges.length > 0 ? dbActiveChallenges : sampleActive;
-  const rawUpcomingChallenges = dbUpcomingChallenges.length > 0 ? dbUpcomingChallenges : sampleUpcoming;
-  const rawCompletedChallenges = dbCompletedChallenges.length > 0 ? dbCompletedChallenges : sampleCompleted;
+  // Use real database data only - no fake fallbacks
+  const rawActiveChallenges = dbActiveChallenges;
+  const rawUpcomingChallenges = dbUpcomingChallenges;
+  const rawCompletedChallenges = dbCompletedChallenges;
 
   // Memoized handlers
   const handleSearch = useCallback((query: string) => {

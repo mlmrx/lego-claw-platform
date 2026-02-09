@@ -23,7 +23,6 @@ import {
 import { Link } from "wouter";
 import { toast } from "sonner";
 import { SearchFilter, FilterConfig, SortOption } from "@/components/SearchFilter";
-import { SAMPLE_TEMPLATES } from "@/lib/sample-data";
 
 // Filter and sort configuration for templates
 const TEMPLATE_FILTERS: FilterConfig[] = [
@@ -90,9 +89,9 @@ export default function Templates() {
     enabled: isAuthenticated,
   });
   
-  // Use sample data as fallback when database is empty
-  const rawPublicTemplates = dbPublicTemplates.length > 0 ? dbPublicTemplates : SAMPLE_TEMPLATES;
-  const featuredTemplates = dbFeaturedTemplates.length > 0 ? dbFeaturedTemplates : SAMPLE_TEMPLATES.filter(t => t.isFeatured);
+  // Use real database data only - no fake fallbacks
+  const rawPublicTemplates = dbPublicTemplates;
+  const featuredTemplates = dbFeaturedTemplates;
 
   // Memoized handlers
   const handleSearch = useCallback((query: string) => {
@@ -169,16 +168,49 @@ export default function Templates() {
     return result;
   }, [rawPublicTemplates, searchQuery, activeFilters, sortBy]);
 
-  // Mutations
-  const useTemplateMutation = trpc.templates.use.useMutation({
+  const utils = trpc.useUtils();
+
+  // Create template mutation
+  const createTemplateMutation = trpc.templates.create.useMutation({
     onSuccess: () => {
-      toast.success("Template loaded! Start building.");
+      toast.success("Template created successfully!");
+      setCreateDialogOpen(false);
+      setNewTemplate({ name: "", description: "", theme: "", difficulty: "intermediate" });
+      utils.templates.list.invalidate();
+      utils.templates.featured.invalidate();
+      utils.templates.myTemplates.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to create template");
     },
   });
 
+  // Use template mutation
+  const useTemplateMutation = trpc.templates.use.useMutation({
+    onSuccess: () => {
+      toast.success("Template loaded! Start building.");
+      utils.templates.list.invalidate();
+    },
+  });
+
+  // Like template mutation
   const likeTemplateMutation = trpc.templates.like.useMutation({
     onSuccess: () => {
       toast.success("Template liked!");
+      utils.templates.list.invalidate();
+      utils.templates.featured.invalidate();
+    },
+  });
+
+  // Delete template mutation
+  const deleteTemplateMutation = trpc.templates.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Template deleted.");
+      utils.templates.list.invalidate();
+      utils.templates.myTemplates.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to delete template");
     },
   });
 
@@ -279,11 +311,25 @@ export default function Templates() {
                   <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={() => {
-                    toast.info("Template creation requires an active build. Start building first!");
-                    setCreateDialogOpen(false);
-                  }}>
-                    Create Template
+                  <Button
+                    disabled={createTemplateMutation.isPending || !newTemplate.name.trim()}
+                    onClick={() => {
+                      if (!newTemplate.name.trim()) {
+                        toast.error("Please enter a template name");
+                        return;
+                      }
+                      createTemplateMutation.mutate({
+                        name: newTemplate.name,
+                        description: newTemplate.description || undefined,
+                        theme: newTemplate.theme || undefined,
+                        difficulty: newTemplate.difficulty,
+                        brickData: [],
+                        totalBricks: 0,
+                        isPublic: true,
+                      });
+                    }}
+                  >
+                    {createTemplateMutation.isPending ? "Creating..." : "Create Template"}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -564,10 +610,23 @@ export default function Templates() {
                         </div>
                       </CardContent>
                       <CardFooter className="gap-2">
-                        <Button variant="outline" size="sm" className="flex-1">
-                          Edit
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 text-destructive hover:text-destructive"
+                          onClick={() => {
+                            if (confirm("Delete this template?")) {
+                              deleteTemplateMutation.mutate({ publicId: template.publicId });
+                            }
+                          }}
+                        >
+                          Delete
                         </Button>
-                        <Button size="sm" className="flex-1">
+                        <Button
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => useTemplateMutation.mutate({ publicId: template.publicId })}
+                        >
                           Use
                         </Button>
                       </CardFooter>

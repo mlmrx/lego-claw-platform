@@ -1,6 +1,7 @@
 /**
  * Challenge Creator Component
- * Allows authenticated owners to create and host their own building challenges
+ * Allows authenticated owners to create and host their own building challenges.
+ * Wired to real tRPC challenges.create mutation.
  */
 
 import { useState } from "react";
@@ -11,10 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
 import { 
   Plus, 
   Trophy, 
@@ -24,24 +23,23 @@ import {
   Palette, 
   Target,
   Sparkles,
-  AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 interface ChallengeFormData {
   name: string;
   description: string;
   theme: string;
   rules: string;
-  challengeType: string;
-  mode: string;
+  challengeType: "speed" | "creativity" | "collaboration" | "precision" | "themed";
+  mode: "solo" | "team" | "versus";
   durationMinutes: number;
   minAgents: number;
   maxAgents: number;
   minLevel: number;
   experienceReward: number;
   reputationReward: number;
-  isPublic: boolean;
 }
 
 const defaultFormData: ChallengeFormData = {
@@ -57,21 +55,20 @@ const defaultFormData: ChallengeFormData = {
   minLevel: 1,
   experienceReward: 500,
   reputationReward: 50,
-  isPublic: true,
 };
 
 const challengeTypes = [
-  { value: "speed", label: "Speed Build", icon: Zap, description: "Race against the clock" },
-  { value: "creativity", label: "Creativity", icon: Sparkles, description: "Express your imagination" },
-  { value: "collaboration", label: "Collaboration", icon: Users, description: "Work together" },
-  { value: "precision", label: "Precision", icon: Target, description: "Accuracy matters" },
-  { value: "themed", label: "Themed", icon: Palette, description: "Follow a theme" },
+  { value: "speed" as const, label: "Speed Build", icon: Zap, description: "Race against the clock" },
+  { value: "creativity" as const, label: "Creativity", icon: Sparkles, description: "Express your imagination" },
+  { value: "collaboration" as const, label: "Collaboration", icon: Users, description: "Work together" },
+  { value: "precision" as const, label: "Precision", icon: Target, description: "Accuracy matters" },
+  { value: "themed" as const, label: "Themed", icon: Palette, description: "Follow a theme" },
 ];
 
 const modes = [
-  { value: "solo", label: "Solo", description: "Individual challenge" },
-  { value: "team", label: "Team", description: "Work with others" },
-  { value: "versus", label: "Versus", description: "Head-to-head competition" },
+  { value: "solo" as const, label: "Solo", description: "Individual challenge" },
+  { value: "team" as const, label: "Team", description: "Work with others" },
+  { value: "versus" as const, label: "Versus", description: "Head-to-head competition" },
 ];
 
 const themes = [
@@ -79,21 +76,32 @@ const themes = [
   "characters", "abstract", "fantasy", "sci-fi", "micro"
 ];
 
-interface ChallengeCreatorProps {
-  onChallengeCreated?: (challenge: ChallengeFormData) => void;
-}
-
-export function ChallengeCreator({ onChallengeCreated }: ChallengeCreatorProps) {
+export function ChallengeCreator() {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<ChallengeFormData>(defaultFormData);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const utils = trpc.useUtils();
+
+  const createMutation = trpc.challenges.create.useMutation({
+    onSuccess: () => {
+      toast.success("Challenge created successfully!");
+      setOpen(false);
+      setStep(1);
+      setFormData(defaultFormData);
+      utils.challenges.active.invalidate();
+      utils.challenges.upcoming.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to create challenge");
+    },
+  });
 
   const updateField = <K extends keyof ChallengeFormData>(field: K, value: ChallengeFormData[K]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!formData.name.trim()) {
       toast.error("Please enter a challenge name");
       return;
@@ -103,17 +111,20 @@ export function ChallengeCreator({ onChallengeCreated }: ChallengeCreatorProps) 
       return;
     }
 
-    setIsSubmitting(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    toast.success("Challenge created successfully!");
-    onChallengeCreated?.(formData);
-    setOpen(false);
-    setStep(1);
-    setFormData(defaultFormData);
-    setIsSubmitting(false);
+    createMutation.mutate({
+      name: formData.name,
+      description: formData.description,
+      theme: formData.theme || undefined,
+      rules: formData.rules || undefined,
+      challengeType: formData.challengeType,
+      mode: formData.mode,
+      durationMinutes: formData.durationMinutes,
+      minAgents: formData.minAgents,
+      maxAgents: formData.maxAgents,
+      minLevel: formData.minLevel,
+      experienceReward: formData.experienceReward,
+      reputationReward: formData.reputationReward,
+    });
   };
 
   const totalSteps = 3;
@@ -304,7 +315,7 @@ export function ChallengeCreator({ onChallengeCreated }: ChallengeCreatorProps) 
                 value={[formData.minLevel]}
                 onValueChange={([v]) => updateField("minLevel", v)}
                 min={1}
-                max={50}
+                max={20}
                 step={1}
               />
             </div>
@@ -318,114 +329,77 @@ export function ChallengeCreator({ onChallengeCreated }: ChallengeCreatorProps) 
             animate={{ opacity: 1, x: 0 }}
             className="space-y-6"
           >
-            <Card className="bg-muted/50">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-yellow-500" />
-                  Reward Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Set the rewards that participants will receive upon completion.
-                </p>
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label>Experience Reward: {formData.experienceReward} XP</Label>
-                    <Zap className="w-4 h-4 text-yellow-500" />
-                  </div>
-                  <Slider
-                    value={[formData.experienceReward]}
-                    onValueChange={([v]) => updateField("experienceReward", v)}
-                    min={100}
-                    max={5000}
-                    step={100}
-                  />
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label>Reputation Reward: {formData.reputationReward}</Label>
-                    <Trophy className="w-4 h-4 text-primary" />
-                  </div>
-                  <Slider
-                    value={[formData.reputationReward]}
-                    onValueChange={([v]) => updateField("reputationReward", v)}
-                    min={10}
-                    max={500}
-                    step={10}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Public Challenge</Label>
-                <p className="text-sm text-muted-foreground">
-                  Anyone can join this challenge
-                </p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>Experience Reward: {formData.experienceReward} XP</Label>
               </div>
-              <Switch
-                checked={formData.isPublic}
-                onCheckedChange={v => updateField("isPublic", v)}
+              <Slider
+                value={[formData.experienceReward]}
+                onValueChange={([v]) => updateField("experienceReward", v)}
+                min={50}
+                max={2000}
+                step={50}
               />
             </div>
 
-            {/* Preview */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Challenge Preview</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-lg">{formData.name || "Untitled Challenge"}</h3>
-                  <Badge>{formData.challengeType}</Badge>
-                  <Badge variant="outline">{formData.mode}</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {formData.description || "No description provided"}
-                </p>
-                <div className="flex flex-wrap gap-4 text-sm">
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    {formData.durationMinutes} min
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
-                    {formData.minAgents}-{formData.maxAgents} agents
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Zap className="w-4 h-4" />
-                    {formData.experienceReward} XP
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Trophy className="w-4 h-4" />
-                    {formData.reputationReward} rep
-                  </span>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>Reputation Reward: {formData.reputationReward}</Label>
+              </div>
+              <Slider
+                value={[formData.reputationReward]}
+                onValueChange={([v]) => updateField("reputationReward", v)}
+                min={10}
+                max={500}
+                step={10}
+              />
+            </div>
+
+            {/* Summary Card */}
+            <Card className="bg-muted/50">
+              <CardContent className="p-4 space-y-2">
+                <h4 className="font-semibold">Challenge Summary</h4>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <span className="text-muted-foreground">Name:</span>
+                  <span>{formData.name || "—"}</span>
+                  <span className="text-muted-foreground">Type:</span>
+                  <span className="capitalize">{formData.challengeType}</span>
+                  <span className="text-muted-foreground">Mode:</span>
+                  <span className="capitalize">{formData.mode}</span>
+                  <span className="text-muted-foreground">Duration:</span>
+                  <span>{formData.durationMinutes} min</span>
+                  <span className="text-muted-foreground">Agents:</span>
+                  <span>{formData.minAgents}–{formData.maxAgents}</span>
+                  <span className="text-muted-foreground">Min Level:</span>
+                  <span>{formData.minLevel}</span>
+                  <span className="text-muted-foreground">XP Reward:</span>
+                  <span>{formData.experienceReward}</span>
+                  <span className="text-muted-foreground">Rep Reward:</span>
+                  <span>{formData.reputationReward}</span>
                 </div>
               </CardContent>
             </Card>
           </motion.div>
         )}
 
-        {/* Navigation */}
-        <div className="flex justify-between pt-4 border-t">
+        {/* Navigation Buttons */}
+        <div className="flex justify-between mt-6">
           <Button
             variant="outline"
-            onClick={() => setStep(s => Math.max(1, s - 1))}
-            disabled={step === 1}
+            onClick={() => step > 1 ? setStep(step - 1) : setOpen(false)}
           >
-            Back
+            {step === 1 ? "Cancel" : "Back"}
           </Button>
           {step < totalSteps ? (
-            <Button onClick={() => setStep(s => s + 1)}>
-              Continue
+            <Button onClick={() => setStep(step + 1)}>
+              Next
             </Button>
           ) : (
-            <Button onClick={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : "Create Challenge"}
+            <Button
+              onClick={handleSubmit}
+              disabled={createMutation.isPending}
+            >
+              {createMutation.isPending ? "Creating..." : "Create Challenge"}
             </Button>
           )}
         </div>

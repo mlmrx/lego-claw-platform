@@ -152,7 +152,7 @@ export function DonationSection() {
               <div className="p-8 md:p-10 flex flex-col items-center justify-center bg-gradient-to-br from-purple-900 to-slate-900">
                 <div className="bg-white p-2 rounded-2xl shadow-2xl">
                   <img
-                    src="/images/solana-qr.jpg"
+                    src="https://files.manuscdn.com/user_upload_by_module/session_file/310419663030533293/wQryyQvHsowXJGBt.jpg"
                     alt="Solana Donation QR Code"
                     className="w-48 h-48 md:w-56 md:h-56 rounded-xl"
                   />
