@@ -7,13 +7,16 @@
  * - Agent-to-agent communication
  * - Consensus building for design decisions
  * - Conflict resolution
+ * - Persisting all agent messages to the database
  */
 
 import { AgentBrain, AgentAction, BuildContext, BrickPlacement, createAgentBrain } from "./agentBrain";
 import { getDb } from "./db";
 import { eq, desc } from "drizzle-orm";
-import { agents, buildProjects, agentSkills, skills } from "../drizzle/schema";
+import { agents, buildProjects, agentSkills, skills, agentMessages } from "../drizzle/schema";
 import * as schema from "../drizzle/schema";
+import { nanoid } from "nanoid";
+import { saveCompletedBuild } from "./db";
 
 export interface CollaborationSession {
   id: string;
@@ -27,6 +30,8 @@ export interface CollaborationSession {
   isActive: boolean;
   startedAt: number;
   lastActionAt: number;
+  // Map agent publicId/name to their DB agent ID (if available)
+  agentDbIdMap: Map<string, number>;
 }
 
 export interface SessionUpdate {
@@ -42,6 +47,74 @@ const activeSessions = new Map<string, CollaborationSession>();
 
 // Session update listeners (for real-time streaming)
 const sessionListeners = new Map<string, Set<(update: SessionUpdate) => void>>();
+
+/**
+ * Map AgentAction.type to agentMessages.messageType enum
+ */
+function actionTypeToMessageType(actionType: string): "idea" | "action" | "reaction" | "question" | "celebration" | "system" {
+  switch (actionType) {
+    case "think":
+    case "propose":
+      return "idea";
+    case "build":
+      return "action";
+    case "react":
+    case "agree":
+    case "disagree":
+      return "reaction";
+    case "speak":
+      return "idea";
+    case "celebrate":
+      return "celebration";
+    default:
+      return "system";
+  }
+}
+
+/**
+ * Persist an agent action to the database as an agentMessage.
+ * Non-blocking: errors are logged but don't stop the session.
+ */
+async function persistAction(session: CollaborationSession, action: AgentAction): Promise<void> {
+  try {
+    // Only persist if we have a real project ID
+    if (session.projectId <= 0) return;
+
+    const db = await getDb();
+    if (!db) return;
+
+    // Look up the agent's DB ID from the map
+    let agentDbId = session.agentDbIdMap.get(action.agentId);
+    
+    // If not in map, try to look up by publicId
+    if (!agentDbId) {
+      const agentRows = await db.select({ id: agents.id })
+        .from(agents)
+        .where(eq(agents.publicId, action.agentId))
+        .limit(1);
+      if (agentRows.length > 0) {
+        agentDbId = agentRows[0].id;
+        session.agentDbIdMap.set(action.agentId, agentDbId);
+      }
+    }
+
+    // System agents (like "system_architect") won't have DB IDs — skip persistence for them
+    if (!agentDbId) return;
+
+    const publicId = nanoid(16);
+    await db.insert(agentMessages).values({
+      publicId,
+      projectId: session.projectId,
+      agentId: agentDbId,
+      content: action.content,
+      messageType: actionTypeToMessageType(action.type),
+      brickAction: action.brickData ? action.brickData : null,
+    });
+  } catch (error) {
+    // Non-blocking: log and continue
+    console.warn("[CollaborationEngine] Failed to persist action:", (error as Error).message);
+  }
+}
 
 /**
  * Create a new collaboration session for a build project
@@ -68,8 +141,10 @@ export async function createCollaborationSession(
     };
   }
 
-  // Get agents for this session
+  // Get agents for this session and build the DB ID map
   let agentsData: any[] = [];
+  const agentDbIdMap = new Map<string, number>();
+
   if (db && agentIds && agentIds.length > 0) {
     // Use specified agents
     agentsData = await Promise.all(
@@ -77,6 +152,9 @@ export async function createCollaborationSession(
         const agentResults = await db.select().from(agents).where(eq(agents.publicId, publicId)).limit(1);
         const agent = agentResults[0];
         if (!agent) return null;
+        
+        // Map publicId to DB id
+        agentDbIdMap.set(publicId, agent.id);
         
         // Get agent's skills
         const agentSkillsData = await db
@@ -95,6 +173,9 @@ export async function createCollaborationSession(
     
     agentsData = await Promise.all(
       allAgents.map(async (agent: any) => {
+        // Map publicId to DB id
+        agentDbIdMap.set(agent.publicId, agent.id);
+        
         const agentSkillsData = await db
           .select({ name: skills.name })
           .from(agentSkills)
@@ -128,6 +209,7 @@ export async function createCollaborationSession(
     isActive: true,
     startedAt: Date.now(),
     lastActionAt: Date.now(),
+    agentDbIdMap,
   };
 
   activeSessions.set(sessionId, session);
@@ -207,6 +289,9 @@ export async function runCollaborationRound(sessionId: string): Promise<AgentAct
       session.actions.push(action);
       roundActions.push(action);
       
+      // Persist action to database (non-blocking)
+      persistAction(session, action).catch(() => {});
+      
       // Notify listeners
       notifyListeners(sessionId, { type: "action", action });
 
@@ -271,6 +356,10 @@ async function runReactionRound(
       const reaction = await agent.reactToAction(significantAction, context);
       session.actions.push(reaction);
       reactions.push(reaction);
+      
+      // Persist reaction to database (non-blocking)
+      persistAction(session, reaction).catch(() => {});
+      
       notifyListeners(session.id, { type: "action", action: reaction });
 
       // If reaction includes a brick, add it
@@ -294,7 +383,8 @@ async function runReactionRound(
 }
 
 /**
- * Run a complete build session with multiple rounds
+ * Run a complete build session with multiple rounds.
+ * On completion, persists the final build to the database.
  */
 export async function runBuildSession(
   sessionId: string,
@@ -332,6 +422,26 @@ export async function runBuildSession(
   // Complete the session
   session.isActive = false;
   notifyListeners(sessionId, { type: "complete" });
+
+  // Persist the completed build to the database if it has bricks
+  if (session.bricks.length > 0) {
+    try {
+      const contributors = Array.from(new Set(session.bricks.map(b => b.placedBy)));
+      await saveCompletedBuild({
+        name: session.projectName,
+        description: session.projectDescription,
+        theme: "collaborative",
+        style: "ai-generated",
+        brickData: session.bricks,
+        currentBricks: session.bricks.length,
+        contributors,
+        messageCount: session.actions.length,
+      });
+      console.log(`[CollaborationEngine] Build "${session.projectName}" saved with ${session.bricks.length} bricks`);
+    } catch (error) {
+      console.error("[CollaborationEngine] Failed to persist completed build:", error);
+    }
+  }
 }
 
 /**
@@ -433,20 +543,21 @@ function delay(ms: number): Promise<void> {
 export async function createDemoSession(): Promise<CollaborationSession> {
   const sessionId = `demo_${Date.now()}`;
   const agentsData = getDefaultAgents();
-  const agents = agentsData.map((agent: any) => createAgentBrain(agent));
+  const agentBrains = agentsData.map((agent: any) => createAgentBrain(agent));
 
   const session: CollaborationSession = {
     id: sessionId,
     projectId: 0,
     projectName: "Community LEGO Tower",
     projectDescription: "A collaborative tower build where each agent contributes their unique skills to create something amazing together.",
-    agents,
+    agents: agentBrains,
     actions: [],
     bricks: [],
     phase: "planning",
     isActive: true,
     startedAt: Date.now(),
     lastActionAt: Date.now(),
+    agentDbIdMap: new Map(),
   };
 
   activeSessions.set(sessionId, session);

@@ -1117,6 +1117,34 @@ const templatesRouter = router({
       return { success: true };
     }),
 
+  // Generate preview image for a template using AI
+  generatePreview: protectedProcedure
+    .input(z.object({ publicId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const template = await db.getBuildTemplateByPublicId(input.publicId);
+      if (!template) throw new TRPCError({ code: "NOT_FOUND", message: "Template not found" });
+      if (template.creatorId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Not your template" });
+
+      // Build a descriptive prompt from the template data
+      const brickCount = template.totalBricks || 0;
+      const theme = template.theme || "creative";
+      const style = template.style || "colorful";
+      const prompt = `A 3D isometric render of a LEGO construction: ${template.name}. ${template.description || ''}. Theme: ${theme}, style: ${style}. Made of ${brickCount} LEGO bricks. Clean white background, studio lighting, high detail, miniature toy photography.`;
+
+      try {
+        const { generateImage } = await import("./_core/imageGeneration");
+        const { url } = await generateImage({ prompt });
+        if (url) {
+          await db.updateTemplatePreviewImage(template.id, url);
+          return { success: true, previewImage: url };
+        }
+        throw new Error("No URL returned from image generation");
+      } catch (error) {
+        console.error("Failed to generate template preview:", error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to generate preview image" });
+      }
+    }),
+
   // Delete template
   delete: protectedProcedure
     .input(z.object({ publicId: z.string() }))

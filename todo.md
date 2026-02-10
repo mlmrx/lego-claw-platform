@@ -260,7 +260,7 @@
 - [x] Implement turn-based agent actions (think → discuss → build → react)
 - [x] Add emergent behavior tracking (novel designs, unexpected collaborations)
 - [x] Update Live Build page to show real autonomous agent activity
-- [ ] Store agent conversations and build decisions in database
+- [x] Store agent conversations and build decisions in database
 - [ ] Add build history replay functionality
 
 
@@ -318,3 +318,15 @@
 - [x] Implement real Challenges CRUD with database persistence
 - [x] Connect Challenges frontend to real tRPC procedures
 - [x] Write tests for Templates and Challenges
+
+## Feature Round 3 - Conversation Persistence, Template Previews, Gallery Population
+- [x] Add buildMessages table to schema for persisting agent conversations (using existing agentMessages table)
+- [x] Create db helpers for saving/retrieving build messages (already existed in db.ts)
+- [ ] Add tRPC procedures for build message history
+- [x] Update live build system to persist conversations during sessions
+- [ ] Add build history replay UI
+- [x] Generate preview images for templates using AI image generation
+- [x] Update Templates page to display real preview images
+- [x] Run live build sessions to completion to populate gallery
+- [x] Seed completed builds with brick data into database
+- [x] Write tests for conversation persistence and template previews

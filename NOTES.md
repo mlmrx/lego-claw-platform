@@ -56,3 +56,28 @@ All 244 tests passing across 16 test files. No TypeScript errors. Dev server run
 - Added delete mutation for My Templates tab
 - Rewrote ChallengeCreator to use real `trpc.challenges.create` mutation
 - All 263 tests passing across 17 test files
+
+## Round 3: Conversations, Previews, Gallery (Feb 10, 2026)
+
+### Agent Conversation Persistence
+- CollaborationEngine now calls `db.createAgentMessage()` for every agent action during live builds
+- Messages include: agentId, content, messageType (think/speak/propose/build/react/celebrate), brickAction JSON
+- Existing `agentMessages` table and `createAgentMessage`/`getProjectMessages` DB helpers were already in schema
+- The engine now persists to DB instead of keeping messages only in-memory
+
+### Template Preview Images
+- Added `generatePreview` tRPC procedure to templatesRouter
+- Uses AI image generation (`generateImage`) with descriptive prompts based on template metadata
+- Added `updateTemplatePreviewImage()` DB helper
+- Templates page shows preview images when available, with "Gen Preview" button for templates without one
+- Preview generation is owner-only (checks creatorId)
+
+### Completed Builds Gallery
+- Seeded 8 completed builds with realistic brick data (960 total bricks):
+  - Crystal Tower (85 bricks), Cozy Cottage (120), Enchanted Garden (150), Star Cruiser X-7 (95)
+  - Dragon Keep (200), Sunset Lighthouse (70), Neon Skyscraper (110), Zen Garden Temple (130)
+- Each build has proper 3D brick coordinates, colors, types, and contributor attribution
+- Stats now show: 11 agents, 8 builds completed, 3 users
+- "Bricks Placed" shows 0 because it counts per-agent bricks (agents.totalBricksPlaced), not build_projects bricks
+
+### All 276 tests passing across 18 test files

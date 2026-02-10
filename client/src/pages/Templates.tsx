@@ -18,7 +18,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { motion } from "framer-motion";
 import { 
   ArrowLeft, Search, Heart, Download, Star, Plus, Blocks, 
-  Sparkles, Clock, Users, Filter, Grid3X3
+  Sparkles, Clock, Users, Filter, Grid3X3, ImageIcon, Loader2
 } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -199,6 +199,19 @@ export default function Templates() {
       toast.success("Template liked!");
       utils.templates.list.invalidate();
       utils.templates.featured.invalidate();
+    },
+  });
+
+  // Generate preview mutation
+  const generatePreviewMutation = trpc.templates.generatePreview.useMutation({
+    onSuccess: (data) => {
+      toast.success("Preview image generated!");
+      utils.templates.list.invalidate();
+      utils.templates.featured.invalidate();
+      utils.templates.myTemplates.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to generate preview");
     },
   });
 
@@ -462,8 +475,12 @@ export default function Templates() {
                     transition={{ delay: i * 0.05 }}
                   >
                     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-                      <div className="h-24 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-                        <Blocks className="w-12 h-12 text-primary/30" />
+                      <div className="h-32 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center overflow-hidden">
+                        {template.previewImage ? (
+                          <img src={template.previewImage} alt={template.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <Blocks className="w-12 h-12 text-primary/30" />
+                        )}
                       </div>
                       <CardHeader className="pb-2">
                         <div className="flex items-start justify-between gap-2">
@@ -532,8 +549,12 @@ export default function Templates() {
                     transition={{ delay: i * 0.05 }}
                   >
                     <Card className="overflow-hidden">
-                      <div className="h-24 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center relative">
-                        <Blocks className="w-12 h-12 text-primary/30" />
+                      <div className="h-32 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center relative overflow-hidden">
+                        {template.previewImage ? (
+                          <img src={template.previewImage} alt={template.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <Blocks className="w-12 h-12 text-primary/30" />
+                        )}
                         <Badge className="absolute top-2 left-2 bg-primary text-primary-foreground">
                           #{i + 1}
                         </Badge>
@@ -593,8 +614,12 @@ export default function Templates() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {myTemplates.map((template) => (
                     <Card key={template.publicId} className="overflow-hidden">
-                      <div className="h-24 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-                        <Blocks className="w-12 h-12 text-primary/30" />
+                      <div className="h-32 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center overflow-hidden">
+                        {template.previewImage ? (
+                          <img src={template.previewImage} alt={template.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <Blocks className="w-12 h-12 text-primary/30" />
+                        )}
                       </div>
                       <CardHeader className="pb-2">
                         <CardTitle className="text-base">{template.name}</CardTitle>
@@ -609,11 +634,27 @@ export default function Templates() {
                           <span>{template.likes} likes</span>
                         </div>
                       </CardContent>
-                      <CardFooter className="gap-2">
+                      <CardFooter className="gap-2 flex-wrap">
+                        {!template.previewImage && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1"
+                            disabled={generatePreviewMutation.isPending}
+                            onClick={() => generatePreviewMutation.mutate({ publicId: template.publicId })}
+                          >
+                            {generatePreviewMutation.isPending ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <ImageIcon className="w-3 h-3" />
+                            )}
+                            Gen Preview
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"
-                          className="flex-1 text-destructive hover:text-destructive"
+                          className="text-destructive hover:text-destructive"
                           onClick={() => {
                             if (confirm("Delete this template?")) {
                               deleteTemplateMutation.mutate({ publicId: template.publicId });

@@ -634,6 +634,14 @@ export async function likeTemplate(templateId: number) {
     .where(eq(buildTemplates.id, templateId));
 }
 
+export async function updateTemplatePreviewImage(templateId: number, previewImageUrl: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(buildTemplates)
+    .set({ previewImage: previewImageUrl })
+    .where(eq(buildTemplates.id, templateId));
+}
+
 export async function deleteTemplate(templateId: number, creatorId: number) {
   const db = await getDb();
   if (!db) return;
