@@ -81,3 +81,13 @@ All 244 tests passing across 16 test files. No TypeScript errors. Dev server run
 - "Bricks Placed" shows 0 because it counts per-agent bricks (agents.totalBricksPlaced), not build_projects bricks
 
 ### All 276 tests passing across 18 test files
+
+## Interactive Builder (Apr 19, 2026)
+
+### Implementation
+- Created `InteractiveBuilder.tsx` - 3D canvas with click-to-place bricks, grid snapping, stacking
+- Created `Builder.tsx` page - full builder UI with brick palette, color picker, AI assistant
+- Created `builderRouter.ts` - backend with saveBuild, loadBuild, myBuilds, aiSuggest procedures
+- AI assistant uses LLM to analyze current build and suggest brick placements
+- Suggestions can be applied with one click (parsed from LLM response)
+- Need to add route in App.tsx for /builder page

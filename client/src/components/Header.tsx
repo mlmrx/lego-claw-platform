@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Blocks, Eye, Bot, LogIn, Store, Grid3X3, Trophy, Book, Heart,
-  Menu, X, ChevronRight, Camera
+  Menu, X, ChevronRight, Camera, Box
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -115,6 +115,18 @@ export function Header({ className }: HeaderProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
           >
+            {/* Build Your Own Button */}
+            <Link href="/builder">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-xl gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3"
+              >
+                <Box className="w-4 h-4" />
+                <span className="hidden sm:inline">Build</span>
+              </Button>
+            </Link>
+
             {/* Start Build Button */}
             <Link href="/start-build">
               <Button 

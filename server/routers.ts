@@ -22,6 +22,7 @@ import { imageBuildRouter } from "./imageBuildRouter";
 import { liveBuildRouter } from "./liveBuildRouter";
 import { youtubeStreamingRouter } from "./youtubeStreaming";
 import { multiStreamRouter } from "./multiStreamRouter";
+import { builderRouter } from "./builderRouter";
 
 // ============================================
 // BUILT-IN SKILLS DEFINITION
@@ -2030,6 +2031,9 @@ export const appRouter = router({
   
   // Multi-Platform Streaming
   multiStream: multiStreamRouter,
+
+  // Interactive Builder
+  builder: builderRouter,
 });
 
 export type AppRouter = typeof appRouter;

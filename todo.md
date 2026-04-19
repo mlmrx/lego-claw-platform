@@ -330,3 +330,17 @@
 - [x] Run live build sessions to completion to populate gallery
 - [x] Seed completed builds with brick data into database
 - [x] Write tests for conversation persistence and template previews
+
+## Interactive LEGO Builder with AI Assistant
+- [x] Read existing 3D rendering and build system code
+- [x] Create interactive builder page with 3D grid and brick palette
+- [x] Implement click-to-place brick placement on 3D grid
+- [x] Add brick color picker and brick type selector
+- [x] Add delete/undo brick operations
+- [x] Implement camera controls (orbit, zoom, pan)
+- [x] Add AI assistant panel that suggests next brick placements
+- [x] Create backend procedures for saving/loading user builds
+- [x] Create AI suggestion endpoint using LLM
+- [x] Connect builder UI to save/load/AI suggestion backend
+- [x] Add route and navigation link for builder page
+- [x] Write tests for builder backend procedures
