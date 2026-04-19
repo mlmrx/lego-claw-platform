@@ -344,3 +344,12 @@
 - [x] Connect builder UI to save/load/AI suggestion backend
 - [x] Add route and navigation link for builder page
 - [x] Write tests for builder backend procedures
+
+## Builder Enhancement - Ghost Preview & Sound Effects
+- [x] Add ghost preview brick that follows mouse cursor on the baseplate
+- [x] Show transparent preview of selected brick type/color at snap position
+- [x] Implement grid snapping for ghost preview (align to LEGO stud grid)
+- [x] Add stacking detection for ghost preview (show on top of existing bricks)
+- [x] Generate and add brick snap sound effect on placement
+- [x] Add subtle animation on brick placement (scale bounce)
+- [x] Write tests for enhanced builder features
