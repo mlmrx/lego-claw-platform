@@ -353,3 +353,18 @@
 - [x] Generate and add brick snap sound effect on placement
 - [x] Add subtle animation on brick placement (scale bounce)
 - [x] Write tests for enhanced builder features
+
+## Legoland-Scale Builder Expansion
+- [x] Create expanded brick catalog with 100+ piece types across themed categories
+- [x] Add specialty 3D shapes: slopes, arches, cylinders, cones, wedges, curves, round bricks
+- [x] Add themed collections: Ninjago, Dino, Galaxy, City, Pirates, Castle, Nature, Water Park
+- [x] Add character/minifigure pieces: people, ninjas, pirates, astronauts, knights
+- [x] Add animal pieces: dragons, dinosaurs, horses, sharks, birds, dogs, cats
+- [x] Add vehicle pieces: cars, boats, spaceships, trains, helicopters, motorcycles
+- [x] Add prefab structures: historic monuments, buildings, bridges, towers, gates
+- [x] Add nature pieces: trees, flowers, water, rocks, bushes, palm trees
+- [x] Add specialty pieces: windows, doors, fences, flags, treasure chests, cannons
+- [x] Implement themed building modes with curated palettes
+- [x] Update Builder UI with categorized piece browser and search
+- [x] Update AI assistant to understand themes and suggest themed pieces
+- [x] Write tests for expanded builder

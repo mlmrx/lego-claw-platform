@@ -2,16 +2,21 @@
  * InteractiveBuilder Component
  * A full 3D LEGO builder with click-to-place bricks, grid snapping,
  * ghost preview, snap sound effects, placement bounce animation,
- * color/type selection, undo/redo, and delete mode.
+ * color/type selection, undo/redo, delete mode, and shape support.
+ * 
+ * Now supports the full brick catalog with specialty shapes rendered
+ * via ShapeBrick3D (slopes, arches, cylinders, cones, etc.)
  */
 
 import { Suspense, useRef, useState, useCallback, useMemo, useEffect } from "react";
 import { Canvas, useThree, useFrame, ThreeEvent } from "@react-three/fiber";
 import { OrbitControls, Environment, ContactShadows, PerspectiveCamera, Html } from "@react-three/drei";
-import { LegoBrick3D, LEGO_COLORS, BrickPlacement } from "./LegoBrick3D";
+import { LegoBrick3D, LEGO_COLORS } from "./LegoBrick3D";
+import ShapeBrick3D from "./ShapeBrick3D";
 import { GhostBrick3D } from "./GhostBrick3D";
 import { PlacementBounce } from "./PlacementBounce";
 import { playSnapSound, playHoverTick, playDeleteSound } from "@/lib/snapSound";
+import type { BrickShape } from "@/lib/brickCatalog";
 import * as THREE from "three";
 
 // ============================================
@@ -25,6 +30,7 @@ export interface BuilderBrick {
   width: number;
   depth: number;
   height: number;
+  shape?: BrickShape;
   placedAt: number;
 }
 
@@ -34,8 +40,10 @@ export interface BrickType {
   depth: number;
   height: number;
   icon: string;
+  shape?: BrickShape;
 }
 
+// Legacy basic types for backward compatibility
 export const BRICK_TYPES: BrickType[] = [
   { name: "1x1", width: 1, depth: 1, height: 3, icon: "▪" },
   { name: "2x1", width: 2, depth: 1, height: 3, icon: "▬" },
@@ -47,7 +55,7 @@ export const BRICK_TYPES: BrickType[] = [
   { name: "4x2 Plate", width: 4, depth: 2, height: 1, icon: "▭" },
 ];
 
-const GRID_SIZE = 16; // 16x16 baseplate
+const GRID_SIZE = 24; // Larger baseplate for bigger builds
 const UNIT = 0.8; // Size of 1 stud in world units
 const BRICK_H = 0.96; // Height of a standard brick (3 plates)
 const PLATE_H = BRICK_H / 3; // Height of a plate
@@ -140,7 +148,6 @@ function InteractiveBaseplate({
 
       if (gx >= -halfGrid && gx < halfGrid && gz >= -halfGrid && gz < halfGrid) {
         const topY = findTopY(bricks, gx, gz, ghostWidth, ghostDepth);
-        const brickH = (ghostHeight / 3) * BRICK_H;
         const worldY = topY;
 
         // Only fire hover tick when grid position actually changes
@@ -163,9 +170,6 @@ function InteractiveBaseplate({
     lastHoverRef.current = null;
     onHoverChange(null);
   }, [onHoverChange]);
-
-  const [clickGx, setClickGx] = useState<number | null>(null);
-  const [clickGz, setClickGz] = useState<number | null>(null);
 
   const handleClick = useCallback(
     (e: ThreeEvent<MouseEvent>) => {
@@ -214,18 +218,18 @@ function InteractiveBaseplate({
         );
       })}
 
-      {/* Studs */}
-      {Array.from({ length: size }, (_, x) =>
-        Array.from({ length: size }, (_, z) => (
+      {/* Studs - only render every other stud for performance on large grid */}
+      {Array.from({ length: Math.floor(size / 2) }, (_, x) =>
+        Array.from({ length: Math.floor(size / 2) }, (_, z) => (
           <mesh
             key={`stud-${x}-${z}`}
             position={[
-              (x - (size - 1) / 2) * UNIT,
+              (x * 2 - (size - 2) / 2) * UNIT,
               0.02,
-              (z - (size - 1) / 2) * UNIT,
+              (z * 2 - (size - 2) / 2) * UNIT,
             ]}
           >
-            <cylinderGeometry args={[0.24, 0.24, 0.04, 12]} />
+            <cylinderGeometry args={[0.24, 0.24, 0.04, 8]} />
             <meshStandardMaterial color="#237841" roughness={0.4} />
           </mesh>
         ))
@@ -235,7 +239,7 @@ function InteractiveBaseplate({
 }
 
 // ============================================
-// CLICKABLE BRICK (for delete mode)
+// CLICKABLE BRICK (for delete mode) - supports shapes
 // ============================================
 
 function ClickableBrick({
@@ -260,7 +264,6 @@ function ClickableBrick({
     if (!groupRef.current || !isNew) return;
     const elapsed = (Date.now() - brick.placedAt) / 1000;
     if (elapsed < 0.3) {
-      // Quick scale bounce: overshoot then settle
       const t = elapsed / 0.3;
       const bounce = 1 + Math.sin(t * Math.PI) * 0.12;
       scaleRef.current = bounce;
@@ -270,6 +273,10 @@ function ClickableBrick({
       groupRef.current.scale.setScalar(1);
     }
   });
+
+  const displayColor = hovered && deleteMode ? "#FF0000" : isHighlighted ? "#FFD700" : brick.color;
+  const shape = brick.shape || "standard";
+  const isSpecialShape = shape !== "standard" && shape !== "plate";
 
   return (
     <group
@@ -294,15 +301,26 @@ function ClickableBrick({
         }
       }}
     >
-      <LegoBrick3D
-        position={brick.position}
-        color={hovered && deleteMode ? "#FF0000" : isHighlighted ? "#FFD700" : brick.color}
-        width={brick.width}
-        depth={brick.depth}
-        height={brick.height}
-        isAnimating={false}
-        animationDelay={0}
-      />
+      {isSpecialShape ? (
+        <ShapeBrick3D
+          position={brick.position}
+          color={displayColor}
+          width={brick.width}
+          depth={brick.depth}
+          height={brick.height}
+          shape={shape}
+        />
+      ) : (
+        <LegoBrick3D
+          position={brick.position}
+          color={displayColor}
+          width={brick.width}
+          depth={brick.depth}
+          height={brick.height}
+          isAnimating={false}
+          animationDelay={0}
+        />
+      )}
       {hovered && deleteMode && (
         <Html position={[brick.position[0], brick.position[1] + 1.5, brick.position[2]]} center>
           <div className="bg-red-500 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap">
@@ -324,15 +342,60 @@ function SceneControls({ deleteMode }: { deleteMode: boolean }) {
       enablePan={true}
       enableZoom={true}
       minDistance={5}
-      maxDistance={40}
+      maxDistance={60}
       minPolarAngle={Math.PI / 8}
       maxPolarAngle={Math.PI / 2.1}
       mouseButtons={{
         LEFT: THREE.MOUSE.LEFT,
         MIDDLE: THREE.MOUSE.DOLLY,
-        RIGHT: THREE.MOUSE.ROTATE,
+        RIGHT: THREE.MOUSE.RIGHT,
       }}
     />
+  );
+}
+
+// ============================================
+// GHOST SHAPE PREVIEW
+// ============================================
+
+function GhostShapeBrick({
+  position,
+  color,
+  width,
+  depth,
+  height,
+  shape,
+}: {
+  position: [number, number, number];
+  color: string;
+  width: number;
+  depth: number;
+  height: number;
+  shape: BrickShape;
+}) {
+  const groupRef = useRef<THREE.Group>(null);
+
+  useFrame((_, delta) => {
+    if (groupRef.current) {
+      // Gentle pulse
+      const t = Date.now() * 0.003;
+      groupRef.current.scale.setScalar(1 + Math.sin(t) * 0.03);
+    }
+  });
+
+  return (
+    <group ref={groupRef}>
+      <ShapeBrick3D
+        position={position}
+        color={color}
+        width={width}
+        depth={depth}
+        height={height}
+        shape={shape}
+        opacity={0.5}
+        wireframe
+      />
+    </group>
   );
 }
 
@@ -401,6 +464,7 @@ export function InteractiveBuilder({
         width: selectedBrickType.width,
         depth: selectedBrickType.depth,
         height: selectedBrickType.height,
+        shape: selectedBrickType.shape || "standard",
       });
     },
     [bricks, selectedColor, selectedBrickType, deleteMode, onPlaceBrick]
@@ -422,10 +486,13 @@ export function InteractiveBuilder({
     setPlacementEffects((prev) => prev.filter((e) => e.id !== id));
   }, []);
 
+  const ghostShape = selectedBrickType.shape || "standard";
+  const isSpecialGhost = ghostShape !== "standard" && ghostShape !== "plate";
+
   return (
     <div className={`w-full h-full ${className}`}>
       <Canvas shadows>
-        <PerspectiveCamera makeDefault position={[12, 10, 12]} fov={45} />
+        <PerspectiveCamera makeDefault position={[15, 12, 15]} fov={45} />
         <SceneControls deleteMode={deleteMode} />
 
         {/* Lighting */}
@@ -458,16 +525,27 @@ export function InteractiveBuilder({
           deleteMode={deleteMode}
         />
 
-        {/* Ghost brick preview */}
+        {/* Ghost brick preview - use shape-aware version for specialty shapes */}
         {ghostPosition && !deleteMode && (
-          <GhostBrick3D
-            position={ghostPosition}
-            color={selectedColor}
-            width={selectedBrickType.width}
-            depth={selectedBrickType.depth}
-            height={selectedBrickType.height}
-            valid={true}
-          />
+          isSpecialGhost ? (
+            <GhostShapeBrick
+              position={ghostPosition}
+              color={selectedColor}
+              width={selectedBrickType.width}
+              depth={selectedBrickType.depth}
+              height={selectedBrickType.height}
+              shape={ghostShape}
+            />
+          ) : (
+            <GhostBrick3D
+              position={ghostPosition}
+              color={selectedColor}
+              width={selectedBrickType.width}
+              depth={selectedBrickType.depth}
+              height={selectedBrickType.height}
+              valid={true}
+            />
+          )
         )}
 
         {/* Placement bounce effects */}
@@ -483,7 +561,7 @@ export function InteractiveBuilder({
         <ContactShadows
           position={[0, -0.05, 0]}
           opacity={0.4}
-          scale={20}
+          scale={30}
           blur={2}
           far={10}
         />

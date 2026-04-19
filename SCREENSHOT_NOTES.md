@@ -1,10 +1,13 @@
-# Screenshot Notes - Builder Feature
+# Screenshot Notes - Builder Feature (Legoland Expansion)
 
-The builder page renders correctly with:
-- Left panel: 15 LEGO colors (red, blue, yellow, green, orange, white, black, gray, dark gray, brown, tan, lime, pink, purple, cyan)
-- Left panel: 8 brick types (1x1, 2x1, 2x2, 4x2 in standard and plate variants)
-- Center: 3D green baseplate with studs, instruction overlay "Click on the green baseplate to place bricks"
-- Right panel: AI Assistant with welcome message and quick action buttons (Suggest next, Complete, Colors)
-- Header: Back, title "My LEGO Build", undo/redo, Delete, Clear, Save buttons
-- Bottom left: Current Mode (Build Mode), Shortcuts (Undo Ctrl+Z, Redo Ctrl+Shift+Z, Delete D, Exit Esc)
-- The "Build" button appears in the main header nav between Support and Start Build
+## Builder Page - Full Catalog UI Working
+- Builder renders correctly with 3D green baseplate
+- Left panel shows: Bricks | Themes | Colors tabs
+- 12 category icons visible in the toolbar (basic, plates, slopes, arches, rounds, specialty, structural, decorative, vehicles, nature, characters, animals)
+- Basic Bricks category showing all brick types with proper icons and dimensions
+- Selected brick info shown at top: "Brick 2x1 2x1" with red color dot
+- Right panel: AI Assistant with Suggest, Complete, Colors quick actions
+- Empty state overlay visible: "Click on the green baseplate to place bricks"
+- Top toolbar: Back, Delete, Clear, Save, 0 bricks counter
+- No TypeScript errors, everything renders properly
+- Need to verify Themes tab shows all 9 themed collections with prefabs

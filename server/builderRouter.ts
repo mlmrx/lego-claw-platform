@@ -136,6 +136,7 @@ export const builderRouter = router({
         message: z.string().min(1).max(1000),
         currentBricks: z.array(brickSchema),
         projectName: z.string().optional(),
+        theme: z.string().optional(),
         chatHistory: z
           .array(
             z.object({
@@ -147,7 +148,7 @@ export const builderRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const { message, currentBricks, projectName, chatHistory } = input;
+      const { message, currentBricks, projectName, theme, chatHistory } = input;
 
       // Build a description of the current state
       const brickSummary = currentBricks.length === 0
@@ -160,7 +161,24 @@ export const builderRouter = router({
             )
             .join("\n")}`;
 
-      const systemPrompt = `You are a LEGO building assistant. You help users build LEGO creations by suggesting brick placements and offering creative advice.
+      // Theme-specific guidance
+      const themeGuides: Record<string, string> = {
+        ninjago: "Theme: NINJAGO - Use dark reds, blacks, golds, and deep greens. Build temples with sloped roofs, dojos with training areas, dragon mounts with wing shapes, and ninja hideouts. Include pagoda-style towers, torii gates, and zen garden elements.",
+        dino: "Theme: DINO WORLD - Use greens, browns, tans, and dark grays. Build dinosaur shapes (T-Rex, Triceratops, Stegosaurus), Jurassic fences, volcanic terrain, fossil dig sites, and prehistoric vegetation.",
+        galaxy: "Theme: LEGO GALAXY - Use blues, silvers, whites, and neon accents (cyan, lime). Build spaceships with cockpits and engines, space stations with docking bays, alien structures with unusual geometry, and planetary bases.",
+        city: "Theme: LEGO CITY - Use realistic colors (grays, whites, reds, blues). Build buildings with windows and doors, vehicles (cars, trucks, fire engines), roads, traffic lights, parks, and city infrastructure.",
+        pirates: "Theme: PIRATES - Use browns, tans, dark reds, and blacks. Build pirate ships with masts and sails, treasure chests, skull-shaped caves, tropical islands with palm trees, and dock structures.",
+        castle: "Theme: MEDIEVAL CASTLE - Use grays, dark grays, blues, and reds. Build castle walls with battlements, towers with pointed roofs, drawbridges, throne rooms, and knight training grounds.",
+        nature: "Theme: NATURE & GARDENS - Use greens, browns, blues, and floral colors. Build trees (trunk + canopy), flower gardens, waterfalls (blue cascading down brown rocks), ponds, bridges, and pathways.",
+        waterpark: "Theme: WATER PARK - Use bright blues, cyans, yellows, and whites. Build water slides (curved descending paths), splash pools, wave pools, lazy rivers, and colorful cabanas.",
+        monuments: "Theme: WORLD MONUMENTS - Use stone colors (grays, whites, tans, sandstone). Build miniature versions of famous landmarks: pyramids, towers, arches, columns, domes, and walls.",
+      };
+
+      const themeContext = theme && themeGuides[theme]
+        ? `\n\n${themeGuides[theme]}\nAdapt all suggestions to fit this theme's style, colors, and structures.`
+        : "";
+
+      const systemPrompt = `You are a LEGO building assistant. You help users build LEGO creations by suggesting brick placements and offering creative advice.${themeContext}
 
 IMPORTANT RULES:
 - The build grid is 16x16 studs, centered at origin. Grid positions range from -6.4 to 6.4 in X and Z (each stud is 0.8 units).
