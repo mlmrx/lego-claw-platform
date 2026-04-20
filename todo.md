@@ -377,3 +377,6 @@
 - [x] Improve stud rendering with LEGO logo indent effect
 - [x] Ensure zero-gap stacking between all brick types
 - [x] Refine ABS plastic material for more authentic LEGO appearance
+
+## Navigation UX
+- [x] Rename confusing "Build" and "Start Build" nav items to clearer distinct labels

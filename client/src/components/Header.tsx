@@ -115,7 +115,7 @@ export function Header({ className }: HeaderProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
           >
-            {/* Build Your Own Button */}
+            {/* Free Build Button */}
             <Link href="/builder">
               <Button 
                 variant="outline" 
@@ -123,11 +123,11 @@ export function Header({ className }: HeaderProps) {
                 className="rounded-xl gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3"
               >
                 <Box className="w-4 h-4" />
-                <span className="hidden sm:inline">Build</span>
+                <span className="hidden sm:inline">Free Build</span>
               </Button>
             </Link>
 
-            {/* Start Build Button */}
+            {/* Scan & Build Button */}
             <Link href="/start-build">
               <Button 
                 variant="default" 
@@ -135,7 +135,7 @@ export function Header({ className }: HeaderProps) {
                 className="rounded-xl gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3 bg-primary hover:bg-primary/90"
               >
                 <Camera className="w-4 h-4" />
-                <span className="hidden sm:inline">Start Build</span>
+                <span className="hidden sm:inline">Scan & Build</span>
               </Button>
             </Link>
 
