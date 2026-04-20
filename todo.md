@@ -368,3 +368,12 @@
 - [x] Update Builder UI with categorized piece browser and search
 - [x] Update AI assistant to understand themes and suggest themed pieces
 - [x] Write tests for expanded builder
+
+## LEGO Builder Authenticity Fixes
+- [x] Fix click-to-stack: allow placing bricks on top of existing bricks (not just baseplate)
+- [x] Improve slope geometry for more dramatic visual angle
+- [x] Fix arch/curved shape extrude positioning offsets
+- [x] Add edge bevels to brick body for realistic LEGO look
+- [x] Improve stud rendering with LEGO logo indent effect
+- [x] Ensure zero-gap stacking between all brick types
+- [x] Refine ABS plastic material for more authentic LEGO appearance

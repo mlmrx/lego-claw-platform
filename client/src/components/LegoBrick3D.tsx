@@ -1,24 +1,36 @@
 /**
  * LegoBrick3D Component
- * A 3D LEGO brick with studs rendered using Three.js
+ * Authentic LEGO brick with proper proportions, studs, bottom tubes,
+ * and realistic ABS plastic material.
+ *
+ * Real LEGO dimensions (scaled to Three.js units):
+ *   1 stud pitch  = 8mm  → 1.0 unit
+ *   Brick height  = 9.6mm → 1.2 units  (plate = 3.2mm → 0.4 units)
+ *   Stud diameter = 4.8mm → 0.6 units  (radius 0.3)
+ *   Stud height   = 1.8mm → 0.225 units
+ *   Wall thickness ≈ 1.5mm → 0.1875 units
  */
 
 import { useRef, useMemo } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 
-// LEGO brick dimensions (in LEGO units, 1 unit = 8mm in real life)
-const BRICK_HEIGHT = 0.96; // Standard brick height
-const STUD_HEIGHT = 0.17;
-const STUD_RADIUS = 0.24;
-const UNIT_SIZE = 0.8; // Width/depth of 1x1 brick
+// ── Authentic LEGO dimensions ──────────────────────────────
+export const UNIT = 1.0;          // 1 stud pitch = 1.0 Three.js unit
+export const BRICK_HEIGHT = 1.2;  // Full brick = 1.2 units (3 plates)
+export const PLATE_HEIGHT = 0.4;  // 1 plate = 0.4 units
+export const STUD_RADIUS = 0.24;  // Stud outer radius
+export const STUD_HEIGHT = 0.2;   // Stud height
+const WALL = 0.16;                // Wall thickness
+const TUBE_OUTER = 0.326;        // Bottom tube outer radius (for 2+ wide)
+const TUBE_INNER = 0.24;         // Bottom tube inner radius
 
 interface LegoBrick3DProps {
   position: [number, number, number];
   color: string;
-  width?: number; // Number of studs wide (x)
-  depth?: number; // Number of studs deep (z)
-  height?: number; // Number of plates high (1 = plate, 3 = brick)
+  width?: number;   // studs wide (x-axis)
+  depth?: number;   // studs deep (z-axis)
+  height?: number;  // in plates (1 = plate, 3 = standard brick)
   isAnimating?: boolean;
   animationDelay?: number;
 }
@@ -35,62 +47,83 @@ export function LegoBrick3D({
   const groupRef = useRef<THREE.Group>(null);
   const startTime = useRef(Date.now() + animationDelay * 1000);
 
-  // Calculate brick dimensions
-  const brickWidth = width * UNIT_SIZE;
-  const brickDepth = depth * UNIT_SIZE;
-  const brickHeight = (height / 3) * BRICK_HEIGHT;
+  // Physical dimensions
+  const brickW = width * UNIT;
+  const brickD = depth * UNIT;
+  const brickH = height * PLATE_HEIGHT;
 
-  // Create stud positions
+  // Stud grid positions
   const studPositions = useMemo(() => {
-    const positions: [number, number][] = [];
+    const pos: [number, number][] = [];
     for (let x = 0; x < width; x++) {
       for (let z = 0; z < depth; z++) {
-        positions.push([
-          (x - (width - 1) / 2) * UNIT_SIZE,
-          (z - (depth - 1) / 2) * UNIT_SIZE,
+        pos.push([
+          (x - (width - 1) / 2) * UNIT,
+          (z - (depth - 1) / 2) * UNIT,
         ]);
       }
     }
-    return positions;
+    return pos;
   }, [width, depth]);
 
-  // Animation for placing brick
-  useFrame(() => {
-    if (!groupRef.current || !isAnimating) return;
-
-    const elapsed = (Date.now() - startTime.current) / 1000;
-    
-    if (elapsed < 0) {
-      // Not started yet
-      groupRef.current.position.y = position[1] + 5;
-      groupRef.current.visible = false;
-    } else if (elapsed < 0.5) {
-      // Falling animation
-      groupRef.current.visible = true;
-      const progress = elapsed / 0.5;
-      const eased = 1 - Math.pow(1 - progress, 3); // Ease out cubic
-      groupRef.current.position.y = position[1] + 5 * (1 - eased);
-      groupRef.current.rotation.y = (1 - progress) * Math.PI * 0.5;
-    } else if (elapsed < 0.6) {
-      // Bounce effect
-      const bounceProgress = (elapsed - 0.5) / 0.1;
-      groupRef.current.position.y = position[1] + Math.sin(bounceProgress * Math.PI) * 0.1;
-    } else {
-      // Settled
-      groupRef.current.position.y = position[1];
-      groupRef.current.rotation.y = 0;
+  // Bottom tube positions (between every 2×2 group of studs)
+  const tubePositions = useMemo(() => {
+    if (width < 2 || depth < 2) return [];
+    const pos: [number, number][] = [];
+    for (let x = 0; x < width - 1; x++) {
+      for (let z = 0; z < depth - 1; z++) {
+        pos.push([
+          (x - (width - 2) / 2) * UNIT,
+          (z - (depth - 2) / 2) * UNIT,
+        ]);
+      }
     }
-  });
+    return pos;
+  }, [width, depth]);
 
+  // ABS plastic material — slightly glossy, no metalness
   const material = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
         color: new THREE.Color(color),
-        roughness: 0.3,
-        metalness: 0.1,
+        roughness: 0.35,
+        metalness: 0.0,
       }),
     [color]
   );
+
+  const darkerMaterial = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: new THREE.Color(color).multiplyScalar(0.85),
+        roughness: 0.4,
+        metalness: 0.0,
+        side: THREE.DoubleSide,
+      }),
+    [color]
+  );
+
+  // Drop animation
+  useFrame(() => {
+    if (!groupRef.current || !isAnimating) return;
+    const elapsed = (Date.now() - startTime.current) / 1000;
+    if (elapsed < 0) {
+      groupRef.current.position.y = position[1] + 5;
+      groupRef.current.visible = false;
+    } else if (elapsed < 0.5) {
+      groupRef.current.visible = true;
+      const t = elapsed / 0.5;
+      const eased = 1 - Math.pow(1 - t, 3);
+      groupRef.current.position.y = position[1] + 5 * (1 - eased);
+      groupRef.current.rotation.y = (1 - t) * Math.PI * 0.5;
+    } else if (elapsed < 0.6) {
+      const bt = (elapsed - 0.5) / 0.1;
+      groupRef.current.position.y = position[1] + Math.sin(bt * Math.PI) * 0.08;
+    } else {
+      groupRef.current.position.y = position[1];
+      groupRef.current.rotation.y = 0;
+    }
+  });
 
   return (
     <group
@@ -99,14 +132,14 @@ export function LegoBrick3D({
     >
       {/* Main brick body */}
       <mesh material={material} castShadow receiveShadow>
-        <boxGeometry args={[brickWidth, brickHeight, brickDepth]} />
+        <boxGeometry args={[brickW - 0.02, brickH - 0.02, brickD - 0.02]} />
       </mesh>
 
       {/* Studs on top */}
-      {studPositions.map(([x, z], index) => (
+      {studPositions.map(([x, z], i) => (
         <mesh
-          key={index}
-          position={[x, brickHeight / 2 + STUD_HEIGHT / 2, z]}
+          key={`stud-${i}`}
+          position={[x, brickH / 2 + STUD_HEIGHT / 2, z]}
           material={material}
           castShadow
         >
@@ -114,13 +147,22 @@ export function LegoBrick3D({
         </mesh>
       ))}
 
-      {/* Inner tube (for 2+ wide bricks) */}
-      {width >= 2 && depth >= 1 && (
-        <mesh position={[0, -brickHeight / 2 + 0.1, 0]}>
-          <cylinderGeometry args={[0.3, 0.3, brickHeight - 0.2, 16]} />
-          <meshStandardMaterial color={color} side={THREE.BackSide} />
+      {/* Bottom tubes (visible from below, adds realism) */}
+      {tubePositions.map(([x, z], i) => (
+        <mesh
+          key={`tube-${i}`}
+          position={[x, -brickH / 2 + (brickH - 0.04) / 2, z]}
+          material={darkerMaterial}
+        >
+          <cylinderGeometry args={[TUBE_OUTER, TUBE_OUTER, brickH - 0.04, 16, 1, true]} />
         </mesh>
-      )}
+      ))}
+
+      {/* Subtle bottom edge line for definition */}
+      <mesh position={[0, -brickH / 2 + 0.01, 0]}>
+        <boxGeometry args={[brickW - 0.04, 0.02, brickD - 0.04]} />
+        <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(0.9)} />
+      </mesh>
     </group>
   );
 }
@@ -152,5 +194,5 @@ export interface BrickPlacement {
   width: number;
   depth: number;
   height: number;
-  placedAt: number; // Timestamp when placed
+  placedAt: number;
 }

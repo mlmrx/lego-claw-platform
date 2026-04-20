@@ -3,15 +3,27 @@
  * A full 3D LEGO builder with click-to-place bricks, grid snapping,
  * ghost preview, snap sound effects, placement bounce animation,
  * color/type selection, undo/redo, delete mode, and shape support.
- * 
- * Now supports the full brick catalog with specialty shapes rendered
- * via ShapeBrick3D (slopes, arches, cylinders, cones, etc.)
+ *
+ * Authentic LEGO dimensions:
+ *   1 stud pitch  = 1.0 unit  (UNIT)
+ *   Brick height  = 1.2 units (3 × PLATE_H)
+ *   Plate height  = 0.4 units (PLATE_H)
+ *   Stud radius   = 0.24
+ *   Stud height   = 0.2
+ *
+ * Bricks are placed with ZERO gaps — every brick sits flush on the
+ * one below it, just like real LEGO.
+ *
+ * CLICK-TO-STACK: An invisible catch plane sits above the scene so
+ * clicks anywhere (including on top of existing bricks) register
+ * as placement actions. The raycaster finds the grid position and
+ * findTopY computes the correct stacking height.
  */
 
 import { Suspense, useRef, useState, useCallback, useMemo, useEffect } from "react";
 import { Canvas, useThree, useFrame, ThreeEvent } from "@react-three/fiber";
 import { OrbitControls, Environment, ContactShadows, PerspectiveCamera, Html } from "@react-three/drei";
-import { LegoBrick3D, LEGO_COLORS } from "./LegoBrick3D";
+import { LegoBrick3D, LEGO_COLORS, UNIT, BRICK_HEIGHT, PLATE_HEIGHT, STUD_RADIUS, STUD_HEIGHT } from "./LegoBrick3D";
 import ShapeBrick3D from "./ShapeBrick3D";
 import { GhostBrick3D } from "./GhostBrick3D";
 import { PlacementBounce } from "./PlacementBounce";
@@ -29,7 +41,7 @@ export interface BuilderBrick {
   color: string;
   width: number;
   depth: number;
-  height: number;
+  height: number;      // in plates (1=plate, 3=brick)
   shape?: BrickShape;
   placedAt: number;
 }
@@ -38,7 +50,7 @@ export interface BrickType {
   name: string;
   width: number;
   depth: number;
-  height: number;
+  height: number;      // in plates
   icon: string;
   shape?: BrickShape;
 }
@@ -55,48 +67,56 @@ export const BRICK_TYPES: BrickType[] = [
   { name: "4x2 Plate", width: 4, depth: 2, height: 1, icon: "▭" },
 ];
 
-const GRID_SIZE = 24; // Larger baseplate for bigger builds
-const UNIT = 0.8; // Size of 1 stud in world units
-const BRICK_H = 0.96; // Height of a standard brick (3 plates)
-const PLATE_H = BRICK_H / 3; // Height of a plate
+const GRID_SIZE = 24;
 
 // ============================================
-// BRICK ON TOP DETECTION (for stacking)
+// STACKING: find the Y position for a new brick
 // ============================================
 
+/**
+ * Given existing bricks and a grid position (gx, gz) in stud units,
+ * returns the world-Y for the CENTER of the new brick so it sits
+ * flush on top of whatever is below.
+ *
+ * If nothing is below, the brick sits on the baseplate (y=0 is top of baseplate).
+ */
 function findTopY(
   bricks: BuilderBrick[],
   gx: number,
   gz: number,
   newWidth: number,
-  newDepth: number
+  newDepth: number,
+  newHeight: number,  // in plates
 ): number {
-  let maxY = 0;
+  let highestTop = 0; // top of baseplate = 0
+
   for (const brick of bricks) {
     const bx = Math.round(brick.position[0] / UNIT);
     const bz = Math.round(brick.position[2] / UNIT);
-    const brickTop = brick.position[1] + (brick.height / 3) * BRICK_H / 2;
 
-    const halfW1 = newWidth / 2;
-    const halfD1 = newDepth / 2;
-    const halfW2 = brick.width / 2;
-    const halfD2 = brick.depth / 2;
-
-    const overlapX = gx - halfW1 < bx + halfW2 && gx + halfW1 > bx - halfW2;
-    const overlapZ = gz - halfD1 < bz + halfD2 && gz + halfD1 > bz - halfD2;
+    // AABB overlap test in stud coordinates
+    const overlapX =
+      gx - newWidth / 2 < bx + brick.width / 2 &&
+      gx + newWidth / 2 > bx - brick.width / 2;
+    const overlapZ =
+      gz - newDepth / 2 < bz + brick.depth / 2 &&
+      gz + newDepth / 2 > bz - brick.depth / 2;
 
     if (overlapX && overlapZ) {
-      maxY = Math.max(maxY, brickTop + (3 / 3) * BRICK_H / 2);
+      // Top of this existing brick = center.y + half its height
+      const brickH = brick.height * PLATE_HEIGHT;
+      const brickTop = brick.position[1] + brickH / 2;
+      highestTop = Math.max(highestTop, brickTop);
     }
   }
-  if (maxY === 0) {
-    return BRICK_H / 2;
-  }
-  return maxY;
+
+  // New brick center = highest top + half of new brick's height
+  const newH = newHeight * PLATE_HEIGHT;
+  return highestTop + newH / 2;
 }
 
 // ============================================
-// PLACEMENT EFFECTS MANAGER
+// PLACEMENT EFFECTS
 // ============================================
 
 interface PlacementEffect {
@@ -106,15 +126,79 @@ interface PlacementEffect {
 }
 
 // ============================================
-// GRID BASEPLATE (interactive with ghost preview)
+// GRID BASEPLATE
 // ============================================
 
 function InteractiveBaseplate({
   size,
+}: {
+  size: number;
+}) {
+  const plateSize = size * UNIT;
+
+  return (
+    <group position={[0, -0.1, 0]}>
+      {/* Main plate surface */}
+      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[plateSize, plateSize]} />
+        <meshStandardMaterial color="#237841" roughness={0.35} />
+      </mesh>
+
+      {/* Baseplate thickness */}
+      <mesh position={[0, -0.1, 0]} receiveShadow>
+        <boxGeometry args={[plateSize, 0.2, plateSize]} />
+        <meshStandardMaterial color="#1e6b38" roughness={0.4} />
+      </mesh>
+
+      {/* Grid lines */}
+      {Array.from({ length: size + 1 }, (_, i) => {
+        const pos = (i - size / 2) * UNIT;
+        return (
+          <group key={`grid-${i}`}>
+            <mesh position={[pos, 0.005, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+              <planeGeometry args={[0.02, plateSize]} />
+              <meshBasicMaterial color="#1a5c30" transparent opacity={0.25} />
+            </mesh>
+            <mesh position={[0, 0.005, pos]} rotation={[-Math.PI / 2, 0, Math.PI / 2]}>
+              <planeGeometry args={[0.02, plateSize]} />
+              <meshBasicMaterial color="#1a5c30" transparent opacity={0.25} />
+            </mesh>
+          </group>
+        );
+      })}
+
+      {/* Studs on baseplate (every stud for authenticity) */}
+      {Array.from({ length: size }, (_, x) =>
+        Array.from({ length: size }, (_, z) => (
+          <mesh
+            key={`stud-${x}-${z}`}
+            position={[
+              (x - (size - 1) / 2) * UNIT,
+              0.005,
+              (z - (size - 1) / 2) * UNIT,
+            ]}
+          >
+            <cylinderGeometry args={[STUD_RADIUS, STUD_RADIUS, 0.01, 8]} />
+            <meshStandardMaterial color="#2a8a4a" roughness={0.35} />
+          </mesh>
+        ))
+      ).flat()}
+    </group>
+  );
+}
+
+// ============================================
+// CATCH PLANE — invisible plane for click/hover detection
+// Sits at y=0 (baseplate surface level) and catches all pointer events.
+// We use the intersection point's x/z to determine grid position,
+// then findTopY to determine stacking height.
+// ============================================
+
+function CatchPlane({
+  size,
   bricks,
   onCellClick,
   onHoverChange,
-  ghostColor,
   ghostWidth,
   ghostDepth,
   ghostHeight,
@@ -124,7 +208,6 @@ function InteractiveBaseplate({
   bricks: BuilderBrick[];
   onCellClick: (x: number, z: number) => void;
   onHoverChange: (pos: { gx: number; gz: number; worldY: number } | null) => void;
-  ghostColor: string;
   ghostWidth: number;
   ghostDepth: number;
   ghostHeight: number;
@@ -133,37 +216,43 @@ function InteractiveBaseplate({
   const meshRef = useRef<THREE.Mesh>(null);
   const lastHoverRef = useRef<string | null>(null);
   const plateSize = size * UNIT;
+  const halfGrid = Math.floor(size / 2);
+
+  const toGrid = useCallback(
+    (point: THREE.Vector3) => {
+      const gx = Math.round(point.x / UNIT);
+      const gz = Math.round(point.z / UNIT);
+      if (gx >= -halfGrid && gx < halfGrid && gz >= -halfGrid && gz < halfGrid) {
+        return { gx, gz };
+      }
+      return null;
+    },
+    [halfGrid]
+  );
 
   const handlePointerMove = useCallback(
     (e: ThreeEvent<PointerEvent>) => {
       e.stopPropagation();
-      if (!meshRef.current || deleteMode) {
+      if (deleteMode) {
         onHoverChange(null);
         return;
       }
-      const point = e.point;
-      const gx = Math.round(point.x / UNIT);
-      const gz = Math.round(point.z / UNIT);
-      const halfGrid = Math.floor(size / 2);
-
-      if (gx >= -halfGrid && gx < halfGrid && gz >= -halfGrid && gz < halfGrid) {
-        const topY = findTopY(bricks, gx, gz, ghostWidth, ghostDepth);
-        const worldY = topY;
-
-        // Only fire hover tick when grid position actually changes
-        const key = `${gx},${gz}`;
-        if (lastHoverRef.current !== key) {
-          lastHoverRef.current = key;
-          playHoverTick();
-        }
-
-        onHoverChange({ gx, gz, worldY });
-      } else {
+      const grid = toGrid(e.point);
+      if (!grid) {
         lastHoverRef.current = null;
         onHoverChange(null);
+        return;
       }
+
+      const worldY = findTopY(bricks, grid.gx, grid.gz, ghostWidth, ghostDepth, ghostHeight);
+      const key = `${grid.gx},${grid.gz}`;
+      if (lastHoverRef.current !== key) {
+        lastHoverRef.current = key;
+        playHoverTick();
+      }
+      onHoverChange({ gx: grid.gx, gz: grid.gz, worldY });
     },
-    [size, bricks, ghostWidth, ghostDepth, ghostHeight, deleteMode, onHoverChange]
+    [bricks, ghostWidth, ghostDepth, ghostHeight, deleteMode, onHoverChange, toGrid]
   );
 
   const handlePointerLeave = useCallback(() => {
@@ -175,97 +264,67 @@ function InteractiveBaseplate({
     (e: ThreeEvent<MouseEvent>) => {
       e.stopPropagation();
       if (deleteMode) return;
-      const point = e.point;
-      const gx = Math.round(point.x / UNIT);
-      const gz = Math.round(point.z / UNIT);
-      const halfGrid = Math.floor(size / 2);
-      if (gx >= -halfGrid && gx < halfGrid && gz >= -halfGrid && gz < halfGrid) {
-        onCellClick(gx, gz);
+      const grid = toGrid(e.point);
+      if (grid) {
+        onCellClick(grid.gx, grid.gz);
       }
     },
-    [size, deleteMode, onCellClick]
+    [deleteMode, onCellClick, toGrid]
   );
 
   return (
-    <group position={[0, -0.08, 0]}>
-      {/* Main plate - clickable */}
-      <mesh
-        ref={meshRef}
-        receiveShadow
-        rotation={[-Math.PI / 2, 0, 0]}
-        onPointerMove={handlePointerMove}
-        onPointerLeave={handlePointerLeave}
-        onClick={handleClick}
-      >
-        <planeGeometry args={[plateSize, plateSize]} />
-        <meshStandardMaterial color="#237841" roughness={0.4} />
-      </mesh>
-
-      {/* Grid lines */}
-      {Array.from({ length: size + 1 }, (_, i) => {
-        const pos = (i - size / 2) * UNIT;
-        return (
-          <group key={`grid-${i}`}>
-            <mesh position={[pos, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-              <planeGeometry args={[0.02, plateSize]} />
-              <meshBasicMaterial color="#1a5c30" transparent opacity={0.3} />
-            </mesh>
-            <mesh position={[0, 0.01, pos]} rotation={[-Math.PI / 2, 0, Math.PI / 2]}>
-              <planeGeometry args={[0.02, plateSize]} />
-              <meshBasicMaterial color="#1a5c30" transparent opacity={0.3} />
-            </mesh>
-          </group>
-        );
-      })}
-
-      {/* Studs - only render every other stud for performance on large grid */}
-      {Array.from({ length: Math.floor(size / 2) }, (_, x) =>
-        Array.from({ length: Math.floor(size / 2) }, (_, z) => (
-          <mesh
-            key={`stud-${x}-${z}`}
-            position={[
-              (x * 2 - (size - 2) / 2) * UNIT,
-              0.02,
-              (z * 2 - (size - 2) / 2) * UNIT,
-            ]}
-          >
-            <cylinderGeometry args={[0.24, 0.24, 0.04, 8]} />
-            <meshStandardMaterial color="#237841" roughness={0.4} />
-          </mesh>
-        ))
-      ).flat()}
-    </group>
+    <mesh
+      ref={meshRef}
+      position={[0, -0.05, 0]}
+      rotation={[-Math.PI / 2, 0, 0]}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
+      onClick={handleClick}
+    >
+      <planeGeometry args={[plateSize, plateSize]} />
+      <meshBasicMaterial visible={false} />
+    </mesh>
   );
 }
 
 // ============================================
 // CLICKABLE BRICK (for delete mode) - supports shapes
+// When NOT in delete mode, clicks pass through to the CatchPlane
+// behind the bricks, enabling click-to-stack.
 // ============================================
 
 function ClickableBrick({
   brick,
   deleteMode,
   onDelete,
+  onPlaceOnTop,
   isHighlighted,
   isNew,
+  selectedColor,
+  selectedBrickType,
+  allBricks,
 }: {
   brick: BuilderBrick;
   deleteMode: boolean;
   onDelete: (id: string) => void;
+  onPlaceOnTop: (gx: number, gz: number) => void;
   isHighlighted: boolean;
   isNew: boolean;
+  selectedColor: string;
+  selectedBrickType: BrickType;
+  allBricks: BuilderBrick[];
 }) {
   const [hovered, setHovered] = useState(false);
   const groupRef = useRef<THREE.Group>(null);
   const scaleRef = useRef(1);
 
-  // Placement bounce animation for newly placed bricks
+  // Placement bounce animation
   useFrame(() => {
     if (!groupRef.current || !isNew) return;
     const elapsed = (Date.now() - brick.placedAt) / 1000;
     if (elapsed < 0.3) {
       const t = elapsed / 0.3;
-      const bounce = 1 + Math.sin(t * Math.PI) * 0.12;
+      const bounce = 1 + Math.sin(t * Math.PI) * 0.1;
       scaleRef.current = bounce;
       groupRef.current.scale.setScalar(bounce);
     } else if (scaleRef.current !== 1) {
@@ -298,6 +357,13 @@ function ClickableBrick({
           playDeleteSound();
           onDelete(brick.id);
           document.body.style.cursor = "default";
+        } else {
+          // In build mode: place a new brick on top of this one
+          e.stopPropagation();
+          const point = e.point;
+          const gx = Math.round(point.x / UNIT);
+          const gz = Math.round(point.z / UNIT);
+          onPlaceOnTop(gx, gz);
         }
       }}
     >
@@ -323,7 +389,7 @@ function ClickableBrick({
       )}
       {hovered && deleteMode && (
         <Html position={[brick.position[0], brick.position[1] + 1.5, brick.position[2]]} center>
-          <div className="bg-red-500 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap">
+          <div className="bg-red-500 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap pointer-events-none">
             Click to delete
           </div>
         </Html>
@@ -375,11 +441,10 @@ function GhostShapeBrick({
 }) {
   const groupRef = useRef<THREE.Group>(null);
 
-  useFrame((_, delta) => {
+  useFrame(() => {
     if (groupRef.current) {
-      // Gentle pulse
       const t = Date.now() * 0.003;
-      groupRef.current.scale.setScalar(1 + Math.sin(t) * 0.03);
+      groupRef.current.scale.setScalar(1 + Math.sin(t) * 0.02);
     }
   });
 
@@ -392,7 +457,7 @@ function GhostShapeBrick({
         depth={depth}
         height={height}
         shape={shape}
-        opacity={0.5}
+        opacity={0.45}
         wireframe
       />
     </group>
@@ -428,7 +493,7 @@ export function InteractiveBuilder({
   const [placementEffects, setPlacementEffects] = useState<PlacementEffect[]>([]);
   const [recentBrickIds, setRecentBrickIds] = useState<Set<string>>(new Set());
 
-  // Compute ghost position from hover info
+  // Ghost position from hover
   const ghostPosition = useMemo<[number, number, number] | null>(() => {
     if (!hoverInfo || deleteMode) return null;
     const worldX = hoverInfo.gx * UNIT;
@@ -436,18 +501,21 @@ export function InteractiveBuilder({
     return [worldX, hoverInfo.worldY, worldZ];
   }, [hoverInfo, deleteMode]);
 
-  const handleCellClick = useCallback(
+  const placeBrickAt = useCallback(
     (gx: number, gz: number) => {
       if (deleteMode) return;
 
       const worldX = gx * UNIT;
       const worldZ = gz * UNIT;
-      const topY = findTopY(bricks, gx, gz, selectedBrickType.width, selectedBrickType.depth);
+      const topY = findTopY(
+        bricks, gx, gz,
+        selectedBrickType.width,
+        selectedBrickType.depth,
+        selectedBrickType.height,
+      );
 
-      // Play snap sound
       playSnapSound();
 
-      // Add placement effect
       const effectId = `effect-${Date.now()}-${Math.random()}`;
       setPlacementEffects((prev) => [
         ...prev,
@@ -495,11 +563,12 @@ export function InteractiveBuilder({
         <PerspectiveCamera makeDefault position={[15, 12, 15]} fov={45} />
         <SceneControls deleteMode={deleteMode} />
 
-        {/* Lighting */}
-        <ambientLight intensity={0.5} />
+        {/* Lighting — warm key + cool fill for LEGO plastic look */}
+        <ambientLight intensity={0.4} color="#f5f0e8" />
         <directionalLight
           position={[10, 15, 10]}
-          intensity={1}
+          intensity={1.2}
+          color="#fff8f0"
           castShadow
           shadow-mapSize={[2048, 2048]}
           shadow-camera-far={50}
@@ -508,24 +577,27 @@ export function InteractiveBuilder({
           shadow-camera-top={15}
           shadow-camera-bottom={-15}
         />
-        <directionalLight position={[-5, 5, -5]} intensity={0.3} />
+        <directionalLight position={[-5, 8, -5]} intensity={0.3} color="#e0e8ff" />
+        <hemisphereLight args={["#f0f0ff", "#404040", 0.3]} />
 
         <Environment preset="studio" />
 
-        {/* Interactive baseplate */}
-        <InteractiveBaseplate
+        {/* Visual baseplate (studs, grid lines, green surface) */}
+        <InteractiveBaseplate size={GRID_SIZE} />
+
+        {/* Invisible catch plane for click/hover — sits at baseplate level */}
+        <CatchPlane
           size={GRID_SIZE}
           bricks={bricks}
-          onCellClick={handleCellClick}
+          onCellClick={placeBrickAt}
           onHoverChange={setHoverInfo}
-          ghostColor={selectedColor}
           ghostWidth={selectedBrickType.width}
           ghostDepth={selectedBrickType.depth}
           ghostHeight={selectedBrickType.height}
           deleteMode={deleteMode}
         />
 
-        {/* Ghost brick preview - use shape-aware version for specialty shapes */}
+        {/* Ghost brick preview */}
         {ghostPosition && !deleteMode && (
           isSpecialGhost ? (
             <GhostShapeBrick
@@ -559,7 +631,7 @@ export function InteractiveBuilder({
         ))}
 
         <ContactShadows
-          position={[0, -0.05, 0]}
+          position={[0, -0.09, 0]}
           opacity={0.4}
           scale={30}
           blur={2}
@@ -574,8 +646,12 @@ export function InteractiveBuilder({
               brick={brick}
               deleteMode={deleteMode}
               onDelete={onDeleteBrick}
+              onPlaceOnTop={placeBrickAt}
               isHighlighted={highlightedBrickIds.includes(brick.id)}
               isNew={recentBrickIds.has(brick.id)}
+              selectedColor={selectedColor}
+              selectedBrickType={selectedBrickType}
+              allBricks={bricks}
             />
           ))}
         </Suspense>
