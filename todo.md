@@ -380,3 +380,13 @@
 
 ## Navigation UX
 - [x] Rename confusing "Build" and "Start Build" nav items to clearer distinct labels
+
+## Direction 1: Creative AI Co-pilot for Kids
+- [x] Create "Dream Build" input page where kids describe what they want to build
+- [x] Build AI decomposition endpoint that breaks a description into buildable LEGO steps
+- [x] Design step-by-step guided builder UI with progress indicator
+- [x] Add educational callouts explaining WHY each step matters (structural reasoning)
+- [x] Connect AI-generated steps to the 3D builder for guided brick placement
+- [x] Add skill lessons per step (stability, color theory, symmetry, etc.)
+- [x] Update landing page to highlight the Dream Build feature
+- [x] Write tests for Dream Build backend procedures

@@ -23,6 +23,7 @@ import { liveBuildRouter } from "./liveBuildRouter";
 import { youtubeStreamingRouter } from "./youtubeStreaming";
 import { multiStreamRouter } from "./multiStreamRouter";
 import { builderRouter } from "./builderRouter";
+import { dreamBuildRouter } from "./dreamBuildRouter";
 
 // ============================================
 // BUILT-IN SKILLS DEFINITION
@@ -2034,6 +2035,9 @@ export const appRouter = router({
 
   // Interactive Builder
   builder: builderRouter,
+
+  // Dream Build - AI Co-pilot for Kids
+  dreamBuild: dreamBuildRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Blocks, Eye, Bot, LogIn, Store, Grid3X3, Trophy, Book, Heart,
-  Menu, X, ChevronRight, Camera, Box
+  Menu, X, ChevronRight, Camera, Box, Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -127,12 +127,24 @@ export function Header({ className }: HeaderProps) {
               </Button>
             </Link>
 
-            {/* Scan & Build Button */}
-            <Link href="/start-build">
+            {/* Dream Build Button */}
+            <Link href="/dream">
               <Button 
                 variant="default" 
                 size="sm" 
-                className="rounded-xl gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3 bg-primary hover:bg-primary/90"
+                className="rounded-xl gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3 bg-gradient-to-r from-primary to-yellow-500 hover:opacity-90"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span className="hidden sm:inline">Dream Build</span>
+              </Button>
+            </Link>
+
+            {/* Scan & Build Button */}
+            <Link href="/start-build">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-xl gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3"
               >
                 <Camera className="w-4 h-4" />
                 <span className="hidden sm:inline">Scan & Build</span>

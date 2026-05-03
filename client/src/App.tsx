@@ -22,6 +22,7 @@ import LiveBuild from "./pages/LiveBuild";
 import MyCollection from "./pages/MyCollection";
 import Stream from "./pages/Stream";
 import Builder from "./pages/Builder";
+import DreamBuild from "./pages/DreamBuild";
 
 function Router() {
   return (
@@ -46,6 +47,7 @@ function Router() {
       <Route path={"/stream/:viewToken"} component={Stream} />
       <Route path={"/builder"} component={Builder} />
       <Route path={"/builder/:projectId"} component={Builder} />
+      <Route path={"/dream"} component={DreamBuild} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
