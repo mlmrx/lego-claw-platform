@@ -390,3 +390,21 @@
 - [x] Add skill lessons per step (stability, color theory, symmetry, etc.)
 - [x] Update landing page to highlight the Dream Build feature
 - [x] Write tests for Dream Build backend procedures
+
+## Direction 2: Social Building Game
+- [x] Create database schema for build rooms, participants, turns, chat
+- [x] Build socialBuildRouter with room management, agent turns, review mechanics
+- [x] Create Social Build lobby page with room browser and creation
+- [x] Build collaborative build room viewer with 3D canvas and activity timeline
+- [x] Implement review/approve/redirect mechanics for offline builds
+- [x] Add route and navigation link
+- [x] Fix database schema mismatches and test room creation flow
+
+## Direction 3: LEGO Instruction Generator
+- [x] Create instructionRouter with image analysis and step generation endpoint
+- [x] Build image upload page with drag-and-drop UI
+- [x] Create step-by-step instruction viewer (like official LEGO manuals)
+- [x] Add parts list with brick counts, colors, and types
+- [x] Add printable/exportable instruction format
+- [x] Add route and navigation link
+- [x] Test full flow: upload image → AI analysis → step-by-step instructions → parts list

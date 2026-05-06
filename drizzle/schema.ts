@@ -925,3 +925,111 @@ export const buildBookmarks = mysqlTable("build_bookmarks", {
 
 export type BuildBookmark = typeof buildBookmarks.$inferSelect;
 export type InsertBuildBookmark = typeof buildBookmarks.$inferInsert;
+
+
+/**
+ * Build Rooms - Collaborative async multiplayer build spaces
+ * Users create rooms where AI agents take turns building together.
+ */
+export const buildRooms = mysqlTable("build_rooms", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 32 }).notNull().unique(),
+  creatorId: int("creatorId").notNull(), // References users.id
+  // Room details
+  name: varchar("name", { length: 200 }).notNull(),
+  description: text("description"),
+  theme: varchar("theme", { length: 50 }),
+  goalDescription: text("goalDescription"),
+  // Configuration
+  maxParticipants: int("maxParticipants").default(6).notNull(),
+  turnDurationMinutes: int("turnDurationMinutes").default(30).notNull(),
+  isPublic: boolean("isPublic").default(true).notNull(),
+  // Build state
+  brickData: json("brickData"), // JSON array of all placed bricks
+  totalBricks: int("totalBricks").default(0).notNull(),
+  totalTurns: int("totalTurns").default(0).notNull(),
+  // Status
+  status: mysqlEnum("status", ["waiting", "active", "paused", "completed", "archived"]).default("waiting").notNull(),
+  participantCount: int("participantCount").default(0).notNull(),
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  lastActivityAt: timestamp("lastActivityAt").defaultNow().notNull(),
+});
+
+export type BuildRoom = typeof buildRooms.$inferSelect;
+export type InsertBuildRoom = typeof buildRooms.$inferInsert;
+
+/**
+ * Room Participants - Users/agents participating in a build room
+ */
+export const roomParticipants = mysqlTable("room_participants", {
+  id: int("id").autoincrement().primaryKey(),
+  roomId: int("roomId").notNull(), // References build_rooms.id
+  userId: int("userId").notNull(), // References users.id
+  agentId: int("agentId"), // References agents.id (optional - can build without agent)
+  // Role
+  role: mysqlEnum("role", ["creator", "builder", "spectator"]).default("builder").notNull(),
+  // Agent settings
+  agentDirective: text("agentDirective"), // What the agent should focus on
+  agentAutoPlay: boolean("agentAutoPlay").default(true).notNull(), // Agent builds automatically
+  // Stats
+  bricksPlaced: int("bricksPlaced").default(0).notNull(),
+  turnsCompleted: int("turnsCompleted").default(0).notNull(),
+  pendingReviewCount: int("pendingReviewCount").default(0).notNull(),
+  // Status
+  isOnline: boolean("isOnline").default(false).notNull(),
+  lastSeenAt: timestamp("lastSeenAt").defaultNow(),
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type RoomParticipant = typeof roomParticipants.$inferSelect;
+export type InsertRoomParticipant = typeof roomParticipants.$inferInsert;
+
+/**
+ * Room Turns - Individual build turns taken by agents in a room
+ */
+export const roomTurns = mysqlTable("room_turns", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 32 }).notNull().unique(),
+  roomId: int("roomId").notNull(), // References build_rooms.id
+  participantId: int("participantId").notNull(), // References room_participants.id
+  agentId: int("agentId"), // References agents.id
+  userId: int("userId").notNull(), // References users.id (owner of the agent)
+  // Turn details
+  turnNumber: int("turnNumber").notNull(),
+  message: text("message"), // What the agent said
+  reasoning: text("reasoning"), // Internal reasoning
+  bricksPlaced: json("bricksPlaced"), // JSON array of bricks placed this turn
+  brickCount: int("brickCount").default(0).notNull(),
+  // Review
+  reviewStatus: mysqlEnum("reviewStatus", ["pending", "approved", "rejected"]).default("pending").notNull(),
+  ownerFeedback: text("ownerFeedback"),
+  reviewedAt: timestamp("reviewedAt"),
+  // Metadata
+  isAutoPlay: boolean("isAutoPlay").default(true).notNull(),
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type RoomTurn = typeof roomTurns.$inferSelect;
+export type InsertRoomTurn = typeof roomTurns.$inferInsert;
+
+/**
+ * Room Chat - Messages in a build room
+ */
+export const roomChat = mysqlTable("room_chat", {
+  id: int("id").autoincrement().primaryKey(),
+  roomId: int("roomId").notNull(), // References build_rooms.id
+  userId: int("userId"), // References users.id (null for system messages)
+  agentId: int("agentId"), // References agents.id (for agent messages)
+  // Message
+  content: text("content").notNull(),
+  messageType: mysqlEnum("messageType", ["system", "chat", "agent", "directive"]).default("chat").notNull(),
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type RoomChatMessage = typeof roomChat.$inferSelect;
+export type InsertRoomChatMessage = typeof roomChat.$inferInsert;

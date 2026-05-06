@@ -23,6 +23,9 @@ import MyCollection from "./pages/MyCollection";
 import Stream from "./pages/Stream";
 import Builder from "./pages/Builder";
 import DreamBuild from "./pages/DreamBuild";
+import SocialBuild from "./pages/SocialBuild";
+import SocialBuildRoom from "./pages/SocialBuildRoom";
+import Instructions from "./pages/Instructions";
 
 function Router() {
   return (
@@ -48,6 +51,9 @@ function Router() {
       <Route path={"/builder"} component={Builder} />
       <Route path={"/builder/:projectId"} component={Builder} />
       <Route path={"/dream"} component={DreamBuild} />
+      <Route path={"/social-build"} component={SocialBuild} />
+      <Route path={"/social-build/:roomId"} component={SocialBuildRoom} />
+      <Route path={"/instructions"} component={Instructions} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

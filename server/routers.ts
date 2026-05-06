@@ -24,6 +24,8 @@ import { youtubeStreamingRouter } from "./youtubeStreaming";
 import { multiStreamRouter } from "./multiStreamRouter";
 import { builderRouter } from "./builderRouter";
 import { dreamBuildRouter } from "./dreamBuildRouter";
+import { socialBuildRouter } from "./socialBuildRouter";
+import { instructionRouter } from "./instructionRouter";
 
 // ============================================
 // BUILT-IN SKILLS DEFINITION
@@ -2038,6 +2040,12 @@ export const appRouter = router({
 
   // Dream Build - AI Co-pilot for Kids
   dreamBuild: dreamBuildRouter,
+
+  // Social Build - Async Multiplayer Collaboration
+  socialBuild: socialBuildRouter,
+
+  // LEGO Instruction Generator
+  instructions: instructionRouter,
 });
 
 export type AppRouter = typeof appRouter;
