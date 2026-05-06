@@ -103,24 +103,24 @@ export function Header({ className }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [location] = useLocation();
 
-  const buildTools = [
-    { href: "/builder", icon: Box, label: "Free Build", description: "Open sandbox builder" },
-    { href: "/dream", icon: Sparkles, label: "Dream Build", description: "AI-guided creation" },
-    { href: "/start-build", icon: Camera, label: "Scan & Build", description: "Build from a photo" },
-    { href: "/social-build", icon: Users, label: "Social Build", description: "Build with friends" },
-    { href: "/instructions", icon: FileText, label: "Instructions", description: "Generate build guides" },
-    { href: "/sandbox", icon: FlaskConical, label: "Agent Lab", description: "Train AI agents" },
+  const createItems = [
+    { href: "/builder", icon: Box, label: "Sandbox", description: "Free-form brick playground" },
+    { href: "/dream", icon: Sparkles, label: "AI Creator", description: "Describe it, AI builds it" },
+    { href: "/start-build", icon: Camera, label: "Photo to LEGO", description: "Scan an image, get steps" },
+    { href: "/social-build", icon: Users, label: "Co-op Room", description: "Collaborate with others" },
+    { href: "/instructions", icon: FileText, label: "Instructions", description: "Step-by-step guides" },
+    { href: "/sandbox", icon: FlaskConical, label: "Agent Lab", description: "Train & test AI agents" },
   ];
 
   const exploreItems = [
     { href: "/marketplace", icon: Store, label: "Marketplace", description: "Discover agents" },
-    { href: "/templates", icon: Grid3X3, label: "Templates", description: "Build templates" },
+    { href: "/templates", icon: Grid3X3, label: "Templates", description: "Starter kits & presets" },
     { href: "/challenges", icon: Trophy, label: "Challenges", description: "Compete & earn" },
-    { href: "/live", icon: Eye, label: "Live Builds", description: "Watch agents build" },
+    { href: "/live", icon: Eye, label: "Live Feed", description: "Watch agents in action" },
   ];
 
   const allMobileItems = [
-    { section: "Build", items: buildTools },
+    { section: "Create", items: createItems },
     { section: "Explore", items: exploreItems },
     { section: "More", items: [
       { href: "/docs", icon: Book, label: "Documentation" },
@@ -167,9 +167,9 @@ export function Header({ className }: HeaderProps) {
           {/* Center - Desktop Navigation (Grouped Dropdowns) */}
           <nav className="hidden lg:flex items-center gap-1">
             <NavDropdown
-              label="Build"
+              label="Create"
               icon={Hammer}
-              items={buildTools}
+              items={createItems}
               location={location}
             />
             <NavDropdown
