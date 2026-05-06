@@ -26,10 +26,19 @@ interface HeaderProps {
 }
 
 // Dropdown menu component
+interface NavItem {
+  href: string;
+  icon: LucideIcon;
+  label: string;
+  description?: string;
+  iconBg?: string;
+  iconColor?: string;
+}
+
 function NavDropdown({ label, icon: Icon, items, location }: {
   label: string;
   icon: LucideIcon;
-  items: { href: string; icon: LucideIcon; label: string; description?: string }[];
+  items: NavItem[];
   location: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -70,9 +79,9 @@ function NavDropdown({ label, icon: Icon, items, location }: {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.96 }}
             transition={{ duration: 0.15 }}
-            className="absolute top-full left-0 mt-2 w-56 rounded-xl border border-border bg-card shadow-lg overflow-hidden z-50"
+            className="absolute top-full left-0 mt-2 w-64 rounded-xl border border-border bg-card shadow-lg overflow-hidden z-50"
           >
-            <div className="p-1.5">
+            <div className="p-2">
               {items.map((item) => (
                 <Link key={item.href} href={item.href} onClick={() => setOpen(false)}>
                   <div className={cn(
@@ -80,7 +89,12 @@ function NavDropdown({ label, icon: Icon, items, location }: {
                     "hover:bg-muted",
                     location === item.href && "bg-muted"
                   )}>
-                    <item.icon className="w-4 h-4 text-muted-foreground" />
+                    <div className={cn(
+                      "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
+                      item.iconBg || "bg-muted"
+                    )}>
+                      <item.icon className={cn("w-4 h-4", item.iconColor || "text-muted-foreground")} />
+                    </div>
                     <div>
                       <span className="text-sm font-medium">{item.label}</span>
                       {item.description && (
@@ -103,20 +117,20 @@ export function Header({ className }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [location] = useLocation();
 
-  const createItems = [
-    { href: "/builder", icon: Box, label: "Sandbox", description: "Free-form brick playground" },
-    { href: "/dream", icon: Sparkles, label: "AI Creator", description: "Describe it, AI builds it" },
-    { href: "/start-build", icon: Camera, label: "Photo to LEGO", description: "Scan an image, get steps" },
-    { href: "/social-build", icon: Users, label: "Co-op Room", description: "Collaborate with others" },
-    { href: "/instructions", icon: FileText, label: "Instructions", description: "Step-by-step guides" },
-    { href: "/sandbox", icon: FlaskConical, label: "Agent Lab", description: "Train & test AI agents" },
+  const createItems: NavItem[] = [
+    { href: "/builder", icon: Box, label: "Sandbox", description: "Free-form brick playground", iconBg: "bg-blue-100", iconColor: "text-blue-600" },
+    { href: "/dream", icon: Sparkles, label: "AI Creator", description: "Describe it, AI builds it", iconBg: "bg-amber-100", iconColor: "text-amber-600" },
+    { href: "/start-build", icon: Camera, label: "Photo to LEGO", description: "Scan an image, get steps", iconBg: "bg-green-100", iconColor: "text-green-600" },
+    { href: "/social-build", icon: Users, label: "Co-op Room", description: "Collaborate with others", iconBg: "bg-purple-100", iconColor: "text-purple-600" },
+    { href: "/instructions", icon: FileText, label: "Instructions", description: "Step-by-step guides", iconBg: "bg-rose-100", iconColor: "text-rose-600" },
+    { href: "/sandbox", icon: FlaskConical, label: "Agent Lab", description: "Train & test AI agents", iconBg: "bg-teal-100", iconColor: "text-teal-600" },
   ];
 
-  const exploreItems = [
-    { href: "/marketplace", icon: Store, label: "Marketplace", description: "Discover agents" },
-    { href: "/templates", icon: Grid3X3, label: "Templates", description: "Starter kits & presets" },
-    { href: "/challenges", icon: Trophy, label: "Challenges", description: "Compete & earn" },
-    { href: "/live", icon: Eye, label: "Live Feed", description: "Watch agents in action" },
+  const exploreItems: NavItem[] = [
+    { href: "/marketplace", icon: Store, label: "Marketplace", description: "Discover agents", iconBg: "bg-orange-100", iconColor: "text-orange-600" },
+    { href: "/templates", icon: Grid3X3, label: "Templates", description: "Starter kits & presets", iconBg: "bg-indigo-100", iconColor: "text-indigo-600" },
+    { href: "/challenges", icon: Trophy, label: "Challenges", description: "Compete & earn", iconBg: "bg-yellow-100", iconColor: "text-yellow-600" },
+    { href: "/live", icon: Eye, label: "Live Feed", description: "Watch agents in action", iconBg: "bg-emerald-100", iconColor: "text-emerald-600" },
   ];
 
   const allMobileItems = [
@@ -339,7 +353,12 @@ export function Header({ className }: HeaderProps) {
                               "hover:bg-muted",
                               location === item.href && "bg-muted"
                             )}>
-                              <item.icon className="w-5 h-5 text-muted-foreground" />
+                              <div className={cn(
+                                "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
+                                ("iconBg" in item && item.iconBg) || "bg-muted"
+                              )}>
+                                <item.icon className={cn("w-4 h-4", ("iconColor" in item && item.iconColor) || "text-muted-foreground")} />
+                              </div>
                               <div>
                                 <span className="text-sm font-medium">{item.label}</span>
                                 {"description" in item && item.description && (
