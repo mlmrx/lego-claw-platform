@@ -420,3 +420,11 @@
 - [x] Add route (/sandbox) and navigation link (Agent Lab button in Header)
 - [x] Write tests for sandboxRouter (14 tests: scenarios, presets, validation, analysis)
 - [x] Test full flow: configure agents → run simulation → observe → analyze metrics
+
+
+## Navigation UX Redesign
+- [x] Simplify top header navigation - too many buttons causing clutter
+- [x] Group related features into dropdown menus (Build Tools, Explore, etc.)
+- [x] Keep only primary CTA and essential items in top-level nav
+- [x] Improve mobile menu with grouped sections
+- [x] Remove redundant/low-priority items from top bar

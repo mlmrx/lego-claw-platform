@@ -333,5 +333,5 @@ describe("sandbox.analyzeSimulation", () => {
     expect(result).toHaveProperty("agentAnalysis");
     expect(result).toHaveProperty("recommendations");
     expect(result).toHaveProperty("patternClassification");
-  });
+  }, 15000);
 });

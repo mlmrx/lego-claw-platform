@@ -1,23 +1,21 @@
 /**
  * Header Component
- * Design: Isometric LEGO Playground
- * Main navigation header with LEGO-inspired branding
- * Fully responsive with mobile hamburger menu
+ * Clean, minimal navigation with grouped dropdown menus
+ * Primary actions visible, secondary features in organized dropdowns
  */
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import type { LucideIcon } from "lucide-react";
 import { 
-  Blocks, Eye, Bot, LogIn, Store, Grid3X3, Trophy, Book, Heart,
-  Menu, X, ChevronRight, Camera, Box, Sparkles, Users, FileText, FlaskConical
+  Blocks, Bot, LogIn, 
+  Menu, X, ChevronDown,
+  Sparkles, Box, Camera, Users, FileText, FlaskConical,
+  Store, Grid3X3, Trophy, Book, Heart, Eye,
+  Hammer, Compass
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Link, useLocation } from "wouter";
@@ -27,18 +25,108 @@ interface HeaderProps {
   className?: string;
 }
 
-const navItems = [
-  { href: "/marketplace", icon: Store, label: "Marketplace" },
-  { href: "/templates", icon: Grid3X3, label: "Templates" },
-  { href: "/challenges", icon: Trophy, label: "Challenges" },
-  { href: "/docs", icon: Book, label: "Docs" },
-  { href: "/support", icon: Heart, label: "Support", highlight: true },
-];
+// Dropdown menu component
+function NavDropdown({ label, icon: Icon, items, location }: {
+  label: string;
+  icon: LucideIcon;
+  items: { href: string; icon: LucideIcon; label: string; description?: string }[];
+  location: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const isActive = items.some(item => location === item.href);
+
+  return (
+    <div ref={ref} className="relative">
+      <Button
+        variant="ghost"
+        size="sm"
+        className={cn(
+          "rounded-xl gap-1.5 h-9 px-3 text-sm font-medium",
+          isActive && "bg-muted"
+        )}
+        onClick={() => setOpen(!open)}
+      >
+        <Icon className="w-4 h-4" />
+        {label}
+        <ChevronDown className={cn("w-3 h-3 transition-transform", open && "rotate-180")} />
+      </Button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.96 }}
+            transition={{ duration: 0.15 }}
+            className="absolute top-full left-0 mt-2 w-56 rounded-xl border border-border bg-card shadow-lg overflow-hidden z-50"
+          >
+            <div className="p-1.5">
+              {items.map((item) => (
+                <Link key={item.href} href={item.href} onClick={() => setOpen(false)}>
+                  <div className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors cursor-pointer",
+                    "hover:bg-muted",
+                    location === item.href && "bg-muted"
+                  )}>
+                    <item.icon className="w-4 h-4 text-muted-foreground" />
+                    <div>
+                      <span className="text-sm font-medium">{item.label}</span>
+                      {item.description && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export function Header({ className }: HeaderProps) {
   const { user, isAuthenticated, loading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [location] = useLocation();
+
+  const buildTools = [
+    { href: "/builder", icon: Box, label: "Free Build", description: "Open sandbox builder" },
+    { href: "/dream", icon: Sparkles, label: "Dream Build", description: "AI-guided creation" },
+    { href: "/start-build", icon: Camera, label: "Scan & Build", description: "Build from a photo" },
+    { href: "/social-build", icon: Users, label: "Social Build", description: "Build with friends" },
+    { href: "/instructions", icon: FileText, label: "Instructions", description: "Generate build guides" },
+    { href: "/sandbox", icon: FlaskConical, label: "Agent Lab", description: "Train AI agents" },
+  ];
+
+  const exploreItems = [
+    { href: "/marketplace", icon: Store, label: "Marketplace", description: "Discover agents" },
+    { href: "/templates", icon: Grid3X3, label: "Templates", description: "Build templates" },
+    { href: "/challenges", icon: Trophy, label: "Challenges", description: "Compete & earn" },
+    { href: "/live", icon: Eye, label: "Live Builds", description: "Watch agents build" },
+  ];
+
+  const allMobileItems = [
+    { section: "Build", items: buildTools },
+    { section: "Explore", items: exploreItems },
+    { section: "More", items: [
+      { href: "/docs", icon: Book, label: "Documentation" },
+      { href: "/support", icon: Heart, label: "Support" },
+    ]},
+  ];
 
   return (
     <>
@@ -51,201 +139,126 @@ export function Header({ className }: HeaderProps) {
       >
         <div className="container flex items-center justify-between h-14 sm:h-16 px-3 sm:px-4">
           {/* Logo */}
-          <motion.div 
-            className="flex items-center gap-2 sm:gap-3"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-          >
-            <Link href="/">
-              <div className="flex items-center gap-2 sm:gap-3 cursor-pointer">
-                <div className="relative">
-                  <motion.div
-                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary flex items-center justify-center lego-shadow"
-                    whileHover={{ rotate: [0, -10, 10, 0] }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <Blocks className="w-4 h-4 sm:w-6 sm:h-6 text-primary-foreground" />
-                  </motion.div>
-                  {/* LEGO stud decoration */}
-                  <div className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-yellow-400 border sm:border-2 border-white" />
-                </div>
-                
-                <div className="hidden xs:block">
-                  <h1 className="font-heading font-bold text-base sm:text-xl tracking-tight">
-                    <span className="text-primary">LEGO</span>
-                    <span className="text-foreground"> Claw</span>
-                  </h1>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground -mt-0.5 hidden sm:block">
-                    Agentic Network Platform
-                  </p>
-                </div>
-              </div>
-            </Link>
-          </motion.div>
-
-          {/* Center - Desktop Navigation */}
-          <motion.nav 
-            className="hidden lg:flex items-center gap-1"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            {navItems.map((item) => (
-              <Link key={item.href} href={item.href}>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className={cn(
-                    "rounded-xl gap-2",
-                    item.highlight && "text-red-500 hover:text-red-600 hover:bg-red-50",
-                    location === item.href && "bg-muted"
-                  )}
+          <Link href="/">
+            <div className="flex items-center gap-2 sm:gap-3 cursor-pointer">
+              <div className="relative">
+                <motion.div
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary flex items-center justify-center lego-shadow"
+                  whileHover={{ rotate: [0, -10, 10, 0] }}
+                  transition={{ duration: 0.5 }}
                 >
-                  <item.icon className="w-4 h-4" />
-                  {item.label}
-                </Button>
-              </Link>
-            ))}
-          </motion.nav>
+                  <Blocks className="w-4 h-4 sm:w-6 sm:h-6 text-primary-foreground" />
+                </motion.div>
+                <div className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-yellow-400 border sm:border-2 border-white" />
+              </div>
+              
+              <div className="hidden xs:block">
+                <h1 className="font-heading font-bold text-base sm:text-xl tracking-tight">
+                  <span className="text-primary">LEGO</span>
+                  <span className="text-foreground"> Claw</span>
+                </h1>
+                <p className="text-[10px] sm:text-xs text-muted-foreground -mt-0.5 hidden sm:block">
+                  Agentic Network Platform
+                </p>
+              </div>
+            </div>
+          </Link>
 
-          {/* Right - Actions */}
-          <motion.div 
-            className="flex items-center gap-1 sm:gap-2"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            {/* Free Build Button */}
-            <Link href="/builder">
+          {/* Center - Desktop Navigation (Grouped Dropdowns) */}
+          <nav className="hidden lg:flex items-center gap-1">
+            <NavDropdown
+              label="Build"
+              icon={Hammer}
+              items={buildTools}
+              location={location}
+            />
+            <NavDropdown
+              label="Explore"
+              icon={Compass}
+              items={exploreItems}
+              location={location}
+            />
+            <Link href="/docs">
               <Button 
-                variant="outline" 
+                variant="ghost" 
                 size="sm" 
-                className="rounded-xl gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3"
+                className={cn("rounded-xl gap-1.5 h-9 px-3 text-sm font-medium", location === "/docs" && "bg-muted")}
               >
-                <Box className="w-4 h-4" />
-                <span className="hidden sm:inline">Free Build</span>
+                <Book className="w-4 h-4" />
+                Docs
               </Button>
             </Link>
+            <Link href="/support">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={cn("rounded-xl gap-1.5 h-9 px-3 text-sm font-medium text-red-500 hover:text-red-600 hover:bg-red-50", location === "/support" && "bg-muted")}
+              >
+                <Heart className="w-4 h-4" />
+                Support
+              </Button>
+            </Link>
+          </nav>
 
-            {/* Dream Build Button */}
+          {/* Right - Actions (minimal) */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Primary CTA - Dream Build */}
             <Link href="/dream">
               <Button 
                 variant="default" 
                 size="sm" 
-                className="rounded-xl gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3 bg-gradient-to-r from-primary to-yellow-500 hover:opacity-90"
+                className="rounded-xl gap-1.5 h-8 sm:h-9 px-2.5 sm:px-3 bg-gradient-to-r from-primary to-yellow-500 hover:opacity-90"
               >
                 <Sparkles className="w-4 h-4" />
-                <span className="hidden sm:inline">Dream Build</span>
+                <span className="hidden sm:inline text-sm">Dream Build</span>
               </Button>
             </Link>
 
-            {/* Scan & Build Button */}
-            <Link href="/start-build">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="rounded-xl gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3"
-              >
-                <Camera className="w-4 h-4" />
-                <span className="hidden sm:inline">Scan & Build</span>
-              </Button>
-            </Link>
-
-            {/* Social Build Button */}
-            <Link href="/social-build">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="rounded-xl gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3"
-              >
-                <Users className="w-4 h-4" />
-                <span className="hidden sm:inline">Social Build</span>
-              </Button>
-            </Link>
-
-            {/* Instructions Button */}
-            <Link href="/instructions">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="rounded-xl gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3"
-              >
-                <FileText className="w-4 h-4" />
-                <span className="hidden sm:inline">Instructions</span>
-              </Button>
-            </Link>
-
-            {/* Agent Lab Button */}
-            <Link href="/sandbox">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="rounded-xl gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3"
-              >
-                <FlaskConical className="w-4 h-4" />
-                <span className="hidden sm:inline">Agent Lab</span>
-              </Button>
-            </Link>
-
-            {/* Live Status - Hidden on mobile */}
+            {/* Live indicator */}
             <Link href="/live">
-              <div className="hidden md:flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-muted hover:bg-muted/80 cursor-pointer transition-colors">
+              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-muted hover:bg-muted/80 cursor-pointer transition-colors">
                 <motion.div
                   className="w-2 h-2 rounded-full bg-green-500"
                   animate={{ scale: [1, 1.3, 1] }}
                   transition={{ repeat: Infinity, duration: 2 }}
                 />
-                <span className="text-xs font-medium">
-                  <span className="text-green-600">Live</span>
-                </span>
+                <span className="text-xs font-medium text-green-600">Live</span>
               </div>
             </Link>
-
-            {/* Observer Mode - Hidden on small screens */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="hidden sm:flex rounded-xl w-8 h-8 sm:w-9 sm:h-9">
-                  <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Observer Mode Active</p>
-              </TooltipContent>
-            </Tooltip>
 
             {/* Notification Bell */}
             <div className="hidden sm:block">
               <NotificationBell />
             </div>
 
-            <div className="hidden sm:block w-px h-6 bg-border mx-1" />
+            <div className="hidden sm:block w-px h-6 bg-border" />
 
-            {/* Dashboard / Auth Button */}
+            {/* Auth Button */}
             {loading ? (
-              <Button variant="outline" size="sm" className="rounded-xl gap-2 h-8 sm:h-9 px-2 sm:px-3" disabled>
-                <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <Button variant="outline" size="sm" className="rounded-xl h-8 sm:h-9 px-2 sm:px-3" disabled>
+                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </Button>
             ) : isAuthenticated ? (
               <Link href="/dashboard">
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="rounded-xl gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3"
+                  className="rounded-xl gap-1.5 h-8 sm:h-9 px-2 sm:px-3"
                 >
                   <Bot className="w-4 h-4" />
-                  <span className="hidden sm:inline">My Agents</span>
+                  <span className="hidden sm:inline text-sm">My Agents</span>
                 </Button>
               </Link>
             ) : (
               <Button 
                 variant="default" 
                 size="sm" 
-                className="rounded-xl gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3"
+                className="rounded-xl gap-1.5 h-8 sm:h-9 px-2 sm:px-3"
                 asChild
               >
                 <a href={getLoginUrl()}>
                   <LogIn className="w-4 h-4" />
-                  <span className="hidden sm:inline">Sign In</span>
+                  <span className="hidden sm:inline text-sm">Sign In</span>
                 </a>
               </Button>
             )}
@@ -254,12 +267,12 @@ export function Header({ className }: HeaderProps) {
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden rounded-xl w-8 h-8 sm:w-9 sm:h-9 ml-1"
+              className="lg:hidden rounded-xl w-8 h-8 sm:w-9 sm:h-9"
               onClick={() => setMobileMenuOpen(true)}
             >
               <Menu className="w-5 h-5" />
             </Button>
-          </motion.div>
+          </div>
         </div>
       </header>
 
@@ -282,7 +295,7 @@ export function Header({ className }: HeaderProps) {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed top-0 right-0 bottom-0 z-50 w-72 sm:w-80 bg-card border-l border-border lg:hidden"
+              className="fixed top-0 right-0 bottom-0 z-50 w-72 sm:w-80 bg-card border-l border-border lg:hidden overflow-y-auto"
             >
               {/* Menu Header */}
               <div className="flex items-center justify-between p-4 border-b border-border">
@@ -305,38 +318,46 @@ export function Header({ className }: HeaderProps) {
                 </Button>
               </div>
 
-              {/* Menu Items */}
-              <nav className="p-4 space-y-2">
-                {navItems.map((item, index) => (
-                  <motion.div
-                    key={item.href}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    <Link href={item.href} onClick={() => setMobileMenuOpen(false)}>
-                      <div 
-                        className={cn(
-                          "flex items-center justify-between p-3 rounded-xl transition-colors",
-                          "hover:bg-muted",
-                          item.highlight && "text-red-500",
-                          location === item.href && "bg-muted"
-                        )}
-                      >
-                        <div className="flex items-center gap-3">
-                          <item.icon className="w-5 h-5" />
-                          <span className="font-medium">{item.label}</span>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                      </div>
-                    </Link>
-                  </motion.div>
+              {/* Grouped Menu Items */}
+              <div className="p-4 space-y-6 pb-32">
+                {allMobileItems.map((group) => (
+                  <div key={group.section}>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">
+                      {group.section}
+                    </p>
+                    <div className="space-y-1">
+                      {group.items.map((item, index) => (
+                        <motion.div
+                          key={item.href}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.03 }}
+                        >
+                          <Link href={item.href} onClick={() => setMobileMenuOpen(false)}>
+                            <div className={cn(
+                              "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors",
+                              "hover:bg-muted",
+                              location === item.href && "bg-muted"
+                            )}>
+                              <item.icon className="w-5 h-5 text-muted-foreground" />
+                              <div>
+                                <span className="text-sm font-medium">{item.label}</span>
+                                {"description" in item && item.description && (
+                                  <p className="text-xs text-muted-foreground">{item.description}</p>
+                                )}
+                              </div>
+                            </div>
+                          </Link>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
                 ))}
-              </nav>
+              </div>
 
-              {/* Mobile-only Actions */}
+              {/* Mobile Footer */}
               <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-card">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <motion.div
                       className="w-2 h-2 rounded-full bg-green-500"
