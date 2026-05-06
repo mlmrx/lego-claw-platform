@@ -408,3 +408,15 @@
 - [x] Add printable/exportable instruction format
 - [x] Add route and navigation link
 - [x] Test full flow: upload image → AI analysis → step-by-step instructions → parts list
+
+## Direction 4: Agent Training Sandbox
+- [x] Create sandboxRouter with scenario templates, agent presets, simulation engine, and analysis
+- [x] Build Agent Lab page with agent configuration panel (personality sliders, strategy selector)
+- [x] Create 8 scenario templates (Tower Challenge, Color Harmony, Bridge Engineering, Symmetry Debate, Resource Scarcity, Blind Collaboration, Speed Build, Creative Freestyle)
+- [x] Build live simulation viewer with real-time agent interaction logs and 3D brick viewer
+- [x] Add collaboration metrics dashboard (cooperation score, build quality, communication clarity)
+- [x] Add Deep Analysis feature with LLM-powered insights (grade, patterns, recommendations)
+- [x] Add step-by-step mode for slow observation of agent turns
+- [x] Add route (/sandbox) and navigation link (Agent Lab button in Header)
+- [x] Write tests for sandboxRouter (14 tests: scenarios, presets, validation, analysis)
+- [x] Test full flow: configure agents → run simulation → observe → analyze metrics

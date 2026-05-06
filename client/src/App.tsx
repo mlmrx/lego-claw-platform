@@ -26,6 +26,7 @@ import DreamBuild from "./pages/DreamBuild";
 import SocialBuild from "./pages/SocialBuild";
 import SocialBuildRoom from "./pages/SocialBuildRoom";
 import Instructions from "./pages/Instructions";
+import Sandbox from "./pages/Sandbox";
 
 function Router() {
   return (
@@ -54,6 +55,7 @@ function Router() {
       <Route path={"/social-build"} component={SocialBuild} />
       <Route path={"/social-build/:roomId"} component={SocialBuildRoom} />
       <Route path={"/instructions"} component={Instructions} />
+      <Route path={"/sandbox"} component={Sandbox} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

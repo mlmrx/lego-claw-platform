@@ -26,6 +26,7 @@ import { builderRouter } from "./builderRouter";
 import { dreamBuildRouter } from "./dreamBuildRouter";
 import { socialBuildRouter } from "./socialBuildRouter";
 import { instructionRouter } from "./instructionRouter";
+import { sandboxRouter } from "./sandboxRouter";
 
 // ============================================
 // BUILT-IN SKILLS DEFINITION
@@ -2046,6 +2047,9 @@ export const appRouter = router({
 
   // LEGO Instruction Generator
   instructions: instructionRouter,
+
+  // Agent Training Sandbox
+  sandbox: sandboxRouter,
 });
 
 export type AppRouter = typeof appRouter;
