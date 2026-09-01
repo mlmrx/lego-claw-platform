@@ -475,3 +475,10 @@
 - [x] Verify accessibility, security, tests, and deployment readiness
 - [x] Prepare Devpost submission copy, demo script, screenshots, and architecture diagram
 - [x] Push the competition-ready version to the private GitHub repository
+
+## Competition Version Selection
+- [x] Preserve checkpoint 970b19f4 as “Krewdoo Rebrand — Acquisition Strategy Branch (Not Competition)”
+- [ ] Restore checkpoint 5fb27e34 as the LEGO Claw WebMCP competition baseline
+- [ ] Verify the restored `/`, `/webmcp`, and `/sandbox` competition experience
+- [ ] Run the full test suite and production build on the restored baseline
+- [ ] Preserve the Krewdoo Git history on a dedicated branch and align the competition branch with LEGO Claw
