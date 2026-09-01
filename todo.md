@@ -428,3 +428,30 @@
 - [x] Keep only primary CTA and essential items in top-level nav
 - [x] Improve mobile menu with grouped sections
 - [x] Remove redundant/low-priority items from top bar
+
+
+## Custom Domain Restoration Incident
+- [ ] Determine why legoclaw.com and www.legoclaw.com were removed or stopped resolving after restoration/deployment
+- [ ] Verify restored website code, static files, database contents, secrets, and deployment state
+- [ ] Reconnect custom domains without changing external DNS unless required
+- [ ] Confirm the default manus.space site and both custom-domain variants are reachable
+- [ ] Document whether any data loss occurred and provide safe recovery guidance
+
+## Rebranding Follow-up
+- [ ] Select a brand name centered on the agentic assembly protocol rather than LEGO/bricks
+- [ ] Validate candidate names with registrar and trademark searches before changing production branding
+- [ ] Implement the selected rebrand only after explicit approval
+
+
+## Custom Domain Reconnection
+- [ ] Reconnect legoclaw.com to the current deployment in Settings → Domains
+- [ ] Reconnect www.legoclaw.com and configure the preferred apex/www redirect
+- [ ] Verify registrar DNS targets, HTTPS certificates, and both public URLs
+- [ ] Confirm the restored application and representative data load through the custom domain
+
+
+## Private GitHub Export
+- [ ] Audit the project for secrets and confirm .gitignore excludes environment files and generated artifacts
+- [ ] Create a private GitHub repository for the complete source code
+- [ ] Push the current project source and commit history to the private repository
+- [ ] Verify repository privacy, default branch, and expected source files
