@@ -1,4 +1,31 @@
 import { describe, expect, it, vi } from "vitest";
+
+vi.mock("./_core/llm", () => ({
+  invokeLLM: vi.fn(async () => ({
+    choices: [
+      {
+        message: {
+          content: JSON.stringify({
+            overallGrade: "A",
+            collaborationPattern: "leader-follower",
+            keyInsights: ["The crew established a clear plan."],
+            agentAnalysis: [
+              {
+                name: "The Architect",
+                effectiveness: 88,
+                strengths: ["Clear structure"],
+                weaknesses: ["Could invite more dissent"],
+              },
+            ],
+            emergentBehaviors: ["Role specialization"],
+            recommendations: ["Keep step-by-step review enabled"],
+            patternClassification: "cooperative",
+          }),
+        },
+      },
+    ],
+  })),
+}));
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
@@ -292,8 +319,6 @@ describe("sandbox.analyzeSimulation", () => {
     const ctx = createPublicContext();
     const caller = appRouter.createCaller(ctx);
 
-    // This will call LLM which may fail in test env, but validates input schema
-    // The function has a fallback, so it should return a result regardless
     const result = await caller.sandbox.analyzeSimulation({
       scenario: "Tower Challenge",
       agents: [
@@ -326,12 +351,12 @@ describe("sandbox.analyzeSimulation", () => {
       ],
     });
 
-    // Should return analysis structure (either from LLM or fallback)
+    // The model is mocked so this remains a fast, deterministic schema test.
     expect(result).toHaveProperty("overallGrade");
     expect(result).toHaveProperty("collaborationPattern");
     expect(result).toHaveProperty("keyInsights");
     expect(result).toHaveProperty("agentAnalysis");
     expect(result).toHaveProperty("recommendations");
     expect(result).toHaveProperty("patternClassification");
-  }, 15000);
+  });
 });

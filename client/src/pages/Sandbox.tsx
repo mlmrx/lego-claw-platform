@@ -4,7 +4,7 @@
  * Configure agent personalities, choose scenarios, run simulations, and analyze results.
  */
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,13 @@ import { cn } from "@/lib/utils";
 import { LegoBrick3D, UNIT, PLATE_HEIGHT, BRICK_HEIGHT } from "@/components/LegoBrick3D";
 import ShapeBrick3D from "@/components/ShapeBrick3D";
 import type { BrickShape } from "@/lib/brickCatalog";
+import { useWebMCPTools } from "@/hooks/useWebMCPTools";
+import {
+  createAssemblyTools,
+  type AssemblyToolActions,
+  type MissionConfigurationInput,
+  type RunSimulationInput,
+} from "@/lib/webmcp/assemblyTools";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 
@@ -45,6 +52,9 @@ import {
   AlertTriangle,
   CheckCircle2,
   Sparkles,
+  Bot,
+  PlugZap,
+  ShieldCheck,
 } from "lucide-react";
 
 // ============================================
@@ -416,6 +426,10 @@ export default function Sandbox() {
   const [stepByStep, setStepByStep] = useState(false);
   const [stepTurns, setStepTurns] = useState<SimulationTurn[]>([]);
   const [isRunningStep, setIsRunningStep] = useState(false);
+  const [lastWebMCPAction, setLastWebMCPAction] = useState(
+    "Waiting for a browser agent",
+  );
+  const webMCPActionsRef = useRef<AssemblyToolActions | null>(null);
 
   // Add agent from preset
   const addAgent = useCallback((preset: AgentConfig) => {
@@ -560,6 +574,310 @@ export default function Sandbox() {
     setStepTurns([]);
   }, []);
 
+  const handleLoadDemoMission = useCallback(() => {
+    if (!scenarios || !presets) return;
+    const demoAgents = ["architect", "diplomat", "engineer"]
+      .map(id => presets.find(preset => preset.id === id))
+      .filter((agent): agent is AgentConfig => Boolean(agent));
+    setSelectedScenario("bridge-engineering");
+    setAgents(demoAgents.map(agent => ({ ...agent })));
+    setTotalTurns(4);
+    setPhase("configure");
+    setSimulationResult(null);
+    setAnalysis(null);
+    setStepByStep(false);
+    setStepTurns([]);
+    setLastWebMCPAction("Demo mission loaded — ready for a browser agent");
+  }, [presets, scenarios]);
+
+  const resetMissionFromAgent = useCallback(() => {
+    setSelectedScenario(null);
+    setAgents([]);
+    setTotalTurns(8);
+    setPhase("configure");
+    setSimulationResult(null);
+    setAnalysis(null);
+    setStepByStep(false);
+    setStepTurns([]);
+    setLastWebMCPAction("Mission reset by browser agent");
+    return { ok: true, state: "configure", message: "Mission cleared." };
+  }, []);
+
+  webMCPActionsRef.current = {
+    listScenarios: () => {
+      setLastWebMCPAction("Browser agent inspected scenarios");
+      return {
+        status: scenarios ? "ready" : "loading",
+        scenarios: (scenarios ?? []).map(scenario => ({
+          id: scenario.id,
+          name: scenario.name,
+          difficulty: scenario.difficulty,
+          category: scenario.category,
+          constraints: scenario.constraints,
+        })),
+      };
+    },
+    listAgentPresets: () => {
+      setLastWebMCPAction("Browser agent inspected specialist agents");
+      return {
+        status: presets ? "ready" : "loading",
+        agents: (presets ?? []).map(preset => ({
+          id: preset.id,
+          name: preset.name,
+          specialization: preset.specialization,
+          strategy: preset.strategy,
+          personality: preset.personality,
+        })),
+      };
+    },
+    configureMission: (input: MissionConfigurationInput) => {
+      if (!scenarios || !presets) {
+        throw new Error("Assembly Lab is still loading. Retry in a moment.");
+      }
+      const scenario = scenarios.find(item => item.id === input.scenario_id);
+      if (!scenario) {
+        throw new Error(
+          `Unknown scenario_id: ${input.scenario_id}. Call list_scenarios first.`,
+        );
+      }
+      const uniqueAgentIds = [...new Set(input.agent_ids)];
+      const selectedAgents = uniqueAgentIds
+        .map(id => presets.find(preset => preset.id === id))
+        .filter((agent): agent is AgentConfig => Boolean(agent));
+      if (selectedAgents.length !== uniqueAgentIds.length) {
+        throw new Error(
+          "One or more agent IDs are invalid. Call list_agent_presets first.",
+        );
+      }
+      if (selectedAgents.length < 2 || selectedAgents.length > 4) {
+        throw new Error("Choose between two and four specialist agents.");
+      }
+
+      const boundedTurns = Math.max(4, Math.min(12, input.total_turns));
+      setSelectedScenario(scenario.id);
+      setAgents(selectedAgents.map(agent => ({ ...agent })));
+      setTotalTurns(boundedTurns);
+      setPhase("configure");
+      setSimulationResult(null);
+      setAnalysis(null);
+      setStepByStep(input.mode !== "full_run");
+      setStepTurns([]);
+      setLastWebMCPAction(
+        `Mission configured: ${scenario.name} with ${selectedAgents.length} agents`,
+      );
+      return {
+        ok: true,
+        scenario: scenario.name,
+        crew: selectedAgents.map(agent => agent.name),
+        total_turns: boundedTurns,
+        mode: input.mode ?? "step_by_step",
+        next: input.mode === "full_run" ? "run_simulation" : "run_next_turn",
+      };
+    },
+    previewMission: () => {
+      const scenario = scenarios?.find(item => item.id === selectedScenario);
+      setLastWebMCPAction("Browser agent previewed the mission");
+      return {
+        configured: Boolean(scenario && agents.length >= 2),
+        scenario: scenario
+          ? { id: scenario.id, name: scenario.name, constraints: scenario.constraints }
+          : null,
+        crew: agents.map(agent => ({
+          id: agent.id,
+          name: agent.name,
+          specialization: agent.specialization,
+          strategy: agent.strategy,
+        })),
+        total_turns: totalTurns,
+        phase,
+        completed_turns: stepByStep
+          ? stepTurns.length
+          : simulationResult?.turns.length ?? 0,
+      };
+    },
+    runNextTurn: async signal => {
+      if (!selectedScenario || agents.length < 2) {
+        throw new Error("Configure a scenario and at least two agents first.");
+      }
+      if (stepTurns.length >= totalTurns) {
+        return {
+          ok: true,
+          complete: true,
+          message: "The configured turn budget is already complete.",
+        };
+      }
+      signal.throwIfAborted();
+      setPhase("running");
+      setStepByStep(true);
+      setIsRunningStep(true);
+      setLastWebMCPAction(`Running turn ${stepTurns.length + 1}`);
+      try {
+        const turn = (await runSingleTurn.mutateAsync({
+          scenarioId: selectedScenario,
+          agents,
+          previousTurns: stepTurns,
+          nextAgentIndex: stepTurns.length % agents.length,
+        })) as SimulationTurn;
+        signal.throwIfAborted();
+        setStepTurns(previous => [...previous, turn]);
+        setLastWebMCPAction(
+          `Turn ${turn.turnNumber}: ${turn.agentName} chose ${turn.action}`,
+        );
+        return {
+          ok: true,
+          complete: turn.turnNumber >= totalTurns,
+          turn: {
+            number: turn.turnNumber,
+            agent: turn.agentName,
+            action: turn.action,
+            message: turn.message.slice(0, 360),
+            bricks_added: turn.bricks?.length ?? 0,
+            metrics: turn.metrics,
+          },
+        };
+      } finally {
+        setIsRunningStep(false);
+      }
+    },
+    runSimulation: async (input: RunSimulationInput, signal: AbortSignal) => {
+      if (!selectedScenario || agents.length < 2) {
+        throw new Error("Configure a scenario and at least two agents first.");
+      }
+      const turnBudget = Math.max(
+        4,
+        Math.min(12, input.total_turns ?? totalTurns),
+      );
+      signal.throwIfAborted();
+      setTotalTurns(turnBudget);
+      setPhase("running");
+      setStepByStep(false);
+      setSimulationResult(null);
+      setAnalysis(null);
+      setLastWebMCPAction(`Running ${turnBudget}-turn mission`);
+      const result = (await startSimulation.mutateAsync({
+        scenarioId: selectedScenario,
+        agents,
+        totalTurns: turnBudget,
+      })) as SimulationResult;
+      signal.throwIfAborted();
+      setSimulationResult(result);
+      setPhase("results");
+      setLastWebMCPAction(
+        `Mission complete: ${result.summary.totalBricksPlaced} bricks assembled`,
+      );
+      return {
+        ok: true,
+        mission_id: result.id,
+        scenario: result.scenario,
+        summary: result.summary,
+      };
+    },
+    inspectCollaboration: () => {
+      const turns = stepByStep ? stepTurns : simulationResult?.turns ?? [];
+      const latest = turns.at(-1);
+      const average = (selector: (turn: SimulationTurn) => number) =>
+        turns.length
+          ? Math.round(turns.reduce((sum, turn) => sum + selector(turn), 0) / turns.length)
+          : 0;
+      const payload = {
+        phase,
+        completed_turns: turns.length,
+        turn_budget: totalTurns,
+        bricks: turns.reduce((sum, turn) => sum + (turn.bricks?.length ?? 0), 0),
+        conflicts: turns.filter(turn => turn.action === "disagree").length,
+        resolutions: turns.filter(turn =>
+          turn.action === "agree" || turn.action === "negotiate",
+        ).length,
+        averages: {
+          cooperation: average(turn => turn.metrics.cooperationScore),
+          build_quality: average(turn => turn.metrics.buildQuality),
+          communication: average(turn => turn.metrics.communicationClarity),
+        },
+        latest_action: latest
+          ? {
+              agent: latest.agentName,
+              action: latest.action,
+              message: latest.message.slice(0, 360),
+            }
+          : null,
+      };
+      setLastWebMCPAction("Browser agent inspected collaboration progress");
+      return payload;
+    },
+    analyzeCollaboration: async signal => {
+      const result = simulationResult;
+      const turns = result?.turns ?? stepTurns;
+      if (turns.length === 0) {
+        throw new Error("Run at least one collaboration turn before analysis.");
+      }
+      const scenarioName =
+        result?.scenario ??
+        scenarios?.find(item => item.id === selectedScenario)?.name ??
+        "Assembly mission";
+      signal.throwIfAborted();
+      setLastWebMCPAction("Analyzing collaboration patterns");
+      const analysisResult = (await analyzeSimulation.mutateAsync({
+        scenario: scenarioName,
+        agents: agents.map(agent => ({
+          name: agent.name,
+          personality: agent.personality,
+          strategy: agent.strategy,
+        })),
+        turns: turns.map(turn => ({
+          agentName: turn.agentName,
+          action: turn.action,
+          message: turn.message,
+          reasoning: turn.reasoning,
+          metrics: turn.metrics,
+        })),
+      })) as AnalysisResult;
+      signal.throwIfAborted();
+      setAnalysis(analysisResult);
+      setLastWebMCPAction(
+        `Analysis ready: ${analysisResult.collaborationPattern}`,
+      );
+      return {
+        ok: true,
+        grade: analysisResult.overallGrade,
+        pattern: analysisResult.collaborationPattern,
+        classification: analysisResult.patternClassification,
+        insights: analysisResult.keyInsights.slice(0, 5),
+        recommendations: analysisResult.recommendations.slice(0, 4),
+      };
+    },
+    resetMission: resetMissionFromAgent,
+  };
+
+  const assemblyTools = useMemo(
+    () =>
+      createAssemblyTools({
+        listScenarios: () => webMCPActionsRef.current?.listScenarios(),
+        listAgentPresets: () => webMCPActionsRef.current?.listAgentPresets(),
+        configureMission: input => {
+          if (!webMCPActionsRef.current) throw new Error("Assembly Lab is not ready.");
+          return webMCPActionsRef.current.configureMission(input);
+        },
+        previewMission: () => webMCPActionsRef.current?.previewMission(),
+        runNextTurn: signal => {
+          if (!webMCPActionsRef.current) return Promise.reject(new Error("Assembly Lab is not ready."));
+          return webMCPActionsRef.current.runNextTurn(signal);
+        },
+        runSimulation: (input, signal) => {
+          if (!webMCPActionsRef.current) return Promise.reject(new Error("Assembly Lab is not ready."));
+          return webMCPActionsRef.current.runSimulation(input, signal);
+        },
+        inspectCollaboration: () =>
+          webMCPActionsRef.current?.inspectCollaboration(),
+        analyzeCollaboration: signal => {
+          if (!webMCPActionsRef.current) return Promise.reject(new Error("Assembly Lab is not ready."));
+          return webMCPActionsRef.current.analyzeCollaboration(signal);
+        },
+        resetMission: () => webMCPActionsRef.current?.resetMission(),
+      }),
+    [],
+  );
+  const webMCP = useWebMCPTools(assemblyTools);
+
   const currentTurns = stepByStep ? stepTurns : (simulationResult?.turns || []);
   const currentScenario = scenarios?.find(s => s.id === selectedScenario);
 
@@ -579,8 +897,8 @@ export default function Sandbox() {
                 <FlaskConical className="w-4 h-4 text-white" />
               </div>
               <div>
-                <h1 className="font-bold text-sm">Agent Lab</h1>
-                <p className="text-[10px] text-muted-foreground">Multi-Agent Training Sandbox</p>
+                <h1 className="font-bold text-sm">Assembly Lab</h1>
+                <p className="text-[10px] text-muted-foreground">Human-guided agent orchestration</p>
               </div>
             </div>
           </div>
@@ -611,6 +929,91 @@ export default function Sandbox() {
         {/* ============================================ */}
         {phase === "configure" && (
           <div className="space-y-6">
+            <Card className="overflow-hidden border-violet-200 bg-gradient-to-br from-violet-50 via-background to-cyan-50">
+              <CardContent className="p-5 md:p-6">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="max-w-2xl space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge className="gap-1.5 bg-violet-600 text-white hover:bg-violet-600">
+                        <Bot className="h-3 w-3" />
+                        WebMCP-native
+                      </Badge>
+                      <Badge variant="outline" className="gap-1.5 bg-white/70">
+                        <ShieldCheck className="h-3 w-3 text-emerald-600" />
+                        Human in the loop
+                      </Badge>
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold md:text-2xl">
+                        Let your browser agent assemble an AI crew
+                      </h2>
+                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                        Your agent can discover scenarios, configure specialist teammates,
+                        advance their collaboration one turn at a time, inspect the visible
+                        3D result, and explain how the crew worked together.
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-violet-200/70 bg-white/75 px-4 py-3 font-mono text-xs leading-relaxed text-violet-950">
+                      “Choose a bridge challenge, pair an architect with a diplomat,
+                      run four observable turns, then explain whether they collaborated well.”
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        size="sm"
+                        className="gap-2 bg-violet-600 hover:bg-violet-700"
+                        onClick={handleLoadDemoMission}
+                        disabled={!scenarios || !presets}
+                      >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        Load judge demo
+                      </Button>
+                      <span className="text-xs text-muted-foreground">
+                        Prepares a four-turn bridge mission; nothing runs until you or your agent starts it.
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="min-w-[230px] rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm backdrop-blur">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          "flex h-10 w-10 items-center justify-center rounded-xl",
+                          webMCP.status === "ready"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : webMCP.status === "unsupported"
+                              ? "bg-amber-100 text-amber-700"
+                              : webMCP.status === "error"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-violet-100 text-violet-700",
+                        )}
+                      >
+                        <PlugZap className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold" aria-live="polite">
+                          {webMCP.status === "ready"
+                            ? `${webMCP.registeredToolCount} tools ready`
+                            : webMCP.status === "unsupported"
+                              ? "WebMCP browser needed"
+                              : webMCP.status === "error"
+                                ? "Registration needs attention"
+                                : "Registering tools…"}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {webMCP.status === "unsupported"
+                            ? "Use ChatGPT browser or Chrome 149+"
+                            : "Actions stay visible on this page"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-3 rounded-lg bg-muted/70 px-3 py-2 text-[11px] text-muted-foreground" aria-live="polite">
+                      {lastWebMCPAction}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Scenario Selection */}
             <section>
               <h2 className="text-lg font-bold mb-3 flex items-center gap-2">

@@ -20,9 +20,10 @@ import { defaultAgents, Agent, AgentMessage } from "@/lib/agents";
 import { BrickPlacement } from "@/components/LegoBrick3D";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Menu, X } from "lucide-react";
+import { ArrowRight, Bot, Menu, ShieldCheck, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Link } from "wouter";
 
 export default function Home() {
   const [agents, setAgents] = useState<Agent[]>(defaultAgents);
@@ -100,6 +101,40 @@ export default function Home() {
 
       {/* Stats Bar */}
       <StatsBar />
+
+      {/* WebMCP Challenge entry point */}
+      <section className="border-b border-violet-200/70 bg-gradient-to-r from-violet-50 via-background to-cyan-50">
+        <div className="container py-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white shadow-sm">
+                <Bot className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-bold text-violet-950">Assembly Lab</span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
+                    <Sparkles className="h-3 w-3" /> WebMCP-native
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                    <ShieldCheck className="h-3 w-3" /> Human-visible actions
+                  </span>
+                </div>
+                <p className="mt-1 max-w-3xl text-xs leading-relaxed text-muted-foreground">
+                  Ask your browser agent to choose a challenge, assemble a specialist AI crew,
+                  run their collaboration turn by turn, and explain the visible 3D result.
+                </p>
+              </div>
+            </div>
+            <Link href="/sandbox">
+              <Button size="sm" className="w-full gap-2 bg-violet-600 hover:bg-violet-700 lg:w-auto">
+                Open Assembly Lab
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {/* Mobile Menu Toggle */}
       <div className="lg:hidden fixed bottom-4 right-4 z-50">

@@ -53,6 +53,10 @@ async function startServer() {
     res.setHeader("X-XSS-Protection", "1; mode=block");
     // Referrer policy
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    // WebMCP requires an origin-keyed agent cluster and the tools permission.
+    // Keep tools same-origin only; no cross-origin exposure is enabled.
+    res.setHeader("Origin-Agent-Cluster", "?1");
+    res.setHeader("Permissions-Policy", "tools=(self)");
     // Content Security Policy (relaxed for development)
     if (process.env.NODE_ENV === "production") {
       res.setHeader(

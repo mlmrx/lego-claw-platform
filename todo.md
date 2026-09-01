@@ -455,3 +455,14 @@
 - [x] Create a private GitHub repository for the complete source code
 - [x] Push the current project source and commit history to the private repository
 - [x] Verify repository privacy, default branch, and expected source files
+
+## WebMCP Devpost Competition Sprint
+- [x] Research the official rules, deadline, eligibility, judging rubric, prizes, and submission requirements
+- [x] Identify the exact WebMCP APIs or browser capabilities required for a valid entry
+- [x] Audit LEGO Claw against every judging criterion and document the product gaps
+- [x] Define a focused, differentiated judge demo centered on the agentic assembly protocol
+- [x] Implement a meaningful WebMCP-native workflow with clear user consent and observable agent actions
+- [x] Add judge-friendly onboarding, demo data, architecture explanation, and failure handling
+- [x] Verify accessibility, security, tests, and deployment readiness
+- [x] Prepare Devpost submission copy, demo script, screenshots, and architecture diagram
+- [ ] Push the competition-ready version to the private GitHub repository

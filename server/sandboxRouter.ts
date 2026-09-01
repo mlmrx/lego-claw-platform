@@ -294,9 +294,9 @@ Respond with valid JSON (no markdown):
 }
 
 Notes on "bricks" field:
-- Only include if action is "place" or "remove"
-- For "remove", list bricks to remove
-- For other actions, omit or use empty array
+- Always include the field
+- For "place" or "remove", list up to 4 affected bricks
+- For other actions, use an empty array
 - Available colors: #D01012, #0057A8, #FED700, #00852B, #FF7E14, #F4F4F4, #1B1B1B, #A0A0A0
 - height: 3 = standard brick, 1 = plate`;
 
@@ -306,15 +306,80 @@ Notes on "bricks" field:
 
   try {
     const response = await invokeLLM({
+      model: "gemini-3-flash-preview",
+      maxTokens: 2200,
+      reasoningEffort: "low",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userMessage },
       ],
-      response_format: { type: "json_object" },
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "simulation_turn",
+          strict: true,
+          schema: {
+            type: "object",
+            properties: {
+              action: {
+                type: "string",
+                enum: ["speak", "place", "remove", "suggest", "agree", "disagree", "negotiate"],
+              },
+              message: { type: "string", maxLength: 360 },
+              reasoning: { type: "string", maxLength: 360 },
+              bricks: {
+                type: "array",
+                maxItems: 4,
+                items: {
+                  type: "object",
+                  properties: {
+                    position: {
+                      type: "array",
+                      items: { type: "number" },
+                      minItems: 3,
+                      maxItems: 3,
+                    },
+                    color: { type: "string" },
+                    width: { type: "integer", minimum: 1, maximum: 8 },
+                    depth: { type: "integer", minimum: 1, maximum: 8 },
+                    height: { type: "integer", minimum: 1, maximum: 3 },
+                    shape: { type: "string" },
+                  },
+                  required: ["position", "color", "width", "depth", "height", "shape"],
+                  additionalProperties: false,
+                },
+              },
+              metrics: {
+                type: "object",
+                properties: {
+                  cooperationScore: { type: "integer", minimum: 0, maximum: 100 },
+                  buildQuality: { type: "integer", minimum: 0, maximum: 100 },
+                  communicationClarity: { type: "integer", minimum: 0, maximum: 100 },
+                },
+                required: ["cooperationScore", "buildQuality", "communicationClarity"],
+                additionalProperties: false,
+              },
+            },
+            required: ["action", "message", "reasoning", "bricks", "metrics"],
+            additionalProperties: false,
+          },
+        },
+      },
     });
+
+    if (!response.choices?.length) {
+      throw new Error(
+        `Model response missing choices: ${JSON.stringify(response).slice(0, 700)}`,
+      );
+    }
 
     const rawContent = response.choices?.[0]?.message?.content;
     const content = typeof rawContent === "string" ? rawContent : "";
+    if (!content.trim()) {
+      throw new Error(
+        `Model returned no turn content (finish_reason=${response.choices?.[0]?.finish_reason ?? "unknown"})`,
+      );
+    }
     const parsed = JSON.parse(content);
 
     return {
@@ -334,6 +399,7 @@ Notes on "bricks" field:
       timestamp: Date.now(),
     };
   } catch (err) {
+    console.error("[Sandbox] Structured turn generation failed:", err);
     // Fallback turn if LLM fails
     return {
       turnNumber,
@@ -593,17 +659,100 @@ ${input.turns.map((t, i) => `[${i + 1}] ${t.agentName} (${t.action}): "${t.messa
 
       try {
         const response = await invokeLLM({
+          model: "gemini-3-flash-preview",
+          maxTokens: 3600,
+          reasoningEffort: "low",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userMessage },
           ],
-          response_format: { type: "json_object" },
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "collaboration_analysis",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  overallGrade: { type: "string", enum: ["A", "B", "C", "D", "F"] },
+                  collaborationPattern: { type: "string", maxLength: 100 },
+                  keyInsights: {
+                    type: "array",
+                    minItems: 3,
+                    maxItems: 5,
+                    items: { type: "string", maxLength: 240 },
+                  },
+                  agentAnalysis: {
+                    type: "array",
+                    minItems: 1,
+                    maxItems: 4,
+                    items: {
+                      type: "object",
+                      properties: {
+                        name: { type: "string" },
+                        effectiveness: { type: "integer", minimum: 0, maximum: 100 },
+                        strengths: {
+                          type: "array",
+                          maxItems: 4,
+                          items: { type: "string", maxLength: 160 },
+                        },
+                        weaknesses: {
+                          type: "array",
+                          maxItems: 4,
+                          items: { type: "string", maxLength: 160 },
+                        },
+                      },
+                      required: ["name", "effectiveness", "strengths", "weaknesses"],
+                      additionalProperties: false,
+                    },
+                  },
+                  emergentBehaviors: {
+                    type: "array",
+                    maxItems: 4,
+                    items: { type: "string", maxLength: 200 },
+                  },
+                  recommendations: {
+                    type: "array",
+                    minItems: 3,
+                    maxItems: 4,
+                    items: { type: "string", maxLength: 220 },
+                  },
+                  patternClassification: {
+                    type: "string",
+                    enum: ["cooperative", "competitive", "mixed", "dysfunctional"],
+                  },
+                },
+                required: [
+                  "overallGrade",
+                  "collaborationPattern",
+                  "keyInsights",
+                  "agentAnalysis",
+                  "emergentBehaviors",
+                  "recommendations",
+                  "patternClassification",
+                ],
+                additionalProperties: false,
+              },
+            },
+          },
         });
+
+        if (!response.choices?.length) {
+          throw new Error(
+            `Model response missing analysis choices: ${JSON.stringify(response).slice(0, 700)}`,
+          );
+        }
 
         const rawContent = response.choices?.[0]?.message?.content;
         const content = typeof rawContent === "string" ? rawContent : "";
+        if (!content.trim()) {
+          throw new Error(
+            `Model returned no analysis content (finish_reason=${response.choices?.[0]?.finish_reason ?? "unknown"})`,
+          );
+        }
         return JSON.parse(content);
       } catch (err) {
+        console.error("[Sandbox] Structured collaboration analysis failed:", err);
         return {
           overallGrade: "B",
           collaborationPattern: "mixed",

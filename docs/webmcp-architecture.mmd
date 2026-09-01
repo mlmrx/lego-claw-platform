@@ -1,0 +1,27 @@
+flowchart TB
+  Human["Human\nintent + oversight"]
+  Browser["Browser agent\nplanning + tool selection"]
+  WebMCP["Assembly Lab WebMCP layer\n9 typed tools"]
+  UI["Shared React state\nvisible mission + timeline"]
+  API["tRPC orchestration API\nvalidated procedures"]
+  Crew["Specialist crew\nArchitect · Diplomat · Engineer"]
+  Artifact["Evidence surface\n3D artifact + metrics + analysis"]
+
+  Human <-->|"prompt · pause · inspect"| Browser
+  Browser -->|"discover · configure · execute"| WebMCP
+  WebMCP -->|"same state as the human UI"| UI
+  UI -->|"typed calls"| API
+  API -->|"bounded turn loop"| Crew
+  Crew -->|"messages · actions · scores"| Artifact
+  Artifact --> UI
+  UI -.->|"visible progress"| Human
+  UI -.->|"structured results"| Browser
+
+  classDef human fill:#F5F3FF,stroke:#7C3AED,color:#2E1065,stroke-width:2px
+  classDef agent fill:#ECFEFF,stroke:#0891B2,color:#164E63,stroke-width:2px
+  classDef core fill:#0F172A,stroke:#0F172A,color:#FFFFFF,stroke-width:2px
+  classDef evidence fill:#ECFDF5,stroke:#059669,color:#064E3B,stroke-width:2px
+  class Human human
+  class Browser,Crew agent
+  class WebMCP,UI,API core
+  class Artifact evidence
