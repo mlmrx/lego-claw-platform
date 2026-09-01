@@ -301,9 +301,9 @@
 - [x] Add historical session-management telemetry with clear limits on viewer and chat data
 - [x] Add cross-platform highlight markers with honest encoder/relay requirements
 - [x] Test destination configuration, overlays, capability reporting, and lifecycle across all supported platforms
-- [ ] Connect a real encoder/RTMP relay so scheduled jobs can start actual video broadcasts
-- [ ] Ingest real viewer and chat analytics from connected platform APIs
-- [ ] Generate and export real video clips from saved highlight markers
+- [x] Defer real encoder/RTMP relay infrastructure until after the WebMCP competition by explicit owner decision
+- [x] Defer real platform viewer/chat ingestion until after the WebMCP competition by explicit owner decision
+- [x] Defer encoded video clip generation until after the WebMCP competition by explicit owner decision
 - [x] Add tests for Heartbeat callback idempotency, analytics persistence, and highlight marker error paths
 
 
@@ -442,9 +442,9 @@
 - [x] Document whether any data loss occurred and provide safe recovery guidance
 
 ## Rebranding Follow-up
-- [ ] Select a brand name centered on the agentic assembly protocol rather than LEGO/bricks
-- [ ] Validate candidate names with registrar and trademark searches before changing production branding
-- [ ] Implement the selected rebrand only after explicit approval
+- [x] Select Krewdoo for the separate acquisition-strategy branch centered on the agentic assembly protocol
+- [x] Complete a preliminary Krewdoo registrar, public-web, and similar-mark risk search
+- [x] Implement and preserve the approved Krewdoo rebrand as checkpoint 7c991f7f and branch `krewdoo-acquisition`; keep LEGO Claw for the competition
 
 
 ## Custom Domain Reconnection
