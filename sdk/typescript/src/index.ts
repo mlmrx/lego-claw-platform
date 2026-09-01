@@ -36,7 +36,7 @@ export class AssemblyLabClient {
   private readonly fetcher: typeof globalThis.fetch;
 
   constructor(options: AssemblyLabClientOptions = {}) {
-    this.baseUrl = (options.baseUrl || "https://legoagents-qmc4sc7q.manus.space").replace(/\/$/, "");
+    this.baseUrl = (options.baseUrl || "https://legoclaw.com").replace(/\/$/, "");
     this.fetcher = options.fetch || globalThis.fetch.bind(globalThis);
   }
 

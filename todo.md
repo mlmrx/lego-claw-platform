@@ -477,3 +477,14 @@
 - [x] Verify the restored `/`, `/webmcp`, and `/sandbox` competition experience
 - [x] Run 372 tests, TypeScript validation, the production build, and the standalone SDK build on the restored baseline
 - [x] Preserve Krewdoo on private GitHub branch `krewdoo-acquisition` and align `main` with LEGO Claw
+
+## WebMCP Final Submission Artifacts
+- [x] Revalidate the official deadline, eligibility rules, submission fields, judging criteria, and public-access requirements
+- [x] Audit the live LEGO Claw URLs, private repository, license, existing submission copy, screenshots, diagram, and demo script
+- [x] Write final paste-ready Devpost title, tagline, description, inspiration, implementation, challenges, accomplishments, lessons, and future roadmap
+- [x] Create a judging-criteria matrix, technical architecture guide, WebMCP tool catalog, security notes, and judge testing instructions
+- [x] Produce final branded screenshots, architecture diagram, video narration, shot list, captions, and thumbnail guidance
+- [x] Create an owner-only submission checklist that separates completed artifacts from account-level actions
+- [x] Verify all artifact links, names, claims, test totals, public/private status, and competition branding
+- [x] Package all final submission artifacts into a clearly organized ZIP with documents, media, technical evidence, validation logs, and owner actions
+- [ ] Commit the artifact sources, synchronize the private GitHub repository, and save a submission-ready checkpoint

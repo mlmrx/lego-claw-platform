@@ -1,19 +1,30 @@
 flowchart TB
-  Human["Human\nintent + oversight"]
-  Browser["Browser agent\nplanning + tool selection"]
-  WebMCP["Assembly Lab WebMCP layer\n9 typed tools"]
-  UI["Shared React state\nvisible mission + timeline"]
-  API["tRPC orchestration API\nvalidated procedures"]
-  Crew["Specialist crew\nArchitect · Diplomat · Engineer"]
-  Artifact["Evidence surface\n3D artifact + metrics + analysis"]
+  subgraph Control["Human + browser control"]
+    direction LR
+    Human["Human\nintent + oversight"]
+    Browser["Browser agent\nplanning + tool selection"]
+    Human <-->|"prompt · pause · inspect"| Browser
+  end
 
-  Human <-->|"prompt · pause · inspect"| Browser
+  subgraph Page["LEGO Claw Assembly Lab"]
+    direction LR
+    WebMCP["WebMCP contract\n9 typed tools"]
+    UI["Shared React state\nvisible mission + timeline"]
+    WebMCP -->|"same state as the human UI"| UI
+  end
+
+  subgraph Runtime["Bounded collaboration runtime"]
+    direction LR
+    API["tRPC orchestration API\nvalidated procedures"]
+    Crew["Specialist crew\nArchitect · Diplomat · Engineer"]
+    Artifact["Evidence surface\n3D artifact + metrics + analysis"]
+    API -->|"bounded turn loop"| Crew
+    Crew -->|"messages · actions · scores"| Artifact
+  end
+
   Browser -->|"discover · configure · execute"| WebMCP
-  WebMCP -->|"same state as the human UI"| UI
   UI -->|"typed calls"| API
-  API -->|"bounded turn loop"| Crew
-  Crew -->|"messages · actions · scores"| Artifact
-  Artifact --> UI
+  Artifact -->|"visible updates"| UI
   UI -.->|"visible progress"| Human
   UI -.->|"structured results"| Browser
 

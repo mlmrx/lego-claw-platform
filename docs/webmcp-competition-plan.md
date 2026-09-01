@@ -1,63 +1,36 @@
-# WebMCP Devpost Competition Plan
+# LEGO Claw Assembly Lab: Final Competition Plan
 
-## Deadline and hard requirements
+The entry is built around one claim: **a browser agent can become an orchestrator of a visible specialist crew**. LEGO Claw supplies the pre-existing multi-agent and 3D environment; the WebMCP submission-period extension exposes a deliberate nine-tool assembly protocol that a browser agent can discover, compose, and execute while a person watches the same state.
 
-The submission deadline is **September 3, 2026 at 1:00 PM PDT**. The official rules require a working public URL, a public open-source repository with a visible license, a text description, and a public YouTube demo video under three minutes with audio. Because this project existed before August 25, the repository and submission must clearly distinguish the new WebMCP extension from the pre-existing product with dated commits.
+## Official constraints
 
-| Requirement | Current status | Required action |
-|---|---|---|
-| Meaningful WebMCP extension after August 25 | Not yet implemented | Add a non-trivial imperative WebMCP tool suite and dated tests/docs |
-| Working live URL | Manus subdomain works | Keep a public, authentication-free judge flow available through the end of judging |
-| Public repository and visible license | Repository is private | Obtain user confirmation before making code public; add a recognized open-source license |
-| Text description | Not prepared | Write criterion-aligned Devpost copy |
-| Public demo video under three minutes | Not prepared | Produce a tight script and shot list; user records voice/video or explicitly requests media generation |
-| Original work and clean IP | Current LEGO branding is high risk | Remove third-party trademark branding from the submitted build, video, screenshots, and repository |
+| Constraint | Competition response |
+|---|---|
+| Submission deadline: September 3, 2026 at 1:00 PM PT | Owner checklist prioritizes public repository, video, final browser test, and submission |
+| Existing projects require meaningful WebMCP work after August 25 | Commit `d8321b8` and `docs/new-vs-preexisting.md` isolate the judged extension |
+| Working live URL | `https://legoclaw.com/webmcp` and `/sandbox` |
+| Public open-source repository | Prepared with MIT license; owner must change visibility before submission |
+| Demo video under three minutes with audio | Timed 2:35 script and proof-shot list prepared |
+| Third-party IP restrictions | LEGO trademark use is explicitly flagged as a blocking owner/legal decision |
 
-## Judging strategy
+## Demonstration path
 
-The four judging criteria are equally weighted: **WebMCP Leverage, Execution, Potential Impact, and Creativity & Ambition**. A competitive entry therefore needs more than one decorative tool registration. The winning story should be that a browser agent becomes an active coordinator of a visible multi-agent creative system while the human remains in control.
+The video and judge instructions use one bounded bridge mission. The browser agent discovers scenarios and specialists, configures a complementary crew, runs four observable turns, inspects the shared 3D artifact and metrics, and requests a structured collaboration analysis. This path demonstrates the full tool chain in less than three minutes without touring unrelated platform features.
 
-> **Working concept:** The browser agent translates a person's intent into a structured build mission, assembles a complementary crew of specialist agents, advances the collaboration turn by turn, observes the evolving 3D artifact and cooperation metrics, and hands control back to the human at meaningful decision points.
+## Score strategy
 
-The official showcase already contains a web-native 3D modeling suite, a 3D puzzle, a music sequencer, image editing, cards, crosswords, and shopping experiences. A generic "agent controls a brick builder" entry would therefore look derivative. The defensible concept is the **agentic assembly protocol**: one browser agent orchestrates a visible team of specialized in-app agents, while the human can inspect, interrupt, and redirect the collaboration. The 3D artifact is evidence of collective work rather than the product's entire identity.
+| Criterion | Primary proof |
+|---|---|
+| WebMCP Leverage | Nine-tool discover → configure → execute → inspect → analyze workflow |
+| Execution | Working live product, shared state, loading/error states, 3D result, and 372 tests |
+| Potential Impact | Makes specialist-agent configuration and evaluation reliable and human-observable |
+| Creativity & Ambition | Nested agency: one browser agent coordinates multiple in-app agents |
 
-The judge-facing page should call this experience **Assembly Lab**. This is a feature name, not a final company rebrand, and avoids blocking implementation on domain availability. Submission branding must not rely on LEGO trademarks because the official rules require entrants to own their work and prohibit unauthorized third-party trademarks in the demo video.
+## Final release state
 
-## Proposed WebMCP tool journey
+The active managed checkpoint is `4415bd9e`. The private GitHub `main` branch contains the LEGO Claw competition version. Krewdoo is preserved separately and is not part of this submission. Real RTMP relay and platform analytics are intentionally deferred because they do not strengthen the focused WebMCP demonstration.
 
-| Tool | Purpose | Safety annotation |
-|---|---|---|
-| `list_scenarios` | Discover available collaboration challenges | Read-only |
-| `list_agent_presets` | Discover specialist agents and strengths | Read-only |
-| `configure_mission` | Set goal, scenario, constraints, crew, and turn budget in the visible UI | Reversible state change |
-| `preview_mission` | Return the current mission state before execution | Read-only |
-| `run_next_turn` | Advance exactly one agent turn so the human can inspect progress | State-changing; bounded |
-| `run_simulation` | Run a bounded mission after configuration | State-changing; explicit limit |
-| `inspect_collaboration` | Return concise progress, brick count, metrics, and latest action | Read-only; untrusted-content hint when returning agent text |
-| `analyze_collaboration` | Produce post-run collaboration findings and recommendations | Read-only with respect to build state |
-| `reset_mission` | Clear the local mission and return to configuration | Destructive but local; clearly described |
+## References
 
-The primary demo should use a multi-step chain rather than a single call: discover scenarios, select a crew, configure a constrained mission, execute two or three turns, inspect progress, and request an analysis. Every state-changing tool must update the same visible interface a human uses.
-
-## Two viable implementation scopes
-
-| Approach | Tradeoffs | Cost | Setup complexity |
-|---|---|---|---|
-| **Focused Assembly Lab** | Registers a coherent tool chain on the existing Agent Lab page, reuses working tRPC simulation procedures, and can be completed and tested before the deadline. Best balance of depth and reliability. | Existing hosting and built-in model usage | Medium |
-| **Site-wide tool layer** | Exposes tools across Dream Build, social rooms, instructions, marketplace, and Agent Lab. Broader but much harder to explain, test, and demo in under three minutes. Higher chance of ambiguous tool selection. | Higher model calls and testing time | High |
-
-The competition implementation should use the focused Assembly Lab approach. It demonstrates non-trivial WebMCP orchestration without risking the coherence and reliability scores.
-
-## Security and quality constraints
-
-Tool names and descriptions must remain concise, JSON Schemas must use clear enums and required fields, and outputs should stay below approximately 1,500 characters. Read-only tools receive `readOnlyHint: true`; tools that return model-generated or user-generated text receive `untrustedContentHint: true`. Long-running calls must honor cancellation signals. Tool handlers must validate state before mutation and return structured, actionable errors.
-
-## Sources
-
-- [Official challenge overview](https://webmcp.devpost.com/)
-- [Official rules](https://webmcp.devpost.com/rules)
-- [Official resources and FAQ](https://webmcp.devpost.com/resources)
-- [Chrome WebMCP documentation](https://developer.chrome.com/docs/ai/webmcp)
-- [Imperative API](https://developer.chrome.com/docs/ai/webmcp/imperative-api)
-- [Tool security guidance](https://developer.chrome.com/docs/ai/webmcp/secure-tools)
-- [WebMCP evaluation guidance](https://developer.chrome.com/docs/ai/webmcp/evals)
+[1]: https://webmcp.devpost.com/rules "WebMCP Challenge official rules"
+[2]: https://webmcp.devpost.com/resources "WebMCP Challenge resources and FAQ"

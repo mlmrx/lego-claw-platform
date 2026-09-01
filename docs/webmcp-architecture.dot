@@ -1,0 +1,50 @@
+digraph WebMCPArchitecture {
+  graph [
+    rankdir=TB,
+    bgcolor="#FFFFFF",
+    pad=0.35,
+    nodesep=0.65,
+    ranksep=0.85,
+    splines=polyline,
+    fontname="Arial",
+    fontsize=20,
+    labelloc="t",
+    label="LEGO Claw Assembly Lab — WebMCP Architecture",
+    size="12,7.2!",
+    ratio="fill",
+    dpi=150
+  ];
+
+  node [
+    shape=box,
+    style="rounded,filled",
+    fontname="Arial",
+    fontsize=16,
+    margin="0.22,0.16",
+    penwidth=2
+  ];
+
+  edge [fontname="Arial", fontsize=12, color="#334155", penwidth=1.7, arrowsize=0.75];
+
+  human [label="Human\nintent + oversight", fillcolor="#F5F3FF", color="#7C3AED", fontcolor="#2E1065"];
+  browser [label="Browser agent\nplanning + tool selection", fillcolor="#ECFEFF", color="#0891B2", fontcolor="#164E63"];
+  tools [label="WebMCP contract\n9 typed tools", fillcolor="#0F172A", color="#0F172A", fontcolor="#FFFFFF"];
+  ui [label="Shared React state\nvisible mission + timeline", fillcolor="#0F172A", color="#0F172A", fontcolor="#FFFFFF"];
+  api [label="tRPC orchestration API\nvalidated procedures", fillcolor="#0F172A", color="#0F172A", fontcolor="#FFFFFF"];
+  crew [label="Specialist crew\nArchitect · Diplomat · Engineer", fillcolor="#ECFEFF", color="#0891B2", fontcolor="#164E63"];
+  evidence [label="Evidence surface\n3D artifact + metrics + analysis", fillcolor="#ECFDF5", color="#059669", fontcolor="#064E3B"];
+
+  { rank=same; human; browser; }
+  { rank=same; tools; ui; }
+  { rank=same; api; crew; evidence; }
+
+  human -> browser [dir=both, label="prompt · pause · inspect"];
+  browser -> tools [label="discover · configure · execute"];
+  tools -> ui [label="same state as human UI"];
+  ui -> api [label="typed calls"];
+  api -> crew [label="bounded turn loop"];
+  crew -> evidence [label="messages · actions · scores"];
+  evidence -> ui [label="visible updates"];
+  ui -> human [style=dashed, label="visible progress"];
+  ui -> browser [style=dashed, label="structured results"];
+}
