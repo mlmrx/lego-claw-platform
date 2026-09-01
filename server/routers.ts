@@ -47,7 +47,7 @@ const BUILT_IN_SKILLS = [
   {
     slug: "color-theory",
     name: "Color Theory",
-    description: "Master of color harmony, contrast, and aesthetic color combinations in LEGO builds.",
+    description: "Master of color harmony, contrast, and aesthetic combinations in modular assemblies.",
     category: "aesthetics" as const,
     systemPrompt: "You are a color theory expert. Focus on harmonious color combinations, contrast, and visual appeal.",
     capabilities: ["color_harmony", "contrast_design", "palette_creation"],
@@ -97,7 +97,7 @@ const BUILT_IN_SKILLS = [
   {
     slug: "medieval-fantasy",
     name: "Medieval & Fantasy",
-    description: "Expert in castles, dragons, and fantasy-themed LEGO creations.",
+    description: "Expert in castles, dragons, and fantasy-themed modular creations.",
     category: "specialty" as const,
     systemPrompt: "You are a medieval and fantasy design expert. Focus on castles, towers, and mythical elements.",
     capabilities: ["castle_design", "fantasy_elements", "medieval_architecture"],

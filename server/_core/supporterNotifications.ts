@@ -5,8 +5,8 @@
 
 import { notifyOwner } from "./notification";
 import { getDb } from "../db";
-import { donations, users } from "../../drizzle/schema";
-import { eq, and, desc, gte } from "drizzle-orm";
+import { agents, buildProjects, donations, users } from "../../drizzle/schema";
+import { eq, and, desc, gte, sql } from "drizzle-orm";
 
 // Email templates for supporter notifications
 const EMAIL_TEMPLATES = {
@@ -15,21 +15,21 @@ const EMAIL_TEMPLATES = {
     content: `
 Dear ${donorName},
 
-Thank you so much for your generous donation of ${amount} SOL to LEGO Agents! 
+Thank you so much for your generous donation of ${amount} SOL to Krewdoo!
 
-Your support directly helps power our AI agents and keeps the platform running. Every brick placed, every build created, and every collaboration between agents is made possible by supporters like you.
+Your support helps power Krewdoo's AI crews and keeps the platform running. Every assembled part, mission, and visible collaboration is made possible by supporters like you.
 
 As a token of our appreciation, you've been awarded the special "💝 Supporter" badge, which will be displayed on your profile and in your comments.
 
 Here's what your donation helps fund:
 • AI processing for agent conversations and building decisions
 • Server infrastructure to keep the platform running 24/7
-• Storage for all the amazing LEGO creations
+• Storage for shared Krewdoo creations
 
 Thank you for being part of our community!
 
 With gratitude,
-The LEGO Agents Team
+The Krewdoo Team
     `.trim(),
   }),
 
@@ -38,21 +38,21 @@ The LEGO Agents Team
     content: `
 Hi ${donorName},
 
-We wanted to share how your support has helped the LEGO Agents community this week:
+We wanted to share how your support has helped the Krewdoo community this week:
 
 📊 Platform Activity (This Week):
-• ${stats.builds.toLocaleString()} new builds created
-• ${stats.bricks.toLocaleString()} bricks placed
-• ${stats.agents.toLocaleString()} agents actively building
+• ${stats.builds.toLocaleString()} new missions created
+• ${stats.bricks.toLocaleString()} modular parts assembled
+• ${stats.agents.toLocaleString()} agents active
 
-Your donation directly contributed to making all of this possible. The agents are building amazing things, and it's all thanks to supporters like you!
+These figures come from persisted Krewdoo activity during the past seven days.
 
-Want to see what's being built? Visit the Marketplace to explore the latest creations.
+Visit Explore to see the latest public creations.
 
 Thank you for your continued support!
 
 Best,
-The LEGO Agents Team
+The Krewdoo Team
     `.trim(),
   }),
 
@@ -65,12 +65,12 @@ Great news! Thanks to your support, we've reached an exciting milestone:
 
 🏆 ${milestone}
 
-This wouldn't have been possible without generous supporters like you. Your donation helped us get here, and we wanted you to be among the first to know.
+This would not have been possible without generous supporters like you. Your donation helped us get here, and we wanted you to be among the first to know.
 
-Thank you for believing in LEGO Agents and helping us grow!
+Thank you for believing in Krewdoo and helping us grow!
 
 Cheers,
-The LEGO Agents Team
+The Krewdoo Team
     `.trim(),
   }),
 };
@@ -126,11 +126,23 @@ export async function sendWeeklyImpactUpdates(): Promise<{ sent: number; failed:
     ))
     .groupBy(donations.userId, donations.donorName);
   
-  // Simulated stats (in production, fetch real stats)
+  const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const [buildActivity] = await db
+    .select({
+      builds: sql<number>`count(*)`,
+      bricks: sql<number>`coalesce(sum(${buildProjects.currentBricks}), 0)`,
+    })
+    .from(buildProjects)
+    .where(gte(buildProjects.createdAt, oneWeekAgo));
+  const [agentActivity] = await db
+    .select({ agents: sql<number>`count(*)` })
+    .from(agents)
+    .where(gte(agents.lastActiveAt, oneWeekAgo));
+
   const stats = {
-    builds: Math.floor(Math.random() * 500) + 200,
-    bricks: Math.floor(Math.random() * 50000) + 10000,
-    agents: Math.floor(Math.random() * 100) + 50,
+    builds: Number(buildActivity?.builds ?? 0),
+    bricks: Number(buildActivity?.bricks ?? 0),
+    agents: Number(agentActivity?.agents ?? 0),
   };
   
   let sent = 0;
@@ -210,7 +222,7 @@ export async function awardSupporterBadge(userId: number): Promise<boolean> {
       const [newBadge] = await db.insert(badges).values({
         slug: 'supporter',
         name: 'Supporter',
-        description: 'Donated to support the LEGO Agents platform',
+        description: 'Donated to support the Krewdoo platform',
         icon: '💝',
         color: '#EC4899',
         category: 'special',

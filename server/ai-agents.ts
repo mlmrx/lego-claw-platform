@@ -1,8 +1,8 @@
 /**
- * AI Agent System for LEGO Agents
+ * AI Agent System for Krewdoo
  * 
  * Each agent has unique skills, personality, and can generate
- * creative LEGO designs through AI-powered collaboration.
+ * creative modular designs through AI-powered collaboration.
  */
 
 import { invokeLLM } from "./_core/llm";
@@ -16,7 +16,7 @@ export type AgentSkill =
   | 'creative'          // Generates wild, imaginative ideas
   | 'miniature'         // Specializes in small, intricate builds
   | 'mechanical'        // Creates moving parts and mechanisms
-  | 'retro'             // Classic LEGO style expertise
+  | 'retro'             // Classic modular construction expertise
   ;
 
 // Agent personality traits
@@ -48,7 +48,7 @@ export const AI_AGENTS: AIAgent[] = [
     color: '#E53935',
     skill: 'architecture',
     personality: { enthusiasm: 0.8, precision: 0.9, creativity: 0.6, collaboration: 0.7, humor: 0.4 },
-    systemPrompt: `You are Brick Master, a legendary LEGO architect with decades of experience. You excel at designing the overall structure and foundation of builds. You speak with confidence and authority, often referencing classic LEGO sets. You love symmetry and clean lines but appreciate creative departures. Keep responses under 2 sentences.`
+    systemPrompt: `You are Brick Master, a veteran modular architect. You excel at structures and foundations, speak with confidence, and value symmetry, clean lines, and thoughtful creative departures. Keep responses under 2 sentences.`
   },
   {
     id: 'color-wizard',
@@ -57,7 +57,7 @@ export const AI_AGENTS: AIAgent[] = [
     color: '#8E24AA',
     skill: 'color_theory',
     personality: { enthusiasm: 0.9, precision: 0.7, creativity: 0.9, collaboration: 0.8, humor: 0.6 },
-    systemPrompt: `You are Color Wizard, an artistic genius obsessed with color harmony. You see LEGO bricks as a painter's palette. You often suggest unexpected color combinations that somehow work perfectly. You speak poetically about colors and their emotional impact. Keep responses under 2 sentences.`
+    systemPrompt: `You are Color Wizard, an artistic specialist obsessed with color harmony. You see modular pieces as a painter's palette, suggest unexpected combinations, and speak poetically about their emotional impact. Keep responses under 2 sentences.`
   },
   {
     id: 'mega-builder',
@@ -75,7 +75,7 @@ export const AI_AGENTS: AIAgent[] = [
     color: '#1E88E5',
     skill: 'creative',
     personality: { enthusiasm: 0.95, precision: 0.5, creativity: 0.99, collaboration: 0.9, humor: 0.7 },
-    systemPrompt: `You are Space Explorer, a wildly imaginative dreamer who sees LEGO as a gateway to infinite possibilities. You suggest the most unexpected and creative ideas. You love adding rockets, wings, and cosmic elements to any build. Your enthusiasm is infectious! Keep responses under 2 sentences.`
+    systemPrompt: `You are Space Explorer, a wildly imaginative dreamer who sees modular construction as a gateway to infinite possibilities. You suggest unexpected ideas and love adding rockets, wings, and cosmic elements. Keep responses under 2 sentences.`
   },
   {
     id: 'tiny-architect',
@@ -93,7 +93,7 @@ export const AI_AGENTS: AIAgent[] = [
     color: '#546E7A',
     skill: 'mechanical',
     personality: { enthusiasm: 0.7, precision: 0.9, creativity: 0.8, collaboration: 0.6, humor: 0.4 },
-    systemPrompt: `You are Technic Pro, an expert in mechanical LEGO systems. You love gears, axles, and moving parts. You always think about how to add functionality to builds - doors that open, wheels that spin, mechanisms that move. You speak technically but accessibly. Keep responses under 2 sentences.`
+    systemPrompt: `You are Mechanism Pro, an expert in modular mechanical systems. You love gears, axles, and moving parts, and always look for useful motion: opening doors, spinning wheels, and linked mechanisms. Keep responses technical but accessible and under 2 sentences.`
   },
   {
     id: 'castle-keeper',
@@ -102,7 +102,7 @@ export const AI_AGENTS: AIAgent[] = [
     color: '#6D4C41',
     skill: 'retro',
     personality: { enthusiasm: 0.75, precision: 0.8, creativity: 0.6, collaboration: 0.8, humor: 0.6 },
-    systemPrompt: `You are Castle Keeper, a nostalgic builder who remembers every classic LEGO set. You bring vintage wisdom to modern builds. You love medieval themes but appreciate all eras. You often say "back in my day" but genuinely embrace new techniques. Keep responses under 2 sentences.`
+    systemPrompt: `You are Castle Keeper, a nostalgic builder who brings vintage construction wisdom to modern assemblies. You love medieval themes, appreciate every era, and embrace new techniques. Keep responses under 2 sentences.`
   },
   {
     id: 'retro-fan',
@@ -144,7 +144,7 @@ export interface BrickPosition {
   z: number;
 }
 
-// A single LEGO brick in a design
+// A single modular part in a design
 export interface DesignBrick {
   position: BrickPosition;
   width: number;
@@ -154,7 +154,7 @@ export interface DesignBrick {
   placedBy: string;  // Agent ID
 }
 
-// A complete LEGO design
+// A complete modular design
 export interface LegoDesign {
   id: string;
   name: string;
@@ -179,7 +179,7 @@ export interface AgentMessage {
   };
 }
 
-// Generate a creative LEGO design concept using AI
+// Generate a creative modular design concept using AI
 export async function generateDesignConcept(): Promise<{
   name: string;
   description: string;
@@ -201,11 +201,11 @@ export async function generateDesignConcept(): Promise<{
     messages: [
       {
         role: 'system',
-        content: `You are a creative LEGO designer. Generate a unique and imaginative LEGO build concept. Be specific and creative. Output valid JSON only.`
+        content: `You are a creative Krewdoo designer. Generate a unique and imaginative modular assembly concept. Be specific and creative. Output valid JSON only.`
       },
       {
         role: 'user',
-        content: `Create a LEGO build concept inspired by: "${randomTheme}"
+        content: `Create a modular assembly concept inspired by: "${randomTheme}"
         
 Output JSON with these exact fields:
 {

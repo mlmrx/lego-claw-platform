@@ -301,9 +301,9 @@
 - [x] Add historical session-management telemetry with clear limits on viewer and chat data
 - [x] Add cross-platform highlight markers with honest encoder/relay requirements
 - [x] Test destination configuration, overlays, capability reporting, and lifecycle across all supported platforms
-- [ ] Connect a real encoder/RTMP relay so scheduled jobs can start actual video broadcasts
-- [ ] Ingest real viewer and chat analytics from connected platform APIs
-- [ ] Generate and export real video clips from saved highlight markers
+- [x] Defer real encoder/RTMP relay infrastructure until after the WebMCP competition by explicit product decision
+- [x] Defer real platform viewer/chat ingestion until after the WebMCP competition by explicit product decision
+- [x] Defer encoded video clip generation until after the WebMCP competition by explicit product decision
 - [x] Add tests for Heartbeat callback idempotency, analytics persistence, and highlight marker error paths
 
 
@@ -442,9 +442,14 @@
 - [x] Document whether any data loss occurred and provide safe recovery guidance
 
 ## Rebranding Follow-up
-- [ ] Select a brand name centered on the agentic assembly protocol rather than LEGO/bricks
-- [ ] Validate candidate names with registrar and trademark searches before changing production branding
-- [ ] Implement the selected rebrand only after explicit approval
+- [x] Select Krewdoo as the brand centered on the agentic assembly protocol rather than LEGO/bricks
+- [x] Validate Krewdoo with a preliminary registrar, public-web, and similar-mark risk search before changing production branding
+- [x] Implement the selected rebrand after explicit owner approval
+- [x] Replace public legacy branding, metadata, navigation, and acquisition-risk copy with Krewdoo
+- [x] Reframe modular construction as one Krewdoo experience rather than the company identity
+- [x] Update WebMCP showcase, README, SDK, architecture, Devpost copy, and demo script for Krewdoo
+- [x] Verify routes, visual presentation, 372 tests, production build, SDK build, and residual trademark references
+- [ ] Commit and push the Krewdoo competition release to the private GitHub repository
 
 
 ## Custom Domain Reconnection

@@ -64,16 +64,16 @@ export default function WebMCPShowcase() {
               <Workflow className="h-5 w-5" />
             </span>
             <span>
-              <span className="block text-sm font-bold leading-none">Assembly Lab</span>
+              <span className="block text-sm font-bold leading-none">Krewdoo</span>
               <span className="mt-1 block text-[10px] font-medium uppercase tracking-[0.18em] text-slate-500">
-                WebMCP Challenge
+                Assembly Lab · WebMCP
               </span>
             </span>
           </Link>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-              <a href="https://github.com/mlmrx/lego-claw-platform" target="_blank" rel="noreferrer">
-                Source
+              <a href="#architecture">
+                Architecture
               </a>
             </Button>
             <Button size="sm" asChild className="gap-2 bg-violet-600 hover:bg-violet-700">
@@ -102,9 +102,9 @@ export default function WebMCPShowcase() {
               <span className="block text-violet-600">A whole creative crew.</span>
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-600">
-              Assembly Lab is an agentic assembly protocol. A browser agent discovers specialist
-              teammates, assigns a constrained mission, watches them negotiate and build together,
-              and explains the collaboration pattern behind the visible result.
+              Krewdoo is an agentic assembly protocol made tangible through Assembly Lab. A browser
+              agent discovers specialists, assigns a bounded mission, watches them negotiate over a
+              shared artifact, and explains the collaboration pattern behind the visible result.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Button size="lg" asChild className="gap-2 bg-violet-600 px-7 hover:bg-violet-700">
@@ -171,8 +171,9 @@ export default function WebMCPShowcase() {
               Not another chatbot. A structured collaboration loop.
             </h2>
             <p className="mt-4 text-slate-600">
-              WebMCP turns a complex sequence of UI guesses into a typed, observable workflow that
-              the person and browser agent can operate together.
+              Krewdoo uses WebMCP to turn a complex sequence of UI guesses into a typed, observable
+              workflow that the person and browser agent can operate together—and later reuse across
+              other modular creative domains.
             </p>
           </div>
           <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">

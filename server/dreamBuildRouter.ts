@@ -3,7 +3,7 @@
  * Direction 1: Creative AI Co-pilot for Kids
  * 
  * Kids describe what they want to build in natural language,
- * and AI decomposes it into step-by-step LEGO building instructions
+ * and AI decomposes it into step-by-step modular building instructions
  * with educational explanations about structural engineering,
  * color theory, and spatial reasoning.
  */
@@ -41,7 +41,7 @@ export interface DreamBuildPlan {
   estimatedMinutes: number;
   totalBricks: number;
   steps: BuildStep[];
-  funFact: string;          // A fun LEGO-related fact
+  funFact: string;          // A fun construction or engineering fact
 }
 
 // ============================================
@@ -71,7 +71,7 @@ export const dreamBuildRouter = router({
         advanced: "Use 60-100 bricks total, 8-12 steps. Include complex techniques like SNOT (studs not on top), overhangs, and mixed shapes. Explanations for ages 12+.",
       };
 
-      const systemPrompt = `You are a LEGO Master Builder and teacher who helps kids learn to build amazing LEGO creations. You break down any idea into clear, educational building steps.
+      const systemPrompt = `You are Krewdoo's friendly modular-building teacher. You help kids turn ideas into clear, educational steps using colorful interlocking construction pieces.
 
 IMPORTANT RULES:
 - The build grid is 24x24 studs, centered at origin
@@ -105,7 +105,7 @@ You MUST respond with valid JSON matching this exact schema (no markdown, no cod
   "difficulty": "beginner|intermediate|advanced",
   "estimatedMinutes": number,
   "totalBricks": number,
-  "funFact": "string - a fun LEGO fact related to this build",
+  "funFact": "string - a fun construction, design, or engineering fact related to this build",
   "steps": [
     {
       "stepNumber": number,
@@ -130,7 +130,7 @@ You MUST respond with valid JSON matching this exact schema (no markdown, no cod
 
       const userMessage = `A kid wants to build: "${description}"
 
-Create a step-by-step LEGO building plan. Remember:
+Create a step-by-step modular building plan. Remember:
 - Start with the base/foundation
 - Build up logically layer by layer
 - Each step teaches something new
@@ -161,12 +161,12 @@ Create a step-by-step LEGO building plan. Remember:
           }
 
           plan = {
-            title: parsed.title || "My LEGO Creation",
+            title: parsed.title || "My Krewdoo Creation",
             description: parsed.description || description,
             difficulty: parsed.difficulty || difficulty,
             estimatedMinutes: parsed.estimatedMinutes || 10,
             totalBricks: parsed.totalBricks || 0,
-            funFact: parsed.funFact || "LEGO bricks are so precise that only 18 out of every million made are rejected!",
+            funFact: parsed.funFact || "Overlapping seams between layers helps interlocking structures resist sideways forces.",
             steps: parsed.steps.map((step: any, i: number) => ({
               stepNumber: step.stepNumber || i + 1,
               title: step.title || `Step ${i + 1}`,
@@ -234,7 +234,7 @@ Create a step-by-step LEGO building plan. Remember:
           messages: [
             {
               role: "system",
-              content: `You are a friendly LEGO building coach helping a kid who is stuck on step ${currentStep} of building "${buildTitle}". 
+              content: `You are a friendly Krewdoo coach helping a kid who is stuck on step ${currentStep} of assembling "${buildTitle}".
 The step is called "${stepTitle}" and involves: ${stepDescription}.
 They've placed ${bricksPlacedSoFar} bricks so far.
 
@@ -303,7 +303,7 @@ Give a SHORT, encouraging hint (2-3 sentences max). Don't give the full answer -
         {
           emoji: "🦕",
           title: "A Dinosaur",
-          description: "Build a T-Rex or Triceratops from LEGO bricks",
+          description: "Build a T-Rex or Triceratops from colorful interlocking pieces",
           difficulty: "intermediate" as const,
         },
         {

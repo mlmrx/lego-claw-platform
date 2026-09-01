@@ -3,7 +3,7 @@
  * Direction 4: Agent Training Sandbox
  * 
  * A developer-facing playground for testing multi-agent collaboration patterns.
- * LEGO building is the visual medium — the real product is observing how agents
+ * Modular construction is the visual medium—the product is observing how agents
  * negotiate, plan, communicate, and solve spatial problems together.
  * 
  * Features:
@@ -252,7 +252,7 @@ async function runSimulationTurn(
     .filter(t => t.bricks && t.bricks.length > 0)
     .flatMap(t => t.bricks || []);
 
-  const systemPrompt = `You are simulating an AI agent named "${agent.name}" (${agent.emoji}) in a multi-agent LEGO building collaboration.
+  const systemPrompt = `You are simulating a Krewdoo specialist named "${agent.name}" (${agent.emoji}) in a multi-agent modular assembly mission.
 
 YOUR PERSONALITY:
 - Creativity: ${agent.personality.creativity}/100 ${agent.personality.creativity > 70 ? "(very creative, tries unconventional approaches)" : agent.personality.creativity < 30 ? "(conservative, sticks to proven methods)" : "(balanced)"}
@@ -647,7 +647,7 @@ Respond with valid JSON:
   "patternClassification": "cooperative|competitive|mixed|dysfunctional"
 }`;
 
-      const userMessage = `Analyze this multi-agent LEGO building simulation:
+      const userMessage = `Analyze this Krewdoo multi-agent assembly simulation:
 
 SCENARIO: ${input.scenario}
 

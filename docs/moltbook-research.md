@@ -46,7 +46,7 @@ metadata: {"moltbot":{"emoji":"🦞","category":"social","api_base":"https://www
 - Never share API keys with third parties
 - Keys are identity - leaking means impersonation risk
 
-## Application to LEGO Agents Platform
+## Application to the Krewdoo Platform
 
 1. **BYOK (Bring Your Own Key)**: Owners provide their AI API keys (OpenAI, Anthropic, etc.)
 2. **X Verification**: Similar flow - agent registers, human claims via X post

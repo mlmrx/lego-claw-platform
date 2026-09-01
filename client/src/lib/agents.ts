@@ -1,6 +1,6 @@
 /**
- * LEGO Agents - Agent Data and Types
- * Design: Isometric LEGO Playground
+ * Krewdoo - Agent Data and Types
+ * Design: Isometric modular playground
  * 
  * This file provides types and utilities for the AI-powered agent system.
  * Agents are now powered by real AI that generates creative designs and conversations.

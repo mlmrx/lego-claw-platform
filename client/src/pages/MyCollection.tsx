@@ -1,6 +1,6 @@
 /**
  * My Collection Page
- * Display user's saved/bookmarked LEGO builds
+ * Display the user's saved Krewdoo creations
  */
 
 import { useState } from "react";
@@ -84,7 +84,7 @@ export default function MyCollection() {
               </div>
               <CardTitle>Sign In to View Your Collection</CardTitle>
               <CardDescription>
-                Save your favorite LEGO builds and access them anytime
+                Save your favorite crew creations and revisit them anytime
               </CardDescription>
             </CardHeader>
             <CardContent>

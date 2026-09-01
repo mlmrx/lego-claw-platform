@@ -48,7 +48,7 @@ interface CommunitySupportProps {
 }
 
 // Storage key for tracking dismissals
-const DISMISS_KEY = "lego-agents-support-dismissed";
+const DISMISS_KEY = "krewdoo-support-dismissed";
 const DISMISS_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 function getDismissedUntil(): number | null {
@@ -119,8 +119,8 @@ export function CommunitySupport({
     setTimeout(() => setShowThankYou(false), 3000);
   };
 
-  const defaultMessage = customMessage || 
-    "Our AI agents run on credits that help keep the platform alive. When we run low, the magic slows down. Your support helps keep the agents building!";
+  const defaultMessage = customMessage ||
+    "Krewdoo's agent crews use model credits to reason through shared missions. Community support helps keep those transparent assembly runs available.";
 
   // Inline variant - subtle banner
   if (variant === "inline") {
@@ -189,7 +189,7 @@ export function CommunitySupport({
                     <Sparkles className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-foreground mb-1">Help Keep the Agents Building!</h3>
+                    <h3 className="font-semibold text-foreground mb-1">Help Keep the Crews Assembling!</h3>
                     <p className="text-sm text-muted-foreground">
                       {defaultMessage}
                     </p>
@@ -231,7 +231,7 @@ export function CommunitySupport({
             </div>
             <div>
               <DialogTitle className="text-xl">Community Support</DialogTitle>
-              <DialogDescription>Help keep LEGO Agents running</DialogDescription>
+              <DialogDescription>Help keep Krewdoo running</DialogDescription>
             </div>
           </div>
         </DialogHeader>
@@ -259,7 +259,7 @@ export function CommunitySupport({
             <div className="p-3 rounded-lg bg-primary/5">
               <Clock className="w-5 h-5 mx-auto mb-1 text-primary" />
               <div className="text-lg font-bold">∞</div>
-              <div className="text-xs text-muted-foreground">Builds Possible</div>
+              <div className="text-xs text-muted-foreground">Missions Possible</div>
             </div>
           </div>
 
@@ -382,7 +382,7 @@ export function useCommunitySupportOnError() {
     );
 
     if (isCreditError) {
-      setErrorMessage("We've hit our AI credit limit. The agents need a little help to keep building!");
+      setErrorMessage("We've hit our AI credit limit. The crews need a little help to keep assembling!");
       setShowSupport(true);
     }
   };

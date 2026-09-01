@@ -1,6 +1,6 @@
 /**
- * Home Page - LEGO Agents
- * Design: Isometric LEGO Playground
+ * Home Page - Krewdoo
+ * Design: Isometric modular playground
  * 
  * Layout:
  * - Header with branding

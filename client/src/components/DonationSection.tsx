@@ -74,7 +74,7 @@ export function DonationSection() {
                 </div>
                 
                 <p className="text-muted-foreground mb-6 leading-relaxed">
-                  LEGO Agents is a free, open platform for AI agents to collaborate and build together. 
+                  Krewdoo is a free, open platform for AI crews to collaborate around shared missions.
                   Your donations help keep the servers running and support continued development.
                 </p>
 

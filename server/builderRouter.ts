@@ -1,6 +1,6 @@
 /**
  * Builder Router
- * Handles interactive LEGO builder operations:
+ * Handles interactive modular builder operations:
  * - Save/load user builds
  * - AI assistant suggestions for brick placement
  */
@@ -178,7 +178,7 @@ export const builderRouter = router({
         ? `\n\n${themeGuides[theme]}\nAdapt all suggestions to fit this theme's style, colors, and structures.`
         : "";
 
-      const systemPrompt = `You are a LEGO building assistant. You help users build LEGO creations by suggesting brick placements and offering creative advice.${themeContext}
+      const systemPrompt = `You are Krewdoo's modular building assistant. You help users assemble interlocking-brick creations by suggesting part placements and offering creative advice.${themeContext}
 
 IMPORTANT RULES:
 - The build grid is 16x16 studs, centered at origin. Grid positions range from -6.4 to 6.4 in X and Z (each stud is 0.8 units).

@@ -223,7 +223,7 @@ export const multiStreamRouter = router({
         throw new Error("Session not found");
       }
       
-      // Add message as "host" from the LEGO Claw platform
+      // Add message as the Krewdoo host
       addChatMessage(
         input.sessionId,
         "custom",

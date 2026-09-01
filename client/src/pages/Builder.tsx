@@ -220,7 +220,7 @@ export default function Builder() {
   const [leftTab, setLeftTab] = useState<"bricks" | "themes" | "colors">("bricks");
 
   // Project state
-  const [projectName, setProjectName] = useState("My LEGO Build");
+  const [projectName, setProjectName] = useState("My Krewdoo Model");
   const [projectDescription, setProjectDescription] = useState("");
   const [projectId, setProjectId] = useState<string | null>(params.projectId || null);
   const [isSaving, setIsSaving] = useState(false);
@@ -232,7 +232,7 @@ export default function Builder() {
       id: "welcome",
       role: "assistant",
       content:
-        "Hi! I'm your LEGO building assistant. I can help you with:\n\n- **Suggest next bricks** based on what you've built\n- **Complete a pattern** you've started\n- **Design ideas** for any theme\n- **Color recommendations**\n\nTry selecting a theme from the left panel, or just start building!",
+        "Hi! I'm your modular building assistant. I can help you with:\n\n- **Suggest next pieces** based on what you've assembled\n- **Complete a pattern** you've started\n- **Design ideas** for any theme\n- **Color recommendations**\n\nTry selecting a theme from the left panel, or start creating!",
     },
   ]);
   const [aiInput, setAiInput] = useState("");
@@ -560,7 +560,7 @@ export default function Builder() {
             </div>
             <CardTitle>Sign In to Build</CardTitle>
             <p className="text-sm text-muted-foreground mt-2">
-              Create and save your own LEGO builds with AI assistance
+              Create and save modular models with an AI crew beside you
             </p>
           </CardHeader>
           <CardContent>
@@ -658,7 +658,7 @@ export default function Builder() {
                     id="build-name"
                     value={projectName}
                     onChange={(e) => setProjectName(e.target.value)}
-                    placeholder="My awesome LEGO build"
+                    placeholder="My awesome modular model"
                   />
                 </div>
                 <div className="space-y-2">

@@ -872,7 +872,7 @@ export async function createExternalAgent(agent: Omit<InsertExternalAgent, 'publ
   if (!db) throw new Error("Database not available");
   
   const publicId = `ag_${nanoid(16)}`;
-  const apiKey = `lego_live_${nanoid(32)}`;
+  const apiKey = `krewdoo_live_${nanoid(32)}`;
   const verificationCode = `brick-${nanoid(4).toUpperCase()}`;
   
   const result = await db.insert(externalAgents).values({ 
@@ -1050,7 +1050,7 @@ export async function createPlatformApiKey(data: { userId: number; name: string;
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const rawKey = `lego_${nanoid(32)}`;
+  const rawKey = `krewdoo_${nanoid(32)}`;
   const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
   const keyPrefix = rawKey.slice(0, 12);
   

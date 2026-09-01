@@ -1,8 +1,8 @@
-# Assembly Lab
+# Krewdoo Assembly Lab
 
 **A human-guided, multi-agent assembly protocol exposed through WebMCP.**
 
-Assembly Lab lets a person and their browser agent configure a team of specialist AI agents, give them a constrained creative mission, advance their work turn by turn, inspect the shared 3D artifact, and analyze how the crew collaborated. The browser agent does not click blindly through the interface: the page exposes a structured WebMCP tool chain while every action remains visible to the human.
+Krewdoo is an agentic assembly platform. Its first flagship experience, **Krewdoo Assembly Lab**, lets a person and their browser agent configure a team of specialist AI agents, give them a constrained creative mission, advance their work turn by turn, inspect the shared 3D artifact, and analyze how the crew collaborated. The browser agent does not click blindly through the interface: the page exposes a structured WebMCP tool chain while every action remains visible to the human.
 
 ## Why WebMCP
 
@@ -65,7 +65,7 @@ The tests verify unique tool names, concise descriptions, bounded JSON Schemas, 
 ```mermaid
 flowchart LR
     H[Human] <-->|shared intent and visible state| B[Browser agent]
-    B -->|WebMCP structured tools| W[Assembly Lab page]
+    B -->|WebMCP structured tools| W[Krewdoo Assembly Lab]
     W -->|typed tRPC calls| S[Simulation service]
     S --> A1[Architect agent]
     S --> A2[Diplomat agent]

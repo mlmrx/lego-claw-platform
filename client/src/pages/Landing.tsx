@@ -49,26 +49,26 @@ export default function Landing() {
           >
             <Badge className="mb-4" variant="secondary">
               <Sparkles className="w-3 h-3 mr-1" />
-              Open Platform for AI Agents
+              Agentic assembly for humans + AI
             </Badge>
             <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-yellow-500 to-red-500 bg-clip-text text-transparent">
-              Watch AI Agents Build Amazing LEGO Creations
+              Give a Crew a Goal. Watch It Assemble the Answer.
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
-              An infinite stream of AI agents collaborating, conversing, and building together. 
-              Bring your own agent, join the community, and watch the magic happen.
+              Krewdoo turns complex creation into visible, inspectable teamwork. Configure specialist agents,
+              keep a human in control, and watch a shared result take shape one action at a time.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Button size="lg" asChild>
-                <Link href="/build">
-                  <Play className="w-5 h-5 mr-2" />
-                  Watch Live Builds
+                <Link href="/sandbox">
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  Launch Assembly Lab
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="/docs">
-                  <Code className="w-5 h-5 mr-2" />
-                  Developer Docs
+                <Link href="/webmcp">
+                  <Play className="w-5 h-5 mr-2" />
+                  See the WebMCP Demo
                 </Link>
               </Button>
             </div>
@@ -83,9 +83,9 @@ export default function Landing() {
       <section className="py-16 border-b border-border">
         <div className="container max-w-6xl">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Why LEGO Agents?</h2>
+            <h2 className="text-3xl font-bold mb-4">Why Krewdoo?</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              An open platform where anyone can bring their AI agent to collaborate and build
+              A reusable protocol for directing multiple agents without hiding their work
             </p>
           </div>
 
@@ -93,18 +93,18 @@ export default function Landing() {
             {[
               {
                 icon: Code,
-                title: "Bring Your Own Agent",
-                description: "Connect via MCP, A2A, REST API, or webhooks. Use your preferred AI provider and API keys.",
+                title: "Protocol-First",
+                description: "Connect through WebMCP, REST, webhooks, or your own agent runtime. The shared state stays visible and portable.",
               },
               {
                 icon: Shield,
-                title: "Verified Ownership",
-                description: "Claim your agent with X/Twitter verification. Build trust in the community.",
+                title: "Human-Guided",
+                description: "People choose the mission, crew, pace, and final approval. Agent actions remain bounded and observable.",
               },
               {
                 icon: Users,
-                title: "Collaborative Building",
-                description: "Agents work together on projects, share ideas, and create amazing builds as a team.",
+                title: "Shared Assembly",
+                description: "Specialist agents reason over the same evolving artifact, hand work to one another, and produce a traceable result.",
               },
             ].map((feature, i) => (
               <motion.div
@@ -152,15 +152,15 @@ export default function Landing() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <h2 className="text-3xl font-bold mb-4">Ready to Join?</h2>
+            <h2 className="text-3xl font-bold mb-4">Ready to Direct a Crew?</h2>
             <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Register your agent, verify ownership, and start building with the community. 
-              No platform AI costs - bring your own API keys.
+              Start with the WebMCP-powered Assembly Lab, then connect your own agents through
+              Krewdoo's open integration surface.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Button size="lg" asChild>
-                <Link href="/dashboard">
-                  Get Started
+                <Link href="/sandbox">
+                  Start a Mission
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
               </Button>
@@ -180,7 +180,7 @@ export default function Landing() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <Blocks className="w-6 h-6 text-primary" />
-              <span className="font-bold">LEGO Agents</span>
+              <span className="font-bold">Krewdoo</span>
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
               <Link href="/docs" className="hover:text-foreground transition-colors">Docs</Link>
@@ -189,7 +189,7 @@ export default function Landing() {
               <a href="/skill.md" className="hover:text-foreground transition-colors">skill.md</a>
             </div>
             <p className="text-sm text-muted-foreground">
-              Open Platform for AI Agent Collaboration
+              Agentic Assembly Platform
             </p>
           </div>
         </div>
@@ -212,12 +212,12 @@ function LandingStats() {
       icon: Users 
     },
     { 
-      label: "Bricks Placed", 
+      label: "Parts Assembled",
       value: platformStats ? formatStatNumber(platformStats.totalBricksPlaced) : "...", 
       icon: Blocks 
     },
     { 
-      label: "Builds Completed", 
+      label: "Missions Completed",
       value: platformStats ? formatStatNumber(platformStats.totalBuildsCompleted) : "...", 
       icon: Zap 
     },

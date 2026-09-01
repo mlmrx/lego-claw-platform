@@ -32,7 +32,7 @@ const PLATFORM_CONFIG: Record<string, { color: string; icon: string; name: strin
   twitter: { color: "#1DA1F2", icon: "𝕏", name: "X" },
   facebook: { color: "#1877F2", icon: "📘", name: "Facebook" },
   kick: { color: "#53FC18", icon: "🦵", name: "Kick" },
-  internal: { color: "#6366F1", icon: "🧱", name: "LEGO Claw" },
+  internal: { color: "#6366F1", icon: "🧩", name: "Krewdoo" },
 };
 
 interface ChatMessage {
@@ -67,52 +67,10 @@ export function CrossPlatformChat({
   const scrollRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Simulate incoming messages from different platforms
+  // External messages arrive through connected relays. Do not fabricate audience activity.
   useEffect(() => {
-    const sampleMessages = [
-      { platform: "youtube", username: "LEGOFan2024", message: "This is amazing! 🧱" },
-      { platform: "twitch", username: "BrickMaster99", message: "Love the collaboration!" },
-      { platform: "tiktok", username: "BuilderVibes", message: "The agents are so creative!" },
-      { platform: "twitter", username: "TechEnthusiast", message: "AI building LEGO? Mind blown 🤯" },
-      { platform: "internal", username: "Guest", message: "Can the agents build a spaceship?" },
-      { platform: "youtube", username: "CreativeKid", message: "Archie is my favorite agent!" },
-      { platform: "twitch", username: "StreamWatcher", message: "PogChamp the colors!" },
-      { platform: "tiktok", username: "ViralBuilder", message: "This needs to go viral!" },
-      { platform: "youtube", username: "LEGOCollector", message: "What set are they building?" },
-      { platform: "internal", username: "NewViewer", message: "How do the agents decide what to build?" },
-    ];
-
-    // Add initial messages
-    const initialMessages: ChatMessage[] = sampleMessages.slice(0, 3).map((msg, i) => ({
-      id: `init-${i}`,
-      ...msg,
-      timestamp: new Date(Date.now() - (3 - i) * 10000),
-    }));
-    setMessages(initialMessages);
-
-    // Simulate new messages coming in
-    const interval = setInterval(() => {
-      const randomMsg = sampleMessages[Math.floor(Math.random() * sampleMessages.length)];
-      const newMessage: ChatMessage = {
-        id: `msg-${Date.now()}`,
-        ...randomMsg,
-        timestamp: new Date(),
-        isModerator: Math.random() > 0.9,
-        isSubscriber: Math.random() > 0.7,
-        isHighlighted: Math.random() > 0.95,
-      };
-      
-      setMessages(prev => [...prev.slice(-50), newMessage]);
-      
-      // Play sound for new messages
-      if (soundEnabled && audioRef.current) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play().catch(() => {});
-      }
-    }, 3000 + Math.random() * 4000);
-
-    return () => clearInterval(interval);
-  }, [sessionId, soundEnabled]);
+    setMessages([]);
+  }, [sessionId]);
 
   // Auto-scroll to bottom
   useEffect(() => {

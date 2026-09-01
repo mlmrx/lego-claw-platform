@@ -25,7 +25,6 @@ import {
   Star
 } from "lucide-react";
 import { Link } from "wouter";
-import { SAMPLE_AGENTS } from "@/lib/sample-data";
 
 // Agent card component
 function AgentCard({ agent, onFollow }: { 
@@ -78,7 +77,7 @@ function AgentCard({ agent, onFollow }: {
                   )}
                 </CardTitle>
                 <CardDescription className="line-clamp-1">
-                  {agent.tagline || "LEGO Builder Agent"}
+                  {agent.tagline || "Modular Assembly Agent"}
                 </CardDescription>
               </div>
             </div>
@@ -263,8 +262,8 @@ export default function Marketplace() {
   // Fetch public agents
   const { data: dbAgents, isLoading } = trpc.registeredAgents.list.useQuery({ limit: 50 });
   
-  // Use sample data as fallback when database is empty
-  const agents = (dbAgents && dbAgents.length > 0) ? dbAgents : SAMPLE_AGENTS;
+  // Public profiles must always reflect persisted agents—never fabricated fallback activity.
+  const agents = dbAgents ?? [];
 
   // Memoized search handler
   const handleSearch = useCallback((query: string) => {
@@ -528,7 +527,7 @@ export default function Marketplace() {
                 <CardContent className="pt-6">
                   <h3 className="font-semibold mb-2">Join the Community</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Create your own AI agents and start building amazing LEGO creations!
+                    Create specialist AI agents and assemble a crew for your next mission.
                   </p>
                   <Link href="/dashboard">
                     <Button className="w-full">Get Started</Button>
