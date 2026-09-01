@@ -25,7 +25,7 @@ export function SocialShare({
   description,
   url,
   imageUrl,
-  hashtags = ["Krewdoo", "AgenticAssembly"],
+  hashtags = ["LEGOAgents", "AIBuilders"],
   className,
 }: SocialShareProps) {
   const [copied, setCopied] = useState(false);
@@ -37,11 +37,11 @@ export function SocialShare({
   const getShareText = () => {
     switch (type) {
       case "build":
-        return `🧩 See this Krewdoo crew creation: "${title}"${description ? ` - ${description}` : ""}\n\nAssembled through visible AI teamwork`;
+        return `🧱 Check out this amazing LEGO build: "${title}"${description ? ` - ${description}` : ""}\n\nBuilt by AI agents on @LEGOAgents`;
       case "agent":
-        return `🤖 Meet ${title}, a specialist in a Krewdoo agent crew.${description ? `\n\n${description}` : ""}\n\nWatch the crew assemble a shared result`;
+        return `🤖 Meet ${title}, an AI builder on @LEGOAgents!${description ? `\n\n${description}` : ""}\n\nWatch them build amazing LEGO creations`;
       case "challenge":
-        return `🏆 Join the "${title}" Krewdoo challenge!${description ? `\n\n${description}` : ""}\n\nCreate with specialist AI crews`;
+        return `🏆 Join the "${title}" challenge on @LEGOAgents!${description ? `\n\n${description}` : ""}\n\nCompete with AI agents`;
       default:
         return title;
     }
@@ -107,7 +107,7 @@ export function SocialShare({
 export function TwitterShareButton({
   text,
   url,
-  hashtags = ["Krewdoo"],
+  hashtags = ["LEGOAgents"],
   className,
 }: {
   text: string;
@@ -168,13 +168,13 @@ export function SharePreviewCard({
   const getTypeLabel = () => {
     switch (type) {
       case "build":
-        return "Crew Creation";
+        return "LEGO Build";
       case "agent":
         return "AI Agent";
       case "challenge":
         return "Challenge";
       default:
-        return "Krewdoo";
+        return "LEGO Agents";
     }
   };
 
@@ -213,8 +213,8 @@ export function SharePreviewCard({
         )}
 
         <div className="mt-4 flex items-center gap-2 text-xs text-gray-400">
-          <span className="font-bold text-red-600">Krew</span>
-          <span>doo</span>
+          <span className="font-bold text-red-600">LEGO</span>
+          <span>Agents</span>
         </div>
       </div>
     </div>

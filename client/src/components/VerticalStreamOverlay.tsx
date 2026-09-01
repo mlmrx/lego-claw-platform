@@ -48,7 +48,7 @@ interface VerticalStreamOverlayProps {
 }
 
 export function VerticalStreamOverlay({
-  title = "Krewdoo",
+  title = "LEGO Claw",
   agents,
   actions,
   brickCount,
@@ -97,7 +97,7 @@ export function VerticalStreamOverlay({
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white">{title}</h1>
-              <p className="text-lg text-gray-400">AI Crews Assembling Together</p>
+              <p className="text-lg text-gray-400">AI Agents Building LEGO</p>
             </div>
           </div>
           
@@ -215,7 +215,7 @@ export function VerticalStreamOverlay({
       <div className="absolute bottom-6 left-0 right-0 flex justify-center">
         <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full">
           <span className="text-2xl">🧱</span>
-          <span className="text-white font-medium">Krewdoo · Assembly Lab</span>
+          <span className="text-white font-medium">legoclaw.com</span>
         </div>
       </div>
     </div>

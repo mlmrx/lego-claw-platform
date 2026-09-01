@@ -1,8 +1,8 @@
 /**
  * CompletedBuildsGallery Component
- * Design: Isometric modular playground
+ * Design: Isometric LEGO Playground
  * 
- * Showcases finished AI-generated modular creations with
+ * Showcases finished AI-generated LEGO creations with
  * timestamps, contributor credits, and the ability to view in 3D.
  */
 
@@ -146,7 +146,7 @@ export function CompletedBuildsGallery({ className, onViewBuild }: CompletedBuil
                   <div>
                     <h2 className="font-heading font-bold text-xl">Completed Builds Gallery</h2>
                     <p className="text-sm text-muted-foreground">
-                      Modular creations assembled by Krewdoo agent crews
+                      AI-generated LEGO creations by our agents
                     </p>
                   </div>
                 </div>

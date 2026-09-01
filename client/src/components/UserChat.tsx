@@ -42,12 +42,58 @@ interface ChatMessage {
   isSupporter?: boolean;
 }
 
+// Simulated chat messages for demo
+const demoMessages: ChatMessage[] = [
+  {
+    id: "1",
+    userId: "user1",
+    userName: "BrickMaster42",
+    message: "This build is looking amazing! 🧱",
+    timestamp: new Date(Date.now() - 300000),
+    reactions: [{ emoji: "❤️", count: 3 }],
+    isSupporter: true,
+  },
+  {
+    id: "2",
+    userId: "user2",
+    userName: "LEGOFan2024",
+    message: "I love how the agents collaborate on the design",
+    timestamp: new Date(Date.now() - 240000),
+    reactions: [{ emoji: "👍", count: 2 }],
+  },
+  {
+    id: "3",
+    userId: "user3",
+    userName: "CreativBuilder",
+    message: "Can't wait to see the finished result!",
+    timestamp: new Date(Date.now() - 180000),
+  },
+  {
+    id: "4",
+    userId: "user4",
+    userName: "TechnicPro",
+    userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=TechnicPro",
+    message: "The color choices are perfect 🎨",
+    timestamp: new Date(Date.now() - 120000),
+    reactions: [{ emoji: "✨", count: 5 }],
+    isSupporter: true,
+  },
+  {
+    id: "5",
+    userId: "user5",
+    userName: "BlockBuilder99",
+    message: "How do I start my own build?",
+    timestamp: new Date(Date.now() - 60000),
+  },
+];
+
 const quickReactions = ["❤️", "👍", "🔥", "✨", "🧱"];
 
 export function UserChat({ projectId, className }: UserChatProps) {
   const { user, isAuthenticated } = useAuth();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(demoMessages);
   const [newMessage, setNewMessage] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -58,6 +104,49 @@ export function UserChat({ projectId, className }: UserChatProps) {
     }
   }, [messages]);
 
+  // Simulate other users typing
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (Math.random() > 0.7) {
+        setIsTyping(true);
+        setTimeout(() => setIsTyping(false), 2000);
+      }
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Simulate incoming messages
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (Math.random() > 0.8) {
+        const randomMessages = [
+          "This is so cool! 🎉",
+          "Love watching the agents work together",
+          "The structural design is impressive",
+          "Can't believe AI can do this!",
+          "What LEGO set is this based on?",
+          "Amazing collaboration! 🤖",
+          "The colors are perfect",
+          "How long until it's done?",
+        ];
+        const randomNames = ["Builder123", "LEGOLover", "BrickFan", "CreativeKid", "MasterBuilder"];
+        
+        const newMsg: ChatMessage = {
+          id: `sim-${Date.now()}`,
+          userId: `sim-${Math.random()}`,
+          userName: randomNames[Math.floor(Math.random() * randomNames.length)],
+          message: randomMessages[Math.floor(Math.random() * randomMessages.length)],
+          timestamp: new Date(),
+          isSupporter: Math.random() > 0.7,
+        };
+        
+        setMessages(prev => [...prev.slice(-50), newMsg]);
+      }
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSendMessage = () => {
     if (!newMessage.trim() || !isAuthenticated) return;
@@ -184,6 +273,21 @@ export function UserChat({ projectId, className }: UserChatProps) {
             ))}
           </AnimatePresence>
 
+          {/* Typing indicator */}
+          {isTyping && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex items-center gap-2 text-xs text-muted-foreground"
+            >
+              <div className="flex gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
+              <span>Someone is typing...</span>
+            </motion.div>
+          )}
         </div>
       </ScrollArea>
 

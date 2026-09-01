@@ -3,7 +3,7 @@
  * Direction 3: LEGO Instruction Generator
  * 
  * Upload any image (building, animal, character, vehicle) and get
- * step-by-step modular building instructions with a parts list —
+ * step-by-step LEGO building instructions with a parts list —
  * like official LEGO manuals.
  */
 
@@ -129,7 +129,7 @@ const LEGO_COLORS: Record<string, string> = {
 
 export const instructionRouter = router({
   /**
-   * Analyze an uploaded image and generate modular building instructions.
+   * Analyze an uploaded image and generate LEGO building instructions.
    * Accepts a base64 image or image URL.
    */
   generateFromImage: publicProcedure
@@ -172,12 +172,12 @@ export const instructionRouter = router({
         expert: `Use up to ${maxPieces} pieces, 15-25 steps. Full range of parts including SNOT techniques, sub-assemblies, and fine detail work.`,
       };
 
-      const systemPrompt = `You are Krewdoo's expert modular model designer. Create clear, original building instructions from reference images using interlocking construction pieces, without presenting the result as an official branded set.
+      const systemPrompt = `You are an expert LEGO set designer who creates official-quality building instructions from reference images. You analyze images and design buildable LEGO models that capture the essence of the subject.
 
 DESIGN PRINCIPLES:
 - Study the image carefully: identify the main shape, proportions, key features, and colors
 - Design from the ground up: start with the base, build structural core, then add details
-- Use proven interlocking-brick techniques: offset layers for strength, side-stud construction for detail, and sub-assemblies for complex parts
+- Use real LEGO building techniques: offset layers for strength, SNOT for detail, sub-assemblies for complex parts
 - Choose colors that best match the reference image from the available palette
 - Every brick must have a valid, non-overlapping position
 
@@ -251,7 +251,7 @@ Respond with valid JSON matching this schema (no markdown, no code blocks):
       const userContent: any[] = [
         {
           type: "text",
-          text: `Analyze this image and create detailed modular building instructions. Capture the main shape, proportions, and colors while keeping the model buildable and structurally sound.`,
+          text: `Analyze this image and create detailed LEGO building instructions to recreate it as a LEGO model. Focus on capturing the main shape, proportions, and colors. Design it to be buildable and structurally sound.`,
         },
       ];
 
@@ -297,7 +297,7 @@ Respond with valid JSON matching this schema (no markdown, no code blocks):
           instructions = {
             id: nanoid(12),
             title: parsed.title || "LEGO Model",
-            description: parsed.description || "A custom modular creation",
+            description: parsed.description || "A custom LEGO creation",
             difficulty: parsed.difficulty || "medium",
             estimatedMinutes: parsed.estimatedMinutes || 30,
             totalPieces: parsed.totalPieces || 0,
@@ -411,7 +411,7 @@ Respond with valid JSON matching this schema (no markdown, no code blocks):
         expert: `Use up to ${maxPieces} pieces, 15-25 steps. Full range of techniques.`,
       };
 
-      const systemPrompt = `You are Krewdoo's expert modular model designer. Create professional, original building instructions for the described subject.
+      const systemPrompt = `You are an expert LEGO set designer. Create professional building instructions for the described subject.
 
 GRID: 32x32 studs, centered. X/Z: -16 to +16. Y=0 is baseplate.
 Standard brick: height=3 (1.2 units). Plate: height=1 (0.4 units).
@@ -441,7 +441,7 @@ Respond with valid JSON (same schema as image-based instructions):
         const response = await invokeLLM({
           messages: [
             { role: "system", content: systemPrompt },
-            { role: "user", content: `Design modular interlocking-brick instructions for: "${description}". Make the model visually clear and structurally sound.` },
+            { role: "user", content: `Design LEGO building instructions for: "${description}". Make it look great and be structurally sound.` },
           ],
           response_format: { type: "json_object" },
         });

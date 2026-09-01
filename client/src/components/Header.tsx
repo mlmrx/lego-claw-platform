@@ -118,12 +118,12 @@ export function Header({ className }: HeaderProps) {
   const [location] = useLocation();
 
   const createItems: NavItem[] = [
-    { href: "/builder", icon: Box, label: "Playground", description: "Shape ideas with modular pieces", iconBg: "bg-blue-100", iconColor: "text-blue-600" },
-    { href: "/dream", icon: Sparkles, label: "Dream Maker", description: "Describe an idea; your crew assembles it", iconBg: "bg-amber-100", iconColor: "text-amber-600" },
-    { href: "/start-build", icon: Camera, label: "Image to Model", description: "Turn a photo into modular steps", iconBg: "bg-green-100", iconColor: "text-green-600" },
-    { href: "/social-build", icon: Users, label: "Crew Room", description: "Create with people and agents", iconBg: "bg-purple-100", iconColor: "text-purple-600" },
-    { href: "/instructions", icon: FileText, label: "Build Guide", description: "Generate clear assembly instructions", iconBg: "bg-rose-100", iconColor: "text-rose-600" },
-    { href: "/sandbox", icon: FlaskConical, label: "Assembly Lab", description: "Test multi-agent teamwork", iconBg: "bg-teal-100", iconColor: "text-teal-600" },
+    { href: "/builder", icon: Box, label: "Sandbox", description: "Free-form brick playground", iconBg: "bg-blue-100", iconColor: "text-blue-600" },
+    { href: "/dream", icon: Sparkles, label: "AI Creator", description: "Describe it, AI builds it", iconBg: "bg-amber-100", iconColor: "text-amber-600" },
+    { href: "/start-build", icon: Camera, label: "Photo to LEGO", description: "Scan an image, get steps", iconBg: "bg-green-100", iconColor: "text-green-600" },
+    { href: "/social-build", icon: Users, label: "Co-op Room", description: "Collaborate with others", iconBg: "bg-purple-100", iconColor: "text-purple-600" },
+    { href: "/instructions", icon: FileText, label: "Instructions", description: "Step-by-step guides", iconBg: "bg-rose-100", iconColor: "text-rose-600" },
+    { href: "/sandbox", icon: FlaskConical, label: "Agent Lab", description: "Train & test AI agents", iconBg: "bg-teal-100", iconColor: "text-teal-600" },
   ];
 
   const exploreItems: NavItem[] = [
@@ -168,11 +168,11 @@ export function Header({ className }: HeaderProps) {
               
               <div className="hidden xs:block">
                 <h1 className="font-heading font-bold text-base sm:text-xl tracking-tight">
-                  <span className="text-primary">Krew</span>
-                  <span className="text-foreground">doo</span>
+                  <span className="text-primary">LEGO</span>
+                  <span className="text-foreground"> Claw</span>
                 </h1>
                 <p className="text-[10px] sm:text-xs text-muted-foreground -mt-0.5 hidden sm:block">
-                  Agentic Assembly Platform
+                  Agentic Network Platform
                 </p>
               </div>
             </div>
@@ -216,7 +216,7 @@ export function Header({ className }: HeaderProps) {
 
           {/* Right - Actions (minimal) */}
           <div className="flex items-center gap-1.5 sm:gap-2">
-            {/* Primary CTA - Dream Maker */}
+            {/* Primary CTA - Dream Build */}
             <Link href="/dream">
               <Button 
                 variant="default" 
@@ -224,7 +224,7 @@ export function Header({ className }: HeaderProps) {
                 className="rounded-xl gap-1.5 h-8 sm:h-9 px-2.5 sm:px-3 bg-gradient-to-r from-primary to-yellow-500 hover:opacity-90"
               >
                 <Sparkles className="w-4 h-4" />
-                <span className="hidden sm:inline text-sm">Dream Maker</span>
+                <span className="hidden sm:inline text-sm">Dream Build</span>
               </Button>
             </Link>
 
@@ -318,8 +318,8 @@ export function Header({ className }: HeaderProps) {
                     <Blocks className="w-4 h-4 text-primary-foreground" />
                   </div>
                   <span className="font-heading font-bold">
-                    <span className="text-primary">Krew</span>
-                    <span className="text-foreground">doo</span>
+                    <span className="text-primary">LEGO</span>
+                    <span className="text-foreground"> Claw</span>
                   </span>
                 </div>
                 <Button
@@ -396,7 +396,7 @@ export function Header({ className }: HeaderProps) {
                   <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
                     <Button variant="outline" className="w-full rounded-xl gap-2">
                       <Bot className="w-4 h-4" />
-                      My Crew
+                      My Agents
                     </Button>
                   </Link>
                 ) : (

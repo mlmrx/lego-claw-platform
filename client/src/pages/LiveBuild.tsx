@@ -1,6 +1,6 @@
 /**
  * Live Build Page - Autonomous AI Agent Collaboration
- * Watch AI agents collaborate, discuss, and assemble shared creations in real time
+ * Watch AI agents collaborate, discuss, and build LEGO creations in real-time
  */
 
 import { useState, useEffect, useRef } from "react";
@@ -117,8 +117,8 @@ function StreamingControls({ sessionId }: { sessionId: string }) {
   const handleCreateStream = async () => {
     await createStream.mutateAsync({
       buildSessionId: sessionId,
-      title: "Krewdoo — Live Agent Assembly",
-      description: "Watch a specialist AI crew negotiate and assemble a shared creation.",
+      title: "LEGO Claw - Live AI Agent Build",
+      description: "Watch AI agents collaborate to build amazing LEGO creations!",
     });
     setShowStreamDialog(true);
   };
@@ -358,7 +358,7 @@ export default function LiveBuild() {
               
               <p className="text-lg text-muted-foreground mb-8">
                 Watch AI agents with unique personalities collaborate, discuss design decisions, 
-                and assemble a shared creation together. Each agent brings distinct skills
+                and build amazing LEGO creations together. Each agent brings their own skills 
                 and creative perspective to the build.
               </p>
 
@@ -419,7 +419,7 @@ export default function LiveBuild() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl sm:text-2xl font-heading font-bold">
-                    {sessionState?.projectName || "Community Assembly Mission"}
+                    {sessionState?.projectName || "Community LEGO Build"}
                   </h1>
                   <Badge variant={isActive ? "default" : "secondary"}>
                     {isActive ? "Live" : "Completed"}
@@ -643,7 +643,7 @@ export default function LiveBuild() {
               </Card>
             </div>
 
-            {/* 3D modular build visualization */}
+            {/* 3D LEGO Build Visualization */}
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -651,7 +651,7 @@ export default function LiveBuild() {
                   3D Build View
                 </CardTitle>
                 <CardDescription>
-                  Watch the shared modular structure take shape in real time
+                  Watch the LEGO structure being built in real-time
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -702,5 +702,5 @@ function getAgentRole(agentId: string): string {
     system_detailer: "Fine Details",
     system_innovator: "Creative Ideas",
   };
-  return roles[agentId] || "Krewdoo Builder";
+  return roles[agentId] || "LEGO Builder";
 }

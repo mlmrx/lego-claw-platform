@@ -1,6 +1,6 @@
 /**
  * Start Build Page
- * Upload a reference image and let an AI crew reconstruct it as a modular model
+ * Upload a LEGO set image and let AI agents build it
  */
 
 import { useState } from "react";
@@ -146,7 +146,7 @@ export default function StartBuild() {
               </div>
               <CardTitle>Sign In to Start Building</CardTitle>
               <CardDescription>
-                Upload a reference image and watch a specialist crew reconstruct it
+                Upload a LEGO set image and watch AI agents build it together
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -176,7 +176,7 @@ export default function StartBuild() {
               Start a New Build
             </h1>
             <p className="text-sm sm:text-base text-muted-foreground max-w-lg mx-auto">
-              Upload a construction-set photo or finished model, and Krewdoo agents will collaborate on a modular reconstruction
+              Upload a photo of your LEGO set box or completed build, and our AI agents will collaborate to recreate it
             </p>
           </div>
 
@@ -270,7 +270,7 @@ export default function StartBuild() {
                   <div className="flex items-start gap-3 p-4 bg-muted/30 rounded-lg">
                     <Puzzle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium">Any Modular Model</p>
+                      <p className="text-sm font-medium">Any LEGO Set</p>
                       <p className="text-xs text-muted-foreground">Works with official sets or custom builds</p>
                     </div>
                   </div>
@@ -297,7 +297,7 @@ export default function StartBuild() {
                       <Loader2 className="w-10 h-10 sm:w-12 sm:h-12 text-primary animate-spin mb-4" />
                       <h3 className="text-lg sm:text-xl font-heading font-bold mb-2">Analyzing Your Image</h3>
                       <p className="text-sm text-muted-foreground max-w-sm">
-                        Krewdoo is identifying the model, estimating pieces, and preparing assembly instructions...
+                        Our AI is identifying the LEGO set, counting pieces, and preparing build instructions...
                       </p>
                     </div>
                   </CardContent>
@@ -319,7 +319,7 @@ export default function StartBuild() {
                     <CardContent className="p-4 sm:p-6">
                       {imageUrl && (
                         <div className="rounded-xl overflow-hidden">
-                          <img src={imageUrl} alt="Uploaded modular model" className="w-full h-auto" />
+                          <img src={imageUrl} alt="LEGO Set" className="w-full h-auto" />
                         </div>
                       )}
                     </CardContent>

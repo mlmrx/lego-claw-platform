@@ -120,7 +120,7 @@ export function ImageUpload({
           >
             <img
               src={previewUrl}
-              alt="Uploaded modular model"
+              alt="Uploaded LEGO set"
               className="w-full h-auto max-h-[400px] object-contain"
             />
             <div className="absolute top-2 right-2 flex gap-2">
@@ -181,10 +181,10 @@ export function ImageUpload({
                 </div>
                 
                 <h3 className="text-base sm:text-lg font-heading font-bold mb-1 sm:mb-2">
-                  Upload a Model Image
+                  Upload LEGO Set Image
                 </h3>
                 <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6 max-w-sm px-2">
-                  Take a photo of a construction-set box or upload the completed model you want Krewdoo to reconstruct
+                  Take a photo of your LEGO box or upload an image of the completed set you want to build
                 </p>
 
                 {/* Action buttons */}

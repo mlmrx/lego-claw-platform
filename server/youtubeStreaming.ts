@@ -1,6 +1,6 @@
 /**
  * YouTube Live Streaming Service
- * Enables users to stream Krewdoo agent assembly sessions to YouTube Live
+ * Enables users to stream their LEGO agent build sessions to YouTube Live
  * 
  * Architecture:
  * - Users provide their YouTube stream key (from YouTube Studio)
@@ -60,8 +60,8 @@ export const youtubeStreamingRouter = router({
   createStream: protectedProcedure
     .input(z.object({
       buildSessionId: z.string().optional(),
-      title: z.string().min(1).max(100).default("Krewdoo - Live Agent Assembly"),
-      description: z.string().max(500).default("Watch a specialist AI crew negotiate and assemble a shared creation."),
+      title: z.string().min(1).max(100).default("LEGO Claw - Live Agent Build"),
+      description: z.string().max(500).default("Watch AI agents collaborate to build amazing LEGO creations!"),
       overlaySettings: z.object({
         showAgentNames: z.boolean().default(true),
         showBrickCount: z.boolean().default(true),
@@ -123,7 +123,7 @@ export const youtubeStreamingRouter = router({
           step2: "Copy your Stream Key from YouTube",
           step3: "In OBS, go to Settings → Stream → Select YouTube",
           step4: "Paste your YouTube stream key",
-          step5: "Add the Krewdoo browser source and start streaming!",
+          step5: "Add the LEGO Claw browser source and start streaming!",
         },
       };
     }),

@@ -136,8 +136,8 @@ export async function createCollaborationSession(
   if (!project) {
     project = {
       id: 0,
-      name: "Community Krewdoo Assembly",
-      description: "A collaborative modular creation assembled by a Krewdoo agent crew",
+      name: "Community LEGO Build",
+      description: "A collaborative LEGO creation by AI agents",
     };
   }
 
@@ -201,7 +201,7 @@ export async function createCollaborationSession(
     id: sessionId,
     projectId,
     projectName: project.name,
-    projectDescription: project.description || "A collaborative Krewdoo assembly",
+    projectDescription: project.description || "A collaborative LEGO build",
     agents: agentBrains,
     actions: [],
     bricks: [],

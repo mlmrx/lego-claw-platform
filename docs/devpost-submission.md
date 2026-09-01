@@ -1,4 +1,4 @@
-# Krewdoo Assembly Lab — Devpost Submission Draft
+# Assembly Lab — Devpost Submission Draft
 
 ## Tagline
 
@@ -6,13 +6,13 @@
 
 ## Short description
 
-Krewdoo Assembly Lab is a human-guided multi-agent assembly protocol exposed through WebMCP. A browser agent discovers specialist teammates, configures a constrained mission, advances their collaboration turn by turn, observes the evolving 3D artifact, and explains the collaboration pattern behind the result.
+Assembly Lab is a human-guided multi-agent assembly protocol exposed through WebMCP. A browser agent discovers specialist teammates, configures a constrained mission, advances their collaboration turn by turn, observes the evolving 3D artifact, and explains the collaboration pattern behind the result.
 
 ## Inspiration
 
 Most browser agents operate alone. They can search a page or fill a form, but they rarely coordinate other intelligent actors or help a person understand how a team reached an outcome. We wanted to explore a more ambitious interaction model: **the browser agent as an orchestrator of a visible specialist crew**.
 
-Krewdoo Assembly Lab started from an existing creative multi-agent sandbox. During the WebMCP Challenge submission period, we added a new WebMCP-native orchestration layer that turns a complicated sequence of UI decisions into a typed, observable collaboration loop. The submitted work is the WebMCP extension and its judge-facing experience, not the pre-existing platform.
+Assembly Lab started from an existing creative multi-agent sandbox. During the WebMCP Challenge submission period, we added a new WebMCP-native orchestration layer that turns a complicated sequence of UI decisions into a typed, observable collaboration loop. The submitted work is the WebMCP extension and its judge-facing experience, not the pre-existing platform.
 
 ## What it does
 
@@ -32,7 +32,7 @@ The agent first discovers the scenarios and specialist presets that the page act
 
 ## Why WebMCP matters
 
-The WebMCP imperative API lets a page register JavaScript tools that browser agents can discover and execute.[1] That makes Krewdoo Assembly Lab more reliable than screen-coordinate automation: the agent works with explicit scenario IDs, agent IDs, bounded turn counts, and structured results rather than guessing which visual control to click.
+The WebMCP imperative API lets a page register JavaScript tools that browser agents can discover and execute.[1] That makes Assembly Lab more reliable than screen-coordinate automation: the agent works with explicit scenario IDs, agent IDs, bounded turn counts, and structured results rather than guessing which visual control to click.
 
 WebMCP is not a decorative integration here. The complete experience depends on a multi-tool chain: discover, configure, execute, inspect, and analyze. The person remains in control because all state-changing tools update the same visible page, step-by-step mode exposes every action, and nothing runs when the prepared demo mission is merely loaded.
 
@@ -67,7 +67,7 @@ Finally, we had to make a broad existing platform understandable in under three 
 
 ## Accomplishments we are proud of
 
-Krewdoo Assembly Lab demonstrates **nested agency**: one browser agent coordinates a team of in-application agents whose roles and behaviors are visible. The integration is meaningful, reversible, and testable. It also produces a tangible shared artifact, so collaboration is not just a transcript; judges can see what the crew assembled and how its decisions changed the result.
+Assembly Lab demonstrates **nested agency**: one browser agent coordinates a team of in-application agents whose roles and behaviors are visible. The integration is meaningful, reversible, and testable. It also produces a tangible shared artifact, so collaboration is not just a transcript; judges can see what the crew assembled and how its decisions changed the result.
 
 The new WebMCP layer includes nine tools, strict schemas, same-origin policy headers, cancellation-aware handlers, safety annotations, deterministic contract tests, responsive onboarding, a prepared judge mission, and an architecture-focused public story page.
 
@@ -79,7 +79,7 @@ WebMCP tools are most compelling when they expose a **coherent workflow**, not a
 
 The underlying protocol is intentionally broader than construction pieces. A future mission could assemble a storyboard, product specification, lesson plan, software architecture, or music arrangement by swapping specialist roles and artifact adapters while preserving the same discover → configure → execute → inspect → analyze loop.
 
-The platform now includes persisted build replay and a versioned TypeScript integration SDK. The next competition-focused milestone is intervention tooling that lets the human pause a run, replace a specialist, modify a constraint, and resume from a checkpoint, followed by an evaluation suite for tool selection, mission completion, invalid-ID recovery, and cancellation behavior.
+The next technical milestone is mission persistence and replay, followed by intervention tools that let the human pause a run, replace a specialist, modify a constraint, and resume from a checkpoint. We also plan to publish a small evaluation suite that scores tool-selection accuracy, mission completion, recovery from invalid IDs, and cancellation behavior.
 
 ## New work completed during the challenge period
 
@@ -103,7 +103,7 @@ The existing platform predates August 25, 2026. The following WebMCP-specific ex
 |---|---|
 | Live project | `https://legoagents-qmc4sc7q.manus.space/webmcp` after publishing the latest checkpoint |
 | Judge demo | `https://legoagents-qmc4sc7q.manus.space/sandbox` after publishing the latest checkpoint |
-| Public source | `https://github.com/mlmrx/krewdoo` after the owner makes it public |
+| Public source | `https://github.com/mlmrx/lego-claw-platform` after the owner makes it public |
 | Demo video | Add the public YouTube URL after recording and uploading |
 
 ## References

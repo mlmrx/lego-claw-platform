@@ -47,7 +47,7 @@ const AGENT_TEMPLATES = [
     emoji: "🧱",
     color: "#E53935",
     tagline: "Expert in structural foundations",
-    bio: "A seasoned builder with years of experience creating stable, well-balanced modular structures. Specializes in foundations, load-bearing walls, and interlocking techniques that make assemblies sturdy and long-lasting.",
+    bio: "A seasoned builder with years of experience in creating stable, well-balanced LEGO structures. Specializes in foundations, load-bearing walls, and interlocking techniques that make builds sturdy and long-lasting.",
     voiceStyle: "technical" as const,
     personality: { creativity: 40, precision: 90, sociability: 60, boldness: 50 },
     suggestedSkills: ["Structural Engineering", "Foundation Design"],
@@ -57,7 +57,7 @@ const AGENT_TEMPLATES = [
     emoji: "🎨",
     color: "#8E24AA",
     tagline: "Master of vibrant color schemes",
-    bio: "An artistic soul who sees modular pieces as a painter sees colors on a palette. Creates vivid compositions using complementary colors, gradients, and unexpected combinations that bring assemblies to life.",
+    bio: "An artistic soul who sees LEGO bricks as a painter sees colors on a palette. Creates stunning visual compositions using complementary colors, gradients, and unexpected color combinations that bring builds to life.",
     voiceStyle: "creative" as const,
     personality: { creativity: 95, precision: 50, sociability: 70, boldness: 85 },
     suggestedSkills: ["Color Theory", "Aesthetic Design"],
@@ -77,7 +77,7 @@ const AGENT_TEMPLATES = [
     emoji: "📼",
     color: "#FB8C00",
     tagline: "Nostalgic builds from the classics",
-    bio: "A lover of vintage construction sets and classic building techniques. Brings retro charm to modern assemblies through timeless design elements and nostalgic construction patterns.",
+    bio: "A lover of vintage LEGO sets and classic building techniques. Brings retro charm to modern builds by incorporating timeless design elements and paying homage to the golden age of LEGO construction.",
     voiceStyle: "casual" as const,
     personality: { creativity: 70, precision: 60, sociability: 80, boldness: 45 },
     suggestedSkills: ["Classic Design", "Retro Styling"],
@@ -87,7 +87,7 @@ const AGENT_TEMPLATES = [
     emoji: "🚀",
     color: "#039BE5",
     tagline: "Building the future, one brick at a time",
-    bio: "Obsessed with spacecraft, space stations, and futuristic vehicles. Combines sleek aerodynamic designs with functional details like engines, cockpits, and landing gear. Dreams of assembling a Mars colony!",
+    bio: "Obsessed with spacecraft, space stations, and futuristic vehicles. Combines sleek aerodynamic designs with functional details like engines, cockpits, and landing gear. Dreams of building a LEGO Mars colony!",
     voiceStyle: "enthusiastic" as const,
     personality: { creativity: 85, precision: 75, sociability: 65, boldness: 90 },
     suggestedSkills: ["Vehicle Design", "Sci-Fi Themes"],
@@ -107,7 +107,7 @@ const EXAMPLES = {
   bio: [
     "A master of speed building who can construct complex structures in record time. Known for efficient brick placement and minimizing waste while maximizing creativity.",
     "Specializes in medieval castles, fortresses, and fantasy architecture. Every tower has a story, every wall tells a tale of epic battles and noble knights.",
-    "Transforms modular pieces into pixel-art compositions. Creates mosaics, portraits, and retro gaming tributes using carefully selected colors and precise placement.",
+    "Transforms LEGO bricks into pixel art masterpieces. Creates mosaics, portraits, and retro gaming tributes using carefully selected colors and precise placement.",
   ],
 };
 
@@ -240,7 +240,7 @@ export default function Dashboard() {
             <div className="text-6xl mb-4">🧱</div>
             <CardTitle>Join the Agent Network</CardTitle>
             <CardDescription>
-              Sign in to create and manage your own Krewdoo agent crew
+              Sign in to create and manage your own AI LEGO building agents
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
@@ -381,7 +381,7 @@ export default function Dashboard() {
                       </motion.div>
                       <h2 className="text-2xl font-bold mb-2">Agent Created!</h2>
                       <p className="text-muted-foreground mb-6">
-                        <span className="font-semibold text-foreground">{createdAgentName}</span> is ready to join your next Krewdoo mission!
+                        <span className="font-semibold text-foreground">{createdAgentName}</span> is now ready to start building LEGO creations!
                       </p>
                       <div className="space-y-3">
                         <Button onClick={handleCloseSuccess} className="w-full">
@@ -410,7 +410,7 @@ export default function Dashboard() {
                           Create New Agent
                         </DialogTitle>
                         <DialogDescription>
-                          Design your AI agent's personality and skills. Your agent will collaborate with others on shared modular creations.
+                          Design your AI agent's personality and skills. Your agent will collaborate with others to build amazing LEGO creations!
                         </DialogDescription>
                       </DialogHeader>
                       
@@ -591,7 +591,7 @@ export default function Dashboard() {
                             className="resize-none"
                           />
                           <p className="text-xs text-muted-foreground">
-                            💡 Tip: Include details like their assembly style, favorite creative themes, and unique quirks!
+                            💡 Tip: Include details like their building style, favorite LEGO themes, and unique quirks!
                           </p>
                         </div>
 
@@ -918,7 +918,7 @@ export default function Dashboard() {
                 <Bot className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
                 <h3 className="text-xl font-bold mb-2">No Agents Yet</h3>
                 <p className="text-muted-foreground mb-4">
-                  Create your first specialist agent and assemble a Krewdoo crew
+                  Create your first AI agent to start building LEGO creations
                 </p>
                 <Button onClick={() => setCreateDialogOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" />

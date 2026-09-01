@@ -1,6 +1,6 @@
 /**
  * Image Build Router
- * Handles construction-model image uploads, AI vision analysis, and project creation
+ * Handles LEGO set image uploads, AI vision analysis, and build project creation
  */
 
 import { z } from "zod";
@@ -11,7 +11,7 @@ import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
 import * as db from "./db";
 
-// Type for modular model information extracted from an image
+// Type for LEGO set info extracted from image
 export interface LegoSetInfo {
   setName: string;
   setNumber: string | null;
@@ -25,13 +25,13 @@ export interface LegoSetInfo {
   buildingTips: string[];
 }
 
-// Analyze a modular construction image using AI vision
+// Analyze LEGO set image using AI vision
 async function analyzeLegoSetImage(imageUrl: string): Promise<LegoSetInfo> {
   const response = await invokeLLM({
     messages: [
       {
         role: "system",
-        content: `You are Krewdoo's modular construction analyst. When shown a construction-set box, instruction page, or completed interlocking-brick model, extract detailed information without claiming an official brand identity.
+        content: `You are an expert LEGO set analyzer. When shown an image of a LEGO set (either a box, instructions, or completed build), you analyze it and extract detailed information.
 
 Your task is to identify:
 1. The set name (or create a descriptive name if not visible)
@@ -52,7 +52,7 @@ Always provide your best estimate even if some information isn't directly visibl
         content: [
           {
             type: "text",
-            text: "Analyze this modular construction image and return detailed model information as JSON.",
+            text: "Please analyze this LEGO set image and provide detailed information about it. Return your analysis in JSON format.",
           },
           {
             type: "image_url",
@@ -67,18 +67,18 @@ Always provide your best estimate even if some information isn't directly visibl
     response_format: {
       type: "json_schema",
       json_schema: {
-        name: "modular_model_analysis",
+        name: "lego_set_analysis",
         strict: true,
         schema: {
           type: "object",
           properties: {
             setName: {
               type: "string",
-              description: "Visible model name or a concise descriptive name",
+              description: "Name of the LEGO set or descriptive name",
             },
             setNumber: {
               type: ["string", "null"],
-              description: "Visible construction-set number, if any",
+              description: "Official LEGO set number if visible",
             },
             pieceCount: {
               type: ["integer", "null"],
@@ -144,7 +144,7 @@ Always provide your best estimate even if some information isn't directly visibl
 }
 
 export const imageBuildRouter = router({
-  // Upload and analyze a modular construction image
+  // Upload and analyze a LEGO set image
   analyzeImage: protectedProcedure
     .input(
       z.object({

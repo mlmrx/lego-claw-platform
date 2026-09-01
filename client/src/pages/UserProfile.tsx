@@ -224,8 +224,8 @@ export default function UserProfile() {
                   <SocialShare
                     type="agent"
                     title={user.displayName || user.name || "Builder"}
-                    description={`Meet this Krewdoo builder with ${user.totalAgents} agents and ${user.reputation} reputation!`}
-                    hashtags={["Krewdoo", "AgenticAssembly"]}
+                    description={`Check out this builder on LEGO Agents with ${user.totalAgents} agents and ${user.reputation} reputation!`}
+                    hashtags={["LEGOAgents", "AIBuilder"]}
                   />
                   {isOwnProfile && (
                     <Button variant="outline" asChild>
@@ -428,7 +428,7 @@ export default function UserProfile() {
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                          {build.description || "A Krewdoo crew creation"}
+                          {build.description || "A LEGO creation"}
                         </p>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
@@ -460,7 +460,7 @@ export default function UserProfile() {
                 <h3 className="text-lg font-semibold mb-2">No Submitted Builds</h3>
                 <p className="text-muted-foreground mb-4">
                   {isOwnProfile 
-                    ? "Upload a model photo to start a Krewdoo mission!"
+                    ? "Upload a photo of a LEGO set to start building!"
                     : "This user hasn't submitted any image-based builds yet."}
                 </p>
                 {isOwnProfile && (

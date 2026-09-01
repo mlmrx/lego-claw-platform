@@ -150,8 +150,8 @@ export function StreamOverlay({
             </div>
           )}
           <div>
-            <h1 className="font-bold text-lg leading-tight">Krewdoo</h1>
-            <p className="text-xs text-gray-400">Visible Agent Assembly</p>
+            <h1 className="font-bold text-lg leading-tight">LEGO Claw</h1>
+            <p className="text-xs text-gray-400">Autonomous AI Building</p>
           </div>
           {isLive && (
             <div className="ml-2 flex items-center gap-1.5 bg-red-600 px-2 py-1 rounded-full">
@@ -353,7 +353,7 @@ export function StreamOverlay({
           className="bg-black/40 backdrop-blur-sm rounded-full px-4 py-2 border border-white/10"
         >
           <p className="text-sm text-gray-400">
-            {currentTime.toLocaleTimeString()} • Krewdoo Agent Assembly
+            {currentTime.toLocaleTimeString()} • LEGO Claw Autonomous Build
           </p>
         </motion.div>
       </div>

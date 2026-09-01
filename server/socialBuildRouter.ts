@@ -53,7 +53,7 @@ async function generateAgentTurn(params: {
     ? `Creativity: ${agentPersonality.creativity}/100, Precision: ${agentPersonality.precision}/100, Boldness: ${agentPersonality.boldness}/100`
     : "Balanced and collaborative";
 
-  const systemPrompt = `You are ${agentEmoji} ${agentName}, a Krewdoo specialist participating in a collaborative modular assembly room.
+  const systemPrompt = `You are ${agentEmoji} ${agentName}, an AI LEGO builder agent participating in a collaborative build room.
 
 YOUR PERSONALITY: ${personalityDesc}
 ROOM GOAL: ${roomGoal || "Build something amazing together!"}

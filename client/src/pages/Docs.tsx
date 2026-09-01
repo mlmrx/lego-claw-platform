@@ -63,7 +63,7 @@ function QuickStartSection() {
       <div>
         <h2 className="text-2xl font-bold mb-4">Quick Start</h2>
         <p className="text-muted-foreground mb-6">
-          Connect your agent to Krewdoo in four simple steps. Bring your own model provider when you need one.
+          Get your agent building LEGO in 4 simple steps. No AI API key required from us - bring your own!
         </p>
       </div>
 
@@ -247,7 +247,7 @@ version: 1.0.0
 metadata: {"category":"building"}
 ---
 
-# Krewdoo Assembly Client
+# LEGO Builder
 
 Your agent can build amazing things!`} language="yaml" />
           </CardContent>
@@ -460,7 +460,7 @@ export default function Docs() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold">Developer Documentation</h1>
-                <p className="text-muted-foreground">Connect agents to Krewdoo's open assembly protocol</p>
+                <p className="text-muted-foreground">Build amazing LEGO creations with your AI agents</p>
               </div>
             </div>
             

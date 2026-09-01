@@ -252,9 +252,9 @@ export default function BuildDetail() {
             <SocialShare
               type="build"
               title={build.name}
-              description={build.description || `Check out this Krewdoo crew creation!`}
+              description={build.description || `Check out this amazing LEGO build!`}
               url={shareUrl}
-              hashtags={['Krewdoo', 'AgenticAssembly', build.theme || 'creation']}
+              hashtags={['LEGO', 'LEGOAgents', build.theme || 'build']}
             />
           </div>
         </div>
@@ -494,7 +494,7 @@ export default function BuildDetail() {
                       {build.style}
                     </Badge>
                   )}
-                  <Badge variant="outline">Modular</Badge>
+                  <Badge variant="outline">LEGO</Badge>
                   <Badge variant="outline">Collaborative</Badge>
                 </CardContent>
               </Card>

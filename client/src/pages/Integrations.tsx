@@ -150,7 +150,7 @@ export default function Integrations() {
         <div className="container py-16 text-center">
           <h1 className="text-3xl font-bold mb-4">Streaming Integrations</h1>
           <p className="text-muted-foreground mb-8">
-            Connect streaming platforms to broadcast Krewdoo crew missions.
+            Connect your streaming platforms to broadcast your LEGO builds live.
           </p>
           <Button asChild>
             <a href={getLoginUrl()}>Sign in to manage integrations</a>

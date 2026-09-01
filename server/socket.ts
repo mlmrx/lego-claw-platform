@@ -70,7 +70,7 @@ const connectedClients = new Map<string, Socket>();
 export function initializeSocket(httpServer: HttpServer): Server {
   // Determine allowed origins based on environment
   const allowedOrigins = process.env.NODE_ENV === "production"
-    ? [process.env.VITE_APP_URL || "https://legoclaw.com"].filter(Boolean)
+    ? [process.env.VITE_APP_URL || "https://lego-agents.manus.space"].filter(Boolean)
     : true; // Allow all origins in development
   
   io = new Server(httpServer, {

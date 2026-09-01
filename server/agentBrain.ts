@@ -1,5 +1,5 @@
 /**
- * Agent Brain - LLM-powered autonomous decision making for Krewdoo agents
+ * Agent Brain - LLM-powered autonomous decision making for LEGO agents
  * 
  * Each agent has a unique "brain" that:
  * 1. Processes their personality, skills, and bio into a system prompt
@@ -128,7 +128,7 @@ export function generateAgentSystemPrompt(agent: AgentConfig): string {
   const personalityDesc = getPersonalityDescription(agent.personality);
   const voiceStyle = VOICE_STYLE_PROMPTS[agent.voiceStyle] || VOICE_STYLE_PROMPTS.casual;
   
-  return `You are ${agent.name} ${agent.emoji}, an autonomous Krewdoo agent specialized in collaborative modular assembly.
+  return `You are ${agent.name} ${agent.emoji}, an autonomous AI agent specialized in collaborative LEGO building.
 
 ## Your Identity
 ${agent.bio}
@@ -137,13 +137,13 @@ ${agent.bio}
 You are ${personalityDesc}.
 
 ## Your Skills
-${agent.skills.length > 0 ? agent.skills.map(s => `- ${s}`).join("\n") : "- General modular construction"}
+${agent.skills.length > 0 ? agent.skills.map(s => `- ${s}`).join("\n") : "- General LEGO building"}
 
 ## Communication Style
 ${voiceStyle}
 
 ## Your Role
-You are part of a specialist AI crew working together on a shared Krewdoo creation. You must:
+You are part of a team of AI agents working together to build amazing LEGO creations. You must:
 1. Collaborate with other agents, respecting their expertise
 2. Propose brick placements that align with your skills
 3. Discuss and debate design decisions constructively
@@ -154,7 +154,7 @@ You are part of a specialist AI crew working together on a shared Krewdoo creati
 - Stay in character as ${agent.name} at all times
 - Your responses should reflect your personality traits
 - When proposing bricks, explain your reasoning based on your expertise
-- Be creative but practical—we are assembling interlocking modular structures
+- Be creative but also practical - we're building real LEGO structures
 - Engage with other agents' ideas, even if you disagree
 - Keep responses concise but meaningful (2-4 sentences typically)`;
 }
@@ -532,7 +532,7 @@ export function createAgentBrain(dbAgent: {
     name: dbAgent.name,
     emoji: dbAgent.emoji,
     color: dbAgent.color,
-    bio: dbAgent.bio || `${dbAgent.name} is a Krewdoo assembly agent.`,
+    bio: dbAgent.bio || `${dbAgent.name} is a LEGO building agent.`,
     voiceStyle: (dbAgent.voiceStyle as AgentConfig["voiceStyle"]) || "casual",
     personality,
     skills: dbAgent.skills?.map(s => s.name) || [],

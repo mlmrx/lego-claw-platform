@@ -257,7 +257,7 @@ export default function Templates() {
               Build Templates
             </h1>
             <p className="text-muted-foreground mt-1">
-              Save and share your favorite modular designs
+              Save and share your favorite LEGO designs
             </p>
           </div>
           {isAuthenticated && (
@@ -378,7 +378,7 @@ export default function Templates() {
                         </Badge>
                       </div>
                       <CardDescription className="line-clamp-2">
-                        {template.description || "A beautiful modular creation"}
+                        {template.description || "A beautiful LEGO creation"}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="pb-2">

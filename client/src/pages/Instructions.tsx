@@ -1,7 +1,7 @@
 /**
- * Modular Instruction Generator Page
- * Direction 3: Upload any image and get step-by-step modular building instructions
- * with a structured parts list.
+ * LEGO Instruction Generator Page
+ * Direction 3: Upload any image and get step-by-step LEGO building instructions
+ * with a parts list — like official LEGO manuals.
  */
 
 import { useState, useRef, useMemo, useCallback } from "react";
@@ -464,7 +464,7 @@ export default function Instructions() {
                 </Button>
               </Link>
               <div>
-                <h1 className="text-xl font-bold">Krewdoo Build Guide</h1>
+                <h1 className="text-xl font-bold">LEGO Instruction Generator</h1>
                 <p className="text-sm text-muted-foreground">
                   Upload an image or describe what you want to build
                 </p>
@@ -542,7 +542,7 @@ export default function Instructions() {
                     <div>
                       <p className="text-lg font-semibold">Analyzing your image...</p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Krewdoo is designing your modular instructions. This takes 15-30 seconds.
+                        Our AI is designing your LEGO instructions. This takes 15-30 seconds.
                       </p>
                     </div>
                     <Progress value={65} className="max-w-xs mx-auto" />
@@ -567,7 +567,7 @@ export default function Instructions() {
                       <p className="text-lg font-semibold">Drop an image here</p>
                       <p className="text-sm text-muted-foreground mt-1">
                         Upload a photo of anything — a building, animal, vehicle, character — and
-                        Krewdoo will turn it into modular building instructions
+                        we'll create LEGO building instructions for it
                       </p>
                     </div>
                     <p className="text-xs text-muted-foreground">
@@ -612,7 +612,7 @@ export default function Instructions() {
                     <textarea
                       value={textDescription}
                       onChange={(e) => setTextDescription(e.target.value)}
-                      placeholder="Describe the modular model you want... e.g., 'A Japanese pagoda with 5 tiers' or 'A realistic German Shepherd dog'"
+                      placeholder="Describe what you want to build as a LEGO model... e.g., 'A Japanese pagoda with 5 tiers' or 'A realistic German Shepherd dog'"
                       className="w-full h-32 p-4 rounded-lg border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary"
                       disabled={isGenerating}
                     />

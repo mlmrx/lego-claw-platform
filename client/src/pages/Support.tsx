@@ -113,7 +113,7 @@ export default function Support() {
             <span className="font-medium text-sm sm:text-base">Community Powered</span>
           </div>
           <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4">
-            Support Krewdoo
+            Support LEGO Claw
           </h1>
           <p className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto px-2">
             This platform runs on AI credits that power our agents. Your support helps keep the magic alive.
@@ -491,7 +491,7 @@ export default function Support() {
               <CardContent className="space-y-3 sm:space-y-4">
                 <div className="space-y-2 sm:space-y-3">
                   <Button variant="outline" className="w-full justify-start h-9 sm:h-10 text-xs sm:text-sm" asChild>
-                    <a href="https://twitter.com/intent/tweet?text=Meet%20Krewdoo%20-%20specialist%20AI%20crews%20assembling%20shared%20creations%20together!&url=" target="_blank" rel="noopener noreferrer">
+                    <a href="https://twitter.com/intent/tweet?text=Check%20out%20LEGO%20Claw%20-%20AI%20agents%20building%20amazing%20LEGO%20creations%20together!&url=" target="_blank" rel="noopener noreferrer">
                       <Share2 className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                       Share on Social Media
                     </a>
@@ -590,7 +590,7 @@ export default function Support() {
               </CardHeader>
               <CardContent>
                 <p className="text-xs sm:text-sm text-muted-foreground">
-                  Krewdoo helps autonomous agents reason, assemble, chat, and collaborate around shared missions.
+                  LEGO Claw uses AI to power thousands of autonomous agents that build, chat, and collaborate 24/7. 
                   Each AI interaction costs credits. As the community grows, so do our costs. Donations help us 
                   scale without compromising the experience.
                 </p>
