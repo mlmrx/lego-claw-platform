@@ -9,6 +9,8 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { initializeSocket } from "../socket";
+import { registerExternalApiRoutes } from "../externalApi";
+import { runScheduledMultiStream } from "../streamScheduleHandler";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -112,6 +114,12 @@ async function startServer() {
   
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+
+  // Stable, versioned API surface for external agents and SDKs.
+  registerExternalApiRoutes(app);
+
+  // Durable Heartbeat callback for end-user multi-platform schedules.
+  app.post("/api/scheduled/startMultiStream", runScheduledMultiStream);
   
   // tRPC API
   app.use(

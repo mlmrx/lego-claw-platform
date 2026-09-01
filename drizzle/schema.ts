@@ -833,6 +833,72 @@ export const integrationEvents = mysqlTable("integration_events", {
 export type IntegrationEvent = typeof integrationEvents.$inferSelect;
 export type InsertIntegrationEvent = typeof integrationEvents.$inferInsert;
 
+/**
+ * Durable multi-platform broadcast schedules. Destinations contain only
+ * integration public IDs; encrypted credentials remain in social_integrations.
+ */
+export const streamSchedules = mysqlTable("stream_schedules", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 32 }).notNull().unique(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 120 }).notNull(),
+  buildSessionId: varchar("buildSessionId", { length: 64 }).notNull(),
+  cronExpression: varchar("cronExpression", { length: 120 }).notNull(),
+  integrationPublicIds: json("integrationPublicIds").notNull(),
+  scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }),
+  isEnabled: boolean("isEnabled").default(true).notNull(),
+  lastRunAt: timestamp("lastRunAt"),
+  lastRunStatus: mysqlEnum("lastRunStatus", ["never", "configured", "skipped", "failed"]).default("never").notNull(),
+  lastSessionId: varchar("lastSessionId", { length: 64 }),
+  lastError: text("lastError"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type StreamSchedule = typeof streamSchedules.$inferSelect;
+export type InsertStreamSchedule = typeof streamSchedules.$inferInsert;
+
+/** Historical snapshots of the session-management telemetry we can verify. */
+export const streamAnalytics = mysqlTable("stream_analytics", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 32 }).notNull().unique(),
+  userId: int("userId").notNull(),
+  sessionId: varchar("sessionId", { length: 64 }).notNull(),
+  buildSessionId: varchar("buildSessionId", { length: 64 }).notNull(),
+  status: mysqlEnum("status", ["configured", "stopped", "failed"]).notNull(),
+  destinationCount: int("destinationCount").default(0).notNull(),
+  totalViewers: int("totalViewers").default(0).notNull(),
+  platformBreakdown: json("platformBreakdown"),
+  chatMessageCount: int("chatMessageCount").default(0).notNull(),
+  startedAt: timestamp("startedAt"),
+  endedAt: timestamp("endedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type StreamAnalytic = typeof streamAnalytics.$inferSelect;
+export type InsertStreamAnalytic = typeof streamAnalytics.$inferInsert;
+
+/**
+ * Cross-platform highlight markers. These preserve timestamps and source
+ * context; they do not claim to contain encoded video without a relay.
+ */
+export const streamClips = mysqlTable("stream_clips", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 32 }).notNull().unique(),
+  userId: int("userId").notNull(),
+  sessionId: varchar("sessionId", { length: 64 }).notNull(),
+  buildSessionId: varchar("buildSessionId", { length: 64 }).notNull(),
+  title: varchar("title", { length: 160 }).notNull(),
+  startSeconds: int("startSeconds").notNull(),
+  endSeconds: int("endSeconds").notNull(),
+  platforms: json("platforms").notNull(),
+  note: text("note"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type StreamClip = typeof streamClips.$inferSelect;
+export type InsertStreamClip = typeof streamClips.$inferInsert;
+
 
 /**
  * Build Ratings - User ratings for LEGO builds

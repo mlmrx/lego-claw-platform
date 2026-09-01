@@ -33,7 +33,14 @@ import {
   Wifi,
   WifiOff,
   Zap,
-  Globe
+  Globe,
+  CalendarClock,
+  BarChart3,
+  Scissors,
+  Trash2,
+  PauseCircle,
+  PlayCircle,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -74,6 +81,13 @@ export function MultiStreamDashboard({ buildSessionId, onClose }: MultiStreamDas
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isLive, setIsLive] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  const [scheduleName, setScheduleName] = useState("Weekly build broadcast");
+  const [cronExpression, setCronExpression] = useState("0 0 18 * * 5");
+  const [selectedIntegrationIds, setSelectedIntegrationIds] = useState<string[]>([]);
+  const [clipTitle, setClipTitle] = useState("Build highlight");
+  const [clipStart, setClipStart] = useState(0);
+  const [clipEnd, setClipEnd] = useState(30);
+  const utils = trpc.useUtils();
 
   const { data: platforms } = trpc.multiStream.getPlatforms.useQuery();
   const { data: sessionData, refetch: refetchSession } = trpc.multiStream.getSession.useQuery(
@@ -84,11 +98,40 @@ export function MultiStreamDashboard({ buildSessionId, onClose }: MultiStreamDas
     { sessionId: sessionId || "", limit: 100 },
     { enabled: !!sessionId && isLive, refetchInterval: 3000 }
   );
+  const { data: integrations } = trpc.integrations.myIntegrations.useQuery();
+  const { data: schedules, isLoading: schedulesLoading, error: schedulesError } = trpc.multiStream.listSchedules.useQuery();
+  const { data: analytics, isLoading: analyticsLoading, error: analyticsError } = trpc.multiStream.getAnalytics.useQuery({ limit: 30 });
+  const { data: clips, isLoading: clipsLoading, error: clipsError } = trpc.multiStream.getClips.useQuery({ limit: 30 });
 
   const createSessionMutation = trpc.multiStream.createSession.useMutation();
   const startStreamMutation = trpc.multiStream.startStream.useMutation();
   const stopStreamMutation = trpc.multiStream.stopStream.useMutation();
   const sendChatMutation = trpc.multiStream.sendChat.useMutation();
+  const createScheduleMutation = trpc.multiStream.createSchedule.useMutation({
+    onSuccess: () => {
+      toast.success("Broadcast schedule created");
+      utils.multiStream.listSchedules.invalidate();
+    },
+    onError: error => toast.error(error.message),
+  });
+  const setScheduleEnabledMutation = trpc.multiStream.setScheduleEnabled.useMutation({
+    onSuccess: () => utils.multiStream.listSchedules.invalidate(),
+    onError: error => toast.error(error.message),
+  });
+  const deleteScheduleMutation = trpc.multiStream.deleteSchedule.useMutation({
+    onSuccess: () => {
+      toast.success("Schedule deleted");
+      utils.multiStream.listSchedules.invalidate();
+    },
+    onError: error => toast.error(error.message),
+  });
+  const createClipMutation = trpc.multiStream.createClip.useMutation({
+    onSuccess: result => {
+      toast.success(result.message);
+      utils.multiStream.getClips.invalidate();
+    },
+    onError: error => toast.error(error.message),
+  });
 
   const enabledCount = destinations.filter(d => d.enabled && d.streamKey).length;
   const totalViewers = sessionData?.totalViewers || 0;
@@ -134,7 +177,7 @@ export function MultiStreamDashboard({ buildSessionId, onClose }: MultiStreamDas
 
       if (result.success) {
         setIsLive(true);
-        toast.success(`🔴 Live on ${result.activeStreams} platform${result.activeStreams > 1 ? 's' : ''}!`);
+        toast.success(`${result.activeStreams} destination${result.activeStreams > 1 ? "s" : ""} configured. Connect an encoder or relay to send video.`);
       } else {
         toast.error("Failed to start some streams");
       }
@@ -174,7 +217,7 @@ export function MultiStreamDashboard({ buildSessionId, onClose }: MultiStreamDas
             Multi-Platform Streaming
           </h2>
           <p className="text-muted-foreground">
-            Stream to multiple platforms simultaneously
+            Configure overlays, destinations, schedules, telemetry, and highlights
           </p>
         </div>
         
@@ -182,7 +225,7 @@ export function MultiStreamDashboard({ buildSessionId, onClose }: MultiStreamDas
           {isLive && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 rounded-full">
               <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              <span className="text-red-500 font-medium">LIVE</span>
+              <span className="text-red-500 font-medium">{sessionData?.capabilities.videoStreaming ? "LIVE" : "SESSION ACTIVE"}</span>
               <Users className="w-4 h-4 text-red-500" />
               <span className="text-red-500 font-bold">{totalViewers.toLocaleString()}</span>
             </div>
@@ -203,7 +246,7 @@ export function MultiStreamDashboard({ buildSessionId, onClose }: MultiStreamDas
               ) : (
                 <>
                   <Zap className="w-5 h-5" />
-                  Go Live Everywhere ({enabledCount})
+                  Configure Everywhere ({enabledCount})
                 </>
               )}
             </Button>
@@ -222,7 +265,7 @@ export function MultiStreamDashboard({ buildSessionId, onClose }: MultiStreamDas
       </div>
 
       <Tabs defaultValue="platforms" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid h-auto w-full grid-cols-3 gap-1 p-1 lg:grid-cols-6">
           <TabsTrigger value="platforms" className="gap-2">
             <Settings className="w-4 h-4" />
             Platforms
@@ -234,6 +277,18 @@ export function MultiStreamDashboard({ buildSessionId, onClose }: MultiStreamDas
           <TabsTrigger value="chat" className="gap-2">
             <MessageSquare className="w-4 h-4" />
             Chat
+          </TabsTrigger>
+          <TabsTrigger value="schedule" className="gap-2">
+            <CalendarClock className="w-4 h-4" />
+            Schedule
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="gap-2">
+            <BarChart3 className="w-4 h-4" />
+            History
+          </TabsTrigger>
+          <TabsTrigger value="clips" className="gap-2">
+            <Scissors className="w-4 h-4" />
+            Highlights
           </TabsTrigger>
         </TabsList>
 
@@ -483,6 +538,155 @@ export function MultiStreamDashboard({ buildSessionId, onClose }: MultiStreamDas
                   </div>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="schedule" className="mt-4 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><CalendarClock className="h-5 w-5" /> Durable Broadcast Schedule</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="schedule-name">Schedule name</Label>
+                  <Input id="schedule-name" value={scheduleName} onChange={event => setScheduleName(event.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="schedule-cron">Six-field UTC cron</Label>
+                  <Input id="schedule-cron" className="font-mono" value={cronExpression} onChange={event => setCronExpression(event.target.value)} />
+                  <p className="text-xs text-muted-foreground">Example: <code>0 0 18 * * 5</code> runs Fridays at 18:00 UTC.</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Saved streaming integrations</Label>
+                {integrations && integrations.length > 0 ? (
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {integrations.filter(integration => integration.isActive).map(integration => {
+                      const selected = selectedIntegrationIds.includes(integration.publicId);
+                      const style = PLATFORM_STYLES[integration.platform] || PLATFORM_STYLES.custom;
+                      return (
+                        <button
+                          type="button"
+                          key={integration.publicId}
+                          onClick={() => setSelectedIntegrationIds(previous => selected
+                            ? previous.filter(id => id !== integration.publicId)
+                            : [...previous, integration.publicId])}
+                          className={cn("flex items-center gap-3 rounded-xl border p-3 text-left transition", selected ? "border-primary bg-primary/5 ring-1 ring-primary" : "hover:bg-muted/50")}
+                        >
+                          <span className="text-xl">{style.icon}</span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block font-medium capitalize">{integration.platformName || integration.platform}</span>
+                            <span className="block truncate text-xs text-muted-foreground">Key ending {integration.keyHint || "not set"}</span>
+                          </span>
+                          {selected && <Badge>Selected</Badge>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">Add and verify a streaming integration before creating a schedule. Raw stream keys are never stored in the schedule.</p>
+                )}
+              </div>
+
+              <Button
+                onClick={() => createScheduleMutation.mutate({
+                  name: scheduleName,
+                  buildSessionId,
+                  cronExpression,
+                  integrationPublicIds: selectedIntegrationIds,
+                })}
+                disabled={!scheduleName.trim() || selectedIntegrationIds.length === 0 || createScheduleMutation.isPending}
+              >
+                {createScheduleMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CalendarClock className="mr-2 h-4 w-4" />}
+                Create schedule
+              </Button>
+              <p className="text-xs text-muted-foreground">Schedules configure destinations through Manus Heartbeat. Actual video delivery still requires an encoder or RTMP relay.</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle>My schedules</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              {schedulesLoading ? (
+                <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading schedules…</div>
+              ) : schedulesError ? (
+                <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Schedules could not be loaded: {schedulesError.message}</p>
+              ) : schedules && schedules.length > 0 ? schedules.map(schedule => (
+                <div key={schedule.publicId} className="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2"><span className="font-semibold">{schedule.name}</span><Badge variant={schedule.isEnabled ? "default" : "secondary"}>{schedule.isEnabled ? "Enabled" : "Paused"}</Badge></div>
+                    <p className="mt-1 font-mono text-xs text-muted-foreground">{schedule.cronExpression}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Last run: {schedule.lastRunAt ? new Date(schedule.lastRunAt).toLocaleString() : "Never"} · {schedule.lastRunStatus}</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setScheduleEnabledMutation.mutate({ publicId: schedule.publicId, enabled: !schedule.isEnabled })}>
+                    {schedule.isEnabled ? <PauseCircle className="mr-2 h-4 w-4" /> : <PlayCircle className="mr-2 h-4 w-4" />}{schedule.isEnabled ? "Pause" : "Resume"}
+                  </Button>
+                  <Button variant="ghost" size="icon" aria-label={`Delete ${schedule.name}`} onClick={() => deleteScheduleMutation.mutate({ publicId: schedule.publicId })}><Trash2 className="h-4 w-4" /></Button>
+                </div>
+              )) : <p className="py-6 text-center text-muted-foreground">No schedules created yet.</p>}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="analytics" className="mt-4 space-y-4">
+          {analyticsLoading ? (
+            <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /> Loading telemetry…</div>
+          ) : analyticsError ? (
+            <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Telemetry could not be loaded: {analyticsError.message}</p>
+          ) : (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Snapshots</p><p className="mt-1 text-2xl font-bold">{analytics?.summary.snapshots || 0}</p></CardContent></Card>
+                <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Configured sessions</p><p className="mt-1 text-2xl font-bold">{analytics?.summary.configuredSessions || 0}</p></CardContent></Card>
+                <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Peak tracked viewers</p><p className="mt-1 text-2xl font-bold">{analytics?.summary.peakViewers || 0}</p></CardContent></Card>
+                <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">In-app chat messages</p><p className="mt-1 text-2xl font-bold">{analytics?.summary.totalChatMessages || 0}</p></CardContent></Card>
+              </div>
+              <Card>
+                <CardHeader><CardTitle>Session telemetry history</CardTitle></CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-xs text-muted-foreground">{analytics?.summary.telemetryScope}</p>
+                  {analytics?.records.length ? analytics.records.map(record => (
+                    <div key={record.publicId} className="grid gap-2 rounded-lg border p-3 text-sm sm:grid-cols-5">
+                      <span className="font-medium capitalize">{record.status}</span>
+                      <span>{record.destinationCount} destinations</span>
+                      <span>{record.totalViewers} viewers</span>
+                      <span>{record.chatMessageCount} messages</span>
+                      <span className="text-muted-foreground sm:text-right">{new Date(record.createdAt).toLocaleString()}</span>
+                    </div>
+                  )) : <p className="py-6 text-center text-muted-foreground">No session snapshots yet.</p>}
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="clips" className="mt-4 space-y-4">
+          <Card>
+            <CardHeader><CardTitle className="flex items-center gap-2"><Scissors className="h-5 w-5" /> Save a cross-platform highlight marker</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2"><Label htmlFor="clip-title">Title</Label><Input id="clip-title" value={clipTitle} onChange={event => setClipTitle(event.target.value)} /></div>
+                <div className="space-y-2"><Label htmlFor="clip-start">Start (seconds)</Label><Input id="clip-start" type="number" min={0} value={clipStart} onChange={event => setClipStart(Number(event.target.value))} /></div>
+                <div className="space-y-2"><Label htmlFor="clip-end">End (seconds)</Label><Input id="clip-end" type="number" min={1} value={clipEnd} onChange={event => setClipEnd(Number(event.target.value))} /></div>
+              </div>
+              <Button onClick={() => sessionId && createClipMutation.mutate({ sessionId, title: clipTitle, startSeconds: clipStart, endSeconds: clipEnd })} disabled={!sessionId || clipEnd <= clipStart || createClipMutation.isPending}>
+                <Scissors className="mr-2 h-4 w-4" /> Save highlight
+              </Button>
+              <p className="text-xs text-muted-foreground">This preserves timestamps and platform context. Video export becomes available only when an encoder or relay is connected.</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader><CardTitle>Saved highlights</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              {clipsLoading ? <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading highlights…</div> : clipsError ? <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Highlights could not be loaded: {clipsError.message}</p> : clips && clips.length > 0 ? clips.map(clip => (
+                <div key={clip.publicId} className="flex items-center justify-between gap-4 rounded-xl border p-4">
+                  <div><p className="font-semibold">{clip.title}</p><p className="text-xs text-muted-foreground">{clip.startSeconds}s–{clip.endSeconds}s · {(clip.platforms as string[]).join(", ")}</p></div>
+                  <Badge variant="outline">Marker</Badge>
+                </div>
+              )) : <p className="py-6 text-center text-muted-foreground">No highlights saved yet.</p>}
             </CardContent>
           </Card>
         </TabsContent>

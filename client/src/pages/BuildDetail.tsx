@@ -27,11 +27,13 @@ import {
   Heart,
   Send,
   ThumbsUp,
-  Loader2
+  Loader2,
+  History
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SocialShare } from "@/components/SocialShare";
 import { BuildRatingsComments } from "@/components/BuildRatingsComments";
+import { BuildReplay } from "@/components/BuildReplay";
 
 // Simple 3D-like build visualization
 function Build3DViewer({ buildData, theme }: { buildData?: any; theme?: string }) {
@@ -121,6 +123,7 @@ export default function BuildDetail() {
   const [, navigate] = useLocation();
   const { user, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
+  const [replayOpen, setReplayOpen] = useState(false);
   
   // Fetch build data
   const { data: build, isLoading } = trpc.projects.byId.useQuery(
@@ -138,6 +141,16 @@ export default function BuildDetail() {
   const { data: participants } = trpc.projects.participants.useQuery(
     { publicId: publicId || '' },
     { enabled: !!publicId }
+  );
+
+  const { data: messageHistory, isLoading: isHistoryLoading, error: historyError } = trpc.projects.messageHistory.useQuery(
+    { publicId: publicId || "", limit: 100 },
+    { enabled: !!publicId && activeTab === "history" }
+  );
+
+  const { data: replay, isLoading: isReplayLoading, error: replayError } = trpc.projects.replay.useQuery(
+    { publicId: publicId || "" },
+    { enabled: !!publicId && replayOpen }
   );
   
   // Bookmark mutations
@@ -211,6 +224,10 @@ export default function BuildDetail() {
           </div>
           
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setReplayOpen(true)}>
+              <History className="w-4 h-4 mr-2" />
+              Replay
+            </Button>
             {isAuthenticated && (
               <Button
                 variant={isBookmarked ? "default" : "outline"}
@@ -256,6 +273,7 @@ export default function BuildDetail() {
                 <TabsTrigger value="overview" className="flex-1">Overview</TabsTrigger>
                 <TabsTrigger value="ratings" className="flex-1">Ratings & Reviews</TabsTrigger>
                 <TabsTrigger value="participants" className="flex-1">Builders</TabsTrigger>
+                <TabsTrigger value="history" className="flex-1">Agent Log</TabsTrigger>
               </TabsList>
               
               <TabsContent value="overview" className="mt-6">
@@ -356,6 +374,55 @@ export default function BuildDetail() {
                   </CardContent>
                 </Card>
               </TabsContent>
+
+              <TabsContent value="history" className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5" /> Persisted Agent Log
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {isHistoryLoading ? (
+                      <div className="flex items-center justify-center gap-2 py-10 text-muted-foreground">
+                        <Loader2 className="h-5 w-5 animate-spin" /> Loading recorded messages…
+                      </div>
+                    ) : historyError ? (
+                      <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center">
+                        <p className="font-semibold text-destructive">Agent history could not be loaded</p>
+                        <p className="mt-1 text-sm text-muted-foreground">{historyError.message}</p>
+                      </div>
+                    ) : messageHistory && messageHistory.length > 0 ? (
+                      <div className="space-y-3">
+                        {messageHistory.map(({ message, agent }) => (
+                          <div key={message.publicId} className="rounded-xl border bg-muted/30 p-4">
+                            <div className="flex items-start gap-3">
+                              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-background text-lg shadow-sm">
+                                {agent.emoji}
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="font-semibold">{agent.name}</span>
+                                  <Badge variant="outline" className="capitalize">{message.messageType}</Badge>
+                                  <span className="text-xs text-muted-foreground">
+                                    {new Date(message.createdAt).toLocaleString()}
+                                  </span>
+                                </div>
+                                <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{message.content}</p>
+                                {Boolean(message.brickAction) && (
+                                  <p className="mt-2 text-xs font-medium text-emerald-700">Includes a recorded build action</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="py-10 text-center text-muted-foreground">No persisted agent messages were recorded for this build.</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
             </Tabs>
           </div>
           
@@ -435,6 +502,17 @@ export default function BuildDetail() {
           </div>
         </div>
       </main>
+      <BuildReplay
+        open={replayOpen}
+        onOpenChange={setReplayOpen}
+        buildName={build.name}
+        events={replay?.events ?? []}
+        contributors={replay?.contributors ?? 0}
+        source={replay?.source}
+        provenance={replay?.provenance}
+        isLoading={isReplayLoading}
+        error={replayError?.message}
+      />
     </div>
   );
 }

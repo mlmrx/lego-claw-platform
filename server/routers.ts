@@ -27,6 +27,7 @@ import { dreamBuildRouter } from "./dreamBuildRouter";
 import { socialBuildRouter } from "./socialBuildRouter";
 import { instructionRouter } from "./instructionRouter";
 import { sandboxRouter } from "./sandboxRouter";
+import { buildReplayEvents } from "./buildReplay";
 
 // ============================================
 // BUILT-IN SKILLS DEFINITION
@@ -333,6 +334,47 @@ const projectsRouter = router({
     .input(z.object({ publicId: z.string() }))
     .query(async ({ input }) => {
       return db.getBuildProjectByPublicId(input.publicId);
+    }),
+
+  messageHistory: publicProcedure
+    .input(z.object({
+      publicId: z.string().min(1).max(32),
+      limit: z.number().int().min(1).max(200).default(100),
+      beforeId: z.number().int().positive().optional(),
+    }))
+    .query(async ({ input }) => {
+      const project = await db.getBuildProjectByPublicId(input.publicId);
+      if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+      const rows = await db.getProjectMessages(project.id, input.limit, input.beforeId);
+      return [...rows].reverse();
+    }),
+
+  replay: publicProcedure
+    .input(z.object({ publicId: z.string().min(1).max(32) }))
+    .query(async ({ input }) => {
+      const project = await db.getBuildProjectByPublicId(input.publicId);
+      if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+      const rows = await db.getProjectMessages(project.id, 500);
+      const events = buildReplayEvents(project, rows);
+      return {
+        project: {
+          publicId: project.publicId,
+          name: project.name,
+          status: project.status,
+          currentBricks: project.currentBricks,
+        },
+        events,
+        contributors: Math.max(
+          project.totalContributors,
+          new Set(events.map(event => event.agentName).filter(name => name !== "Contributor unavailable")).size,
+        ),
+        source: events.some(event => event.source === "message")
+          ? "persisted-message-actions" as const
+          : "final-build-snapshot" as const,
+        provenance: events.some(event => event.source === "message")
+          ? "Replayed from recorded per-turn brick actions and timestamps."
+          : "Reconstructed from the final brick snapshot; exact placement timing may be unavailable.",
+      };
     }),
 
   create: protectedProcedure

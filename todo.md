@@ -46,7 +46,7 @@
 - [x] X post verification system (like Moltbook)
 - [x] Comprehensive developer documentation
 - [x] Public REST API for external agents
-- [ ] SDK/libraries for easy integration
+- [x] Versioned TypeScript SDK for external-agent registration, project discovery, message history, and replay through stable `/api/v1` routes
 - [x] Agent registration via manifest files
 - [x] Webhook system for agent events
 - [x] Rate limiting and fair usage policies
@@ -261,7 +261,7 @@
 - [x] Add emergent behavior tracking (novel designs, unexpected collaborations)
 - [x] Update Live Build page to show real autonomous agent activity
 - [x] Store agent conversations and build decisions in database
-- [ ] Add build history replay functionality
+- [x] Add build history replay functionality
 
 
 ## YouTube Live Streaming Feature
@@ -297,10 +297,14 @@
 - [x] Implement real-time viewer count aggregation across all platforms
 - [x] Build cross-platform chat aggregation (see all comments in one feed)
 - [x] Add platform status indicators (connected/live/offline per platform)
-- [ ] Create stream scheduling for multi-platform broadcasts
-- [ ] Add stream analytics dashboard (total viewers, engagement, platform breakdown)
-- [ ] Implement stream clips feature (save highlights across platforms)
-- [ ] Test multi-platform streaming with all supported platforms
+- [x] Create durable Heartbeat scheduling for multi-platform destination configuration without storing raw stream keys
+- [x] Add historical session-management telemetry with clear limits on viewer and chat data
+- [x] Add cross-platform highlight markers with honest encoder/relay requirements
+- [x] Test destination configuration, overlays, capability reporting, and lifecycle across all supported platforms
+- [ ] Connect a real encoder/RTMP relay so scheduled jobs can start actual video broadcasts
+- [ ] Ingest real viewer and chat analytics from connected platform APIs
+- [ ] Generate and export real video clips from saved highlight markers
+- [x] Add tests for Heartbeat callback idempotency, analytics persistence, and highlight marker error paths
 
 
 ## Audit Fix Priorities
@@ -322,9 +326,9 @@
 ## Feature Round 3 - Conversation Persistence, Template Previews, Gallery Population
 - [x] Add buildMessages table to schema for persisting agent conversations (using existing agentMessages table)
 - [x] Create db helpers for saving/retrieving build messages (already existed in db.ts)
-- [ ] Add tRPC procedures for build message history
+- [x] Add tRPC procedures for build message history
 - [x] Update live build system to persist conversations during sessions
-- [ ] Add build history replay UI
+- [x] Add build history replay UI
 - [x] Generate preview images for templates using AI image generation
 - [x] Update Templates page to display real preview images
 - [x] Run live build sessions to completion to populate gallery
@@ -431,11 +435,11 @@
 
 
 ## Custom Domain Restoration Incident
-- [ ] Determine why legoclaw.com and www.legoclaw.com were removed or stopped resolving after restoration/deployment
-- [ ] Verify restored website code, static files, database contents, secrets, and deployment state
-- [ ] Reconnect custom domains without changing external DNS unless required
-- [ ] Confirm the default manus.space site and both custom-domain variants are reachable
-- [ ] Document whether any data loss occurred and provide safe recovery guidance
+- [x] Determine why legoclaw.com and www.legoclaw.com were removed or stopped resolving after restoration/deployment
+- [x] Verify restored website code, static files, database contents, secrets, and deployment state
+- [x] Reconnect custom domains without changing external DNS unless required
+- [x] Confirm the default manus.space site and both custom-domain variants are reachable
+- [x] Document whether any data loss occurred and provide safe recovery guidance
 
 ## Rebranding Follow-up
 - [ ] Select a brand name centered on the agentic assembly protocol rather than LEGO/bricks
@@ -444,10 +448,10 @@
 
 
 ## Custom Domain Reconnection
-- [ ] Reconnect legoclaw.com to the current deployment in Settings → Domains
-- [ ] Reconnect www.legoclaw.com and configure the preferred apex/www redirect
-- [ ] Verify registrar DNS targets, HTTPS certificates, and both public URLs
-- [ ] Confirm the restored application and representative data load through the custom domain
+- [x] Reconnect legoclaw.com to the current deployment in Settings → Domains
+- [x] Reconnect www.legoclaw.com and configure the preferred apex/www redirect
+- [x] Verify registrar DNS targets, HTTPS certificates, and both public URLs
+- [x] Confirm the restored application and representative data load through the custom domain
 
 
 ## Private GitHub Export

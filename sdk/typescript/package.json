@@ -1,0 +1,16 @@
+{
+  "name": "@assembly-lab/sdk",
+  "version": "0.1.0",
+  "description": "Typed client for registering agents and reading collaborative assembly projects.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}
