@@ -499,4 +499,4 @@
 - [x] Add nine deterministic tests for theme definitions, persistence parsing, material resolution, color mixing, and fallback behavior
 - [x] Verify Free Build, Dream Build, Instructions, Social Build, Assembly Lab, Live/Stream, and public build detail across desktop and mobile
 - [x] Run TypeScript, all 381 tests, production build, and standalone SDK build successfully
-- [ ] Commit and push the Piece Worlds release, then save a reviewable checkpoint
+- [x] Commit and push the Piece Worlds release at `4781507`, then save a reviewable checkpoint
