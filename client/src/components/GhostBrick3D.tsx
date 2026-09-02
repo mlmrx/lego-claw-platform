@@ -10,6 +10,8 @@
 import { useRef, useMemo } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
+import { usePieceWorld } from "@/contexts/PieceWorldContext";
+import { resolvePieceMaterial, resolveWorldEdgeColor } from "@/lib/pieceWorlds";
 
 // Must match LegoBrick3D constants
 const UNIT = 1.0;
@@ -34,6 +36,7 @@ export function GhostBrick3D({
   height,
   valid = true,
 }: GhostBrick3DProps) {
+  const { worldId, world } = usePieceWorld();
   const groupRef = useRef<THREE.Group>(null);
   const materialRef = useRef<THREE.MeshStandardMaterial>(null);
 
@@ -67,6 +70,8 @@ export function GhostBrick3D({
   });
 
   const ghostColor = valid ? color : "#FF3333";
+  const ghostStyle = resolvePieceMaterial(worldId, ghostColor, 0.35);
+  const outlineColor = valid ? resolveWorldEdgeColor(worldId, ghostColor) : "#FF0000";
 
   return (
     <group ref={groupRef} position={position}>
@@ -75,12 +80,14 @@ export function GhostBrick3D({
         <boxGeometry args={[brickW - 0.02, brickH - 0.02, brickD - 0.02]} />
         <meshStandardMaterial
           ref={materialRef}
-          color={ghostColor}
+          color={ghostStyle.color}
           transparent
           opacity={0.35}
           depthWrite={false}
-          roughness={0.3}
-          metalness={0.0}
+          roughness={ghostStyle.roughness}
+          metalness={ghostStyle.metalness}
+          emissive={ghostStyle.emissive}
+          emissiveIntensity={ghostStyle.emissiveIntensity}
           side={THREE.DoubleSide}
         />
       </mesh>
@@ -89,7 +96,7 @@ export function GhostBrick3D({
       <mesh>
         <boxGeometry args={[brickW - 0.02, brickH - 0.02, brickD - 0.02]} />
         <meshBasicMaterial
-          color={valid ? "#FFFFFF" : "#FF0000"}
+          color={outlineColor}
           wireframe
           transparent
           opacity={0.25}
@@ -103,9 +110,20 @@ export function GhostBrick3D({
             position={[x, brickH / 2 + STUD_HEIGHT / 2, z]}
             castShadow={false}
           >
-            <cylinderGeometry args={[STUD_RADIUS, STUD_RADIUS, STUD_HEIGHT, 12]} />
+            {world.studStyle === "voxel" ? (
+              <boxGeometry args={[STUD_RADIUS * 1.55, STUD_HEIGHT, STUD_RADIUS * 1.55]} />
+            ) : world.studStyle === "clay" || world.studStyle === "candy" ? (
+              <sphereGeometry args={[STUD_RADIUS * 0.9, 12, 8]} />
+            ) : (
+              <cylinderGeometry args={[
+                STUD_RADIUS,
+                STUD_RADIUS,
+                STUD_HEIGHT,
+                world.studStyle === "crystal" ? 6 : 12,
+              ]} />
+            )}
             <meshStandardMaterial
-              color={ghostColor}
+              color={ghostStyle.color}
               transparent
               opacity={0.25}
               depthWrite={false}
@@ -114,7 +132,7 @@ export function GhostBrick3D({
           <mesh position={[x, brickH / 2 + STUD_HEIGHT / 2, z]}>
             <cylinderGeometry args={[STUD_RADIUS, STUD_RADIUS, STUD_HEIGHT, 12]} />
             <meshBasicMaterial
-              color={valid ? "#FFFFFF" : "#FF0000"}
+              color={outlineColor}
               wireframe
               transparent
               opacity={0.15}

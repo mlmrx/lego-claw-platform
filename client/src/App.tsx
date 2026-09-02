@@ -3,7 +3,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { PieceWorldDock } from "./components/PieceWorldDock";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { PieceWorldProvider } from "./contexts/PieceWorldContext";
 import Landing from "./pages/Landing";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
@@ -68,10 +70,13 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+        <PieceWorldProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+            <PieceWorldDock />
+          </TooltipProvider>
+        </PieceWorldProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

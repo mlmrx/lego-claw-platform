@@ -8,17 +8,30 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Environment, ContactShadows, Html, PerspectiveCamera } from "@react-three/drei";
 import { LegoBrick3D, LEGO_COLORS, BrickPlacement } from "./LegoBrick3D";
 import * as THREE from "three";
+import { usePieceWorld } from "@/contexts/PieceWorldContext";
+import { resolvePieceMaterial, resolveWorldEdgeColor } from "@/lib/pieceWorlds";
 
 // Baseplate component
-function Baseplate({ size = 16, color = "#237841" }: { size?: number; color?: string }) {
+function Baseplate({ size = 16, color }: { size?: number; color?: string }) {
+  const { worldId, world } = usePieceWorld();
   const plateSize = size * 0.8;
+  const plateColor = color ?? world.scene.baseplate;
+  const plateStyle = resolvePieceMaterial(worldId, plateColor);
   
   return (
     <group position={[0, -0.08, 0]}>
       {/* Main plate */}
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[plateSize, plateSize]} />
-        <meshStandardMaterial color={color} roughness={0.4} />
+        <meshPhysicalMaterial
+          color={plateStyle.color}
+          roughness={plateStyle.roughness}
+          metalness={plateStyle.metalness}
+          transparent={plateStyle.transparent}
+          opacity={plateStyle.opacity}
+          transmission={plateStyle.transmission}
+          clearcoat={plateStyle.clearcoat}
+        />
       </mesh>
       
       {/* Studs on baseplate */}
@@ -33,8 +46,12 @@ function Baseplate({ size = 16, color = "#237841" }: { size?: number; color?: st
             ]}
             castShadow
           >
-            <cylinderGeometry args={[0.24, 0.24, 0.04, 12]} />
-            <meshStandardMaterial color={color} roughness={0.4} />
+            {world.studStyle === "voxel" ? (
+              <boxGeometry args={[0.36, 0.04, 0.36]} />
+            ) : (
+              <cylinderGeometry args={[0.24, 0.24, 0.04, world.studStyle === "crystal" ? 6 : 12]} />
+            )}
+            <meshStandardMaterial color={plateStyle.color} roughness={plateStyle.roughness} />
           </mesh>
         ))
       ).flat()}
@@ -136,14 +153,15 @@ export function LegoScene3D({
   totalBricks,
   autoRotate = true,
 }: LegoScene3DProps) {
+  const { world } = usePieceWorld();
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full transition-colors duration-300" style={{ backgroundColor: world.scene.background }}>
       <Canvas shadows>
         <PerspectiveCamera makeDefault position={[10, 8, 10]} fov={45} />
         <AnimatedCamera autoRotate={autoRotate} />
         
         {/* Lighting */}
-        <ambientLight intensity={0.4} />
+        <ambientLight intensity={world.edgeStyle === "neon" ? 0.25 : 0.4} color={world.edgeStyle === "neon" ? "#93C5FD" : "#FFFFFF"} />
         <directionalLight
           position={[10, 15, 10]}
           intensity={1}
@@ -161,7 +179,7 @@ export function LegoScene3D({
         <Environment preset="studio" />
         
         {/* Baseplate */}
-        <Baseplate size={16} color={LEGO_COLORS.green} />
+        <Baseplate size={16} />
         
         {/* Contact shadows */}
         <ContactShadows

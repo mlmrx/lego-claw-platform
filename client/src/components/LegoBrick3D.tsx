@@ -11,9 +11,16 @@
  *   Wall thickness ≈ 1.5mm → 0.1875 units
  */
 
-import { useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
+import { usePieceWorld } from "@/contexts/PieceWorldContext";
+import {
+  getPieceWorld,
+  resolvePieceMaterial,
+  resolveWorldEdgeColor,
+  type PieceWorldId,
+} from "@/lib/pieceWorlds";
 
 // ── Authentic LEGO dimensions ──────────────────────────────
 export const UNIT = 1.0;          // 1 stud pitch = 1.0 Three.js unit
@@ -33,6 +40,28 @@ interface LegoBrick3DProps {
   height?: number;  // in plates (1 = plate, 3 = standard brick)
   isAnimating?: boolean;
   animationDelay?: number;
+  worldId?: PieceWorldId;
+}
+
+function makePhysicalMaterial(worldId: PieceWorldId, color: string, opacity = 1) {
+  const style = resolvePieceMaterial(worldId, color, opacity);
+  return new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color(style.color),
+    roughness: style.roughness,
+    metalness: style.metalness,
+    transparent: style.transparent,
+    opacity: style.opacity,
+    depthWrite: style.depthWrite,
+    transmission: style.transmission,
+    thickness: style.thickness,
+    ior: style.ior,
+    clearcoat: style.clearcoat,
+    clearcoatRoughness: style.clearcoatRoughness,
+    emissive: new THREE.Color(style.emissive),
+    emissiveIntensity: style.emissiveIntensity,
+    flatShading: style.flatShading,
+    side: style.transparent ? THREE.DoubleSide : THREE.FrontSide,
+  });
 }
 
 export function LegoBrick3D({
@@ -43,7 +72,11 @@ export function LegoBrick3D({
   height = 3,
   isAnimating = false,
   animationDelay = 0,
+  worldId: explicitWorldId,
 }: LegoBrick3DProps) {
+  const { worldId: contextWorldId, world } = usePieceWorld();
+  const worldId = explicitWorldId ?? contextWorldId;
+  const resolvedWorld = explicitWorldId ? getPieceWorld(worldId) : world;
   const groupRef = useRef<THREE.Group>(null);
   const startTime = useRef(Date.now() + animationDelay * 1000);
 
@@ -81,27 +114,21 @@ export function LegoBrick3D({
     return pos;
   }, [width, depth]);
 
-  // ABS plastic material — slightly glossy, no metalness
+  // World-aware physical materials preserve dimensions while changing the visual language.
   const material = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: new THREE.Color(color),
-        roughness: 0.35,
-        metalness: 0.0,
-      }),
-    [color]
+    () => makePhysicalMaterial(worldId, color),
+    [color, worldId]
   );
 
   const darkerMaterial = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: new THREE.Color(color).multiplyScalar(0.85),
-        roughness: 0.4,
-        metalness: 0.0,
-        side: THREE.DoubleSide,
-      }),
-    [color]
+    () => makePhysicalMaterial(worldId, resolveWorldEdgeColor(worldId, color)),
+    [color, worldId]
   );
+
+  useEffect(() => () => {
+    material.dispose();
+    darkerMaterial.dispose();
+  }, [darkerMaterial, material]);
 
   // Drop animation
   useFrame(() => {
@@ -143,7 +170,27 @@ export function LegoBrick3D({
           material={material}
           castShadow
         >
-          <cylinderGeometry args={[STUD_RADIUS, STUD_RADIUS, STUD_HEIGHT, 16]} />
+          {resolvedWorld.studStyle === "voxel" ? (
+            <boxGeometry args={[STUD_RADIUS * 1.55, STUD_HEIGHT, STUD_RADIUS * 1.55]} />
+          ) : resolvedWorld.studStyle === "crystal" ? (
+            <cylinderGeometry args={[STUD_RADIUS * 0.9, STUD_RADIUS, STUD_HEIGHT, 6]} />
+          ) : resolvedWorld.studStyle === "clay" || resolvedWorld.studStyle === "candy" ? (
+            <sphereGeometry args={[STUD_RADIUS * 0.9, 14, 10]} />
+          ) : (
+            <cylinderGeometry args={[STUD_RADIUS, STUD_RADIUS, STUD_HEIGHT, 16]} />
+          )}
+        </mesh>
+      ))}
+
+      {/* Magnetic and neon worlds expose the connection system instead of hiding it. */}
+      {(resolvedWorld.studStyle === "magnet" || resolvedWorld.studStyle === "neon") && studPositions.map(([x, z], i) => (
+        <mesh key={`connector-ring-${i}`} position={[x, brickH / 2 + STUD_HEIGHT + 0.012, z]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[STUD_RADIUS * 0.72, 0.035, 8, 20]} />
+          <meshBasicMaterial
+            color={resolvedWorld.studStyle === "neon" ? resolvedWorld.accent : "#F8FAFC"}
+            transparent
+            opacity={resolvedWorld.studStyle === "neon" ? 0.95 : 0.72}
+          />
         </mesh>
       ))}
 
@@ -161,8 +208,28 @@ export function LegoBrick3D({
       {/* Subtle bottom edge line for definition */}
       <mesh position={[0, -brickH / 2 + 0.01, 0]}>
         <boxGeometry args={[brickW - 0.04, 0.02, brickD - 0.04]} />
-        <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(0.9)} />
+        <primitive object={darkerMaterial} attach="material" />
       </mesh>
+
+      {resolvedWorld.edgeStyle !== "subtle" && (
+        <mesh scale={[1.003, 1.003, 1.003]}>
+          <boxGeometry args={[brickW - 0.015, brickH - 0.015, brickD - 0.015]} />
+          <meshBasicMaterial
+            color={resolveWorldEdgeColor(worldId, color)}
+            wireframe
+            transparent
+            opacity={resolvedWorld.edgeStyle === "neon" ? 0.6 : 0.18}
+            depthWrite={false}
+          />
+        </mesh>
+      )}
+
+      {resolvedWorld.edgeStyle === "grain" && [-0.22, 0, 0.22].map((offset, index) => (
+        <mesh key={`grain-${index}`} position={[offset * brickW, 0, brickD / 2 + 0.006]}>
+          <boxGeometry args={[0.018, brickH * 0.72, 0.008]} />
+          <meshBasicMaterial color="#6B4423" transparent opacity={0.42} />
+        </mesh>
+      ))}
     </group>
   );
 }

@@ -10,10 +10,12 @@
  * This ensures zero-gap stacking with the grid system.
  */
 
-import { useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import type { BrickShape } from "@/lib/brickCatalog";
+import { usePieceWorld } from "@/contexts/PieceWorldContext";
+import { resolvePieceMaterial, resolveWorldEdgeColor } from "@/lib/pieceWorlds";
 
 // ── Shared constants (must match LegoBrick3D) ──
 const UNIT = 1.0;
@@ -40,6 +42,8 @@ interface ShapeBrick3DProps {
 function Studs({ width, depth, color, yOffset, opacity = 1 }: {
   width: number; depth: number; color: string; yOffset: number; opacity?: number;
 }) {
+  const { world } = usePieceWorld();
+  const mat = useBrickMaterial(color, opacity);
   const studs = useMemo(() => {
     const positions: [number, number, number][] = [];
     for (let x = 0; x < width; x++) {
@@ -57,34 +61,60 @@ function Studs({ width, depth, color, yOffset, opacity = 1 }: {
   return (
     <>
       {studs.map((pos, i) => (
-        <mesh key={i} position={pos}>
-          <cylinderGeometry args={[STUD_RADIUS, STUD_RADIUS, STUD_HEIGHT, 16]} />
-          <meshStandardMaterial
-            color={color}
-            roughness={0.35}
-            metalness={0.0}
-            transparent={opacity < 1}
-            opacity={opacity}
-          />
-        </mesh>
+        <group key={i} position={pos}>
+          <mesh material={mat}>
+            {world.studStyle === "voxel" ? (
+              <boxGeometry args={[STUD_RADIUS * 1.55, STUD_HEIGHT, STUD_RADIUS * 1.55]} />
+            ) : world.studStyle === "crystal" ? (
+              <cylinderGeometry args={[STUD_RADIUS * 0.9, STUD_RADIUS, STUD_HEIGHT, 6]} />
+            ) : world.studStyle === "clay" || world.studStyle === "candy" ? (
+              <sphereGeometry args={[STUD_RADIUS * 0.9, 14, 10]} />
+            ) : (
+              <cylinderGeometry args={[STUD_RADIUS, STUD_RADIUS, STUD_HEIGHT, 16]} />
+            )}
+          </mesh>
+          {(world.studStyle === "magnet" || world.studStyle === "neon") && (
+            <mesh position={[0, STUD_HEIGHT / 2 + 0.012, 0]} rotation={[Math.PI / 2, 0, 0]}>
+              <torusGeometry args={[STUD_RADIUS * 0.72, 0.035, 8, 20]} />
+              <meshBasicMaterial
+                color={world.studStyle === "neon" ? world.accent : "#F8FAFC"}
+                transparent
+                opacity={world.studStyle === "neon" ? 0.95 : 0.72}
+              />
+            </mesh>
+          )}
+        </group>
       ))}
     </>
   );
 }
 
-// ── ABS plastic material helper ──
+// ── Piece World material helper ──
 function useBrickMaterial(color: string, opacity: number) {
-  return useMemo(
-    () => new THREE.MeshStandardMaterial({
-      color: new THREE.Color(color),
-      roughness: 0.35,
-      metalness: 0.0,
-      transparent: opacity < 1,
-      opacity,
-      ...(opacity < 1 ? { depthWrite: false } : {}),
-    }),
-    [color, opacity]
-  );
+  const { worldId } = usePieceWorld();
+  const material = useMemo(() => {
+    const style = resolvePieceMaterial(worldId, color, opacity);
+    return new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color(style.color),
+      roughness: style.roughness,
+      metalness: style.metalness,
+      transparent: style.transparent,
+      opacity: style.opacity,
+      depthWrite: style.depthWrite,
+      transmission: style.transmission,
+      thickness: style.thickness,
+      ior: style.ior,
+      clearcoat: style.clearcoat,
+      clearcoatRoughness: style.clearcoatRoughness,
+      emissive: new THREE.Color(style.emissive),
+      emissiveIntensity: style.emissiveIntensity,
+      flatShading: style.flatShading,
+      side: style.transparent ? THREE.DoubleSide : THREE.FrontSide,
+    });
+  }, [color, opacity, worldId]);
+
+  useEffect(() => () => material.dispose(), [material]);
+  return material;
 }
 
 // ════════════════════════════════════════════
@@ -260,11 +290,8 @@ function CylinderBrick({ width, depth, height, color, opacity }: {
       </mesh>
       {/* Single stud on top */}
       {opacity >= 0.9 && (
-        <mesh position={[0, h / 2 + STUD_HEIGHT / 2, 0]}>
-          <cylinderGeometry args={[STUD_RADIUS, STUD_RADIUS, STUD_HEIGHT, 16]} />
-          <meshStandardMaterial color={color} roughness={0.35} metalness={0}
-            transparent={opacity < 1} opacity={opacity} />
-        </mesh>
+        <Studs width={1} depth={1} color={color}
+          yOffset={h / 2 + STUD_HEIGHT / 2} opacity={opacity} />
       )}
     </group>
   );
@@ -692,7 +719,9 @@ export default function ShapeBrick3D({
   onPointerOver,
   onPointerOut,
 }: ShapeBrick3DProps) {
+  const { worldId, world } = usePieceWorld();
   const groupRef = useRef<THREE.Group>(null);
+  const edgeOverlayAllowed = !["flag", "antenna", "wheel"].includes(shape);
 
   useFrame((_, delta) => {
     if (animate && groupRef.current) {
@@ -737,6 +766,24 @@ export default function ShapeBrick3D({
       onPointerOut={onPointerOut}
     >
       {shapeComponent}
+      {edgeOverlayAllowed && world.edgeStyle !== "subtle" && opacity >= 0.9 && (
+        <mesh scale={[1.003, 1.003, 1.003]}>
+          <boxGeometry args={[width * UNIT - 0.015, height * PLATE_H - 0.015, depth * UNIT - 0.015]} />
+          <meshBasicMaterial
+            color={resolveWorldEdgeColor(worldId, color)}
+            wireframe
+            transparent
+            opacity={world.edgeStyle === "neon" ? 0.6 : 0.18}
+            depthWrite={false}
+          />
+        </mesh>
+      )}
+      {world.edgeStyle === "grain" && edgeOverlayAllowed && opacity >= 0.9 && [-0.22, 0, 0.22].map((offset, index) => (
+        <mesh key={`grain-${index}`} position={[offset * width * UNIT, 0, depth * UNIT / 2 + 0.006]}>
+          <boxGeometry args={[0.018, height * PLATE_H * 0.7, 0.008]} />
+          <meshBasicMaterial color="#6B4423" transparent opacity={0.42} />
+        </mesh>
+      ))}
       {wireframe && (
         <mesh>
           <boxGeometry args={[width * UNIT, height * PLATE_H, depth * UNIT]} />

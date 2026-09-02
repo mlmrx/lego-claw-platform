@@ -7,6 +7,8 @@ import { useRef, useState, useEffect, useMemo } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, PerspectiveCamera, Environment, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
+import { usePieceWorld } from "@/contexts/PieceWorldContext";
+import { resolvePieceMaterial, resolveWorldEdgeColor } from "@/lib/pieceWorlds";
 
 // LEGO brick dimensions (in LEGO units, 1 unit = 8mm)
 const STUD_RADIUS = 0.3;
@@ -51,10 +53,31 @@ interface BrickData {
 
 // Single LEGO Stud
 function Stud({ position, color }: { position: [number, number, number]; color: string }) {
+  const { worldId, world } = usePieceWorld();
+  const material = resolvePieceMaterial(worldId, color);
   return (
     <mesh position={position} castShadow>
-      <cylinderGeometry args={[STUD_RADIUS, STUD_RADIUS, STUD_HEIGHT, 16]} />
-      <meshStandardMaterial color={color} roughness={0.3} metalness={0.1} />
+      {world.studStyle === "voxel" ? (
+        <boxGeometry args={[STUD_RADIUS * 1.5, STUD_HEIGHT, STUD_RADIUS * 1.5]} />
+      ) : world.studStyle === "crystal" ? (
+        <cylinderGeometry args={[STUD_RADIUS * 0.9, STUD_RADIUS, STUD_HEIGHT, 6]} />
+      ) : world.studStyle === "clay" || world.studStyle === "candy" ? (
+        <sphereGeometry args={[STUD_RADIUS * 0.86, 14, 10]} />
+      ) : (
+        <cylinderGeometry args={[STUD_RADIUS, STUD_RADIUS, STUD_HEIGHT, 16]} />
+      )}
+      <meshPhysicalMaterial
+        color={material.color}
+        roughness={material.roughness}
+        metalness={material.metalness}
+        transparent={material.transparent}
+        opacity={material.opacity}
+        transmission={material.transmission}
+        thickness={material.thickness}
+        clearcoat={material.clearcoat}
+        emissive={material.emissive}
+        emissiveIntensity={material.emissiveIntensity}
+      />
     </mesh>
   );
 }
@@ -67,10 +90,13 @@ function LegoBrick({
   brick: BrickData; 
   isNew?: boolean;
 }) {
+  const { worldId, world } = usePieceWorld();
   const meshRef = useRef<THREE.Group>(null);
   const [animationProgress, setAnimationProgress] = useState(isNew ? 0 : 1);
   
   const color = LEGO_COLORS[brick.color] || brick.color || LEGO_COLORS.red;
+  const material = resolvePieceMaterial(worldId, color);
+  const edgeColor = resolveWorldEdgeColor(worldId, color);
   const height = brick.isPlate ? PLATE_HEIGHT : BRICK_HEIGHT;
   
   // Animation for new bricks
@@ -115,10 +141,21 @@ function LegoBrick({
       {/* Main brick body */}
       <mesh castShadow receiveShadow>
         <boxGeometry args={[brickWidth - 0.02, height - 0.02, brickDepth - 0.02]} />
-        <meshStandardMaterial 
-          color={color} 
-          roughness={0.3} 
-          metalness={0.1}
+        <meshPhysicalMaterial
+          color={material.color}
+          roughness={material.roughness}
+          metalness={material.metalness}
+          transparent={material.transparent}
+          opacity={material.opacity}
+          depthWrite={material.depthWrite}
+          transmission={material.transmission}
+          thickness={material.thickness}
+          ior={material.ior}
+          clearcoat={material.clearcoat}
+          clearcoatRoughness={material.clearcoatRoughness}
+          emissive={material.emissive}
+          emissiveIntensity={material.emissiveIntensity}
+          flatShading={material.flatShading}
         />
       </mesh>
       
@@ -130,15 +167,37 @@ function LegoBrick({
       {/* Bottom tubes (simplified) */}
       <mesh position={[0, -height / 2 + 0.05, 0]}>
         <boxGeometry args={[brickWidth - 0.1, 0.1, brickDepth - 0.1]} />
-        <meshStandardMaterial color={color} roughness={0.4} metalness={0.1} />
+        <meshStandardMaterial color={edgeColor} roughness={Math.max(material.roughness, 0.38)} metalness={material.metalness} />
       </mesh>
+
+      {world.edgeStyle !== "subtle" && (
+        <mesh scale={[1.003, 1.003, 1.003]}>
+          <boxGeometry args={[brickWidth - 0.015, height - 0.015, brickDepth - 0.015]} />
+          <meshBasicMaterial
+            color={edgeColor}
+            wireframe
+            transparent
+            opacity={world.edgeStyle === "neon" ? 0.6 : 0.18}
+            depthWrite={false}
+          />
+        </mesh>
+      )}
+
+      {world.edgeStyle === "grain" && [-0.22, 0, 0.22].map((offset, index) => (
+        <mesh key={`grain-${index}`} position={[offset * brickWidth, 0, brickDepth / 2 + 0.006]}>
+          <boxGeometry args={[0.018, height * 0.72, 0.008]} />
+          <meshBasicMaterial color="#6B4423" transparent opacity={0.42} />
+        </mesh>
+      ))}
     </group>
   );
 }
 
 // Baseplate
-function Baseplate({ size = 16, color = "#237841" }: { size?: number; color?: string }) {
-  const plateColor = LEGO_COLORS[color] || color;
+function Baseplate({ size = 16, color }: { size?: number; color?: string }) {
+  const { worldId, world } = usePieceWorld();
+  const plateColor = color ? (LEGO_COLORS[color] || color) : world.scene.baseplate;
+  const material = resolvePieceMaterial(worldId, plateColor);
   
   // Generate stud positions for baseplate
   const studs = useMemo(() => {
@@ -158,7 +217,15 @@ function Baseplate({ size = 16, color = "#237841" }: { size?: number; color?: st
       {/* Baseplate body */}
       <mesh receiveShadow position={[0, PLATE_HEIGHT / 2, 0]}>
         <boxGeometry args={[size * UNIT_SIZE, PLATE_HEIGHT, size * UNIT_SIZE]} />
-        <meshStandardMaterial color={plateColor} roughness={0.4} metalness={0.05} />
+        <meshPhysicalMaterial
+          color={material.color}
+          roughness={material.roughness}
+          metalness={material.metalness}
+          transparent={material.transparent}
+          opacity={material.opacity}
+          transmission={material.transmission}
+          clearcoat={material.clearcoat}
+        />
       </mesh>
       
       {/* Studs */}
@@ -200,6 +267,7 @@ function LegoScene({
   baseplateSize?: number;
   autoRotate?: boolean;
 }) {
+  const { world } = usePieceWorld();
   const [newBrickIds, setNewBrickIds] = useState<Set<string>>(new Set());
   const prevBrickCount = useRef(0);
 
@@ -223,7 +291,7 @@ function LegoScene({
       <CameraController autoRotate={autoRotate} />
       
       {/* Lighting */}
-      <ambientLight intensity={0.4} />
+      <ambientLight intensity={world.edgeStyle === "neon" ? 0.24 : 0.4} color={world.edgeStyle === "neon" ? "#93C5FD" : "#FFFFFF"} />
       <directionalLight
         position={[10, 20, 10]}
         intensity={1}
@@ -282,8 +350,12 @@ export function Lego3DViewer({
   className = "",
   style,
 }: Lego3DViewerProps) {
+  const { world } = usePieceWorld();
   return (
-    <div className={`w-full h-full ${className}`} style={style}>
+    <div
+      className={`w-full h-full transition-colors duration-300 ${className}`}
+      style={{ backgroundColor: world.scene.background, ...style }}
+    >
       <Canvas
         shadows
         gl={{ antialias: true, alpha: true }}

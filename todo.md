@@ -488,3 +488,15 @@
 - [x] Verify all artifact links, names, claims, test totals, public/private status, and competition branding
 - [x] Package all final submission artifacts into a clearly organized ZIP with documents, media, technical evidence, validation logs, and owner actions
 - [x] Commit artifact sources at `47ae9e7`, synchronize the private GitHub repository, and prepare the submission-ready checkpoint
+
+## Piece Worlds — Global Construction Style Selector
+- [x] Audit every standard, specialty, ghost, preview, and read-only 3D piece renderer
+- [x] Define eight trademark-safe worlds: Classic Click, Prism Glass, Claykin, Voxel Realm, MagnaSnap, Neon Circuit, Candy Lab, and Ancient Timber
+- [x] Create a global typed Piece World model with local persistence and safe fallback behavior
+- [x] Build an accessible visual selector with color/material previews and concise world descriptions
+- [x] Apply each world consistently to standard piece bodies, studs, tubes, specialty shapes, ghost previews, and scene accents without changing placement dimensions
+- [x] Expose the selector through a route-aware floating dock without adding another crowded top-level navigation item
+- [x] Add nine deterministic tests for theme definitions, persistence parsing, material resolution, color mixing, and fallback behavior
+- [x] Verify Free Build, Dream Build, Instructions, Social Build, Assembly Lab, Live/Stream, and public build detail across desktop and mobile
+- [x] Run TypeScript, all 381 tests, production build, and standalone SDK build successfully
+- [ ] Commit and push the Piece Worlds release, then save a reviewable checkpoint

@@ -18,6 +18,8 @@ import { LegoBrick3D, UNIT, PLATE_HEIGHT, BRICK_HEIGHT } from "@/components/Lego
 import ShapeBrick3D from "@/components/ShapeBrick3D";
 import type { BrickShape } from "@/lib/brickCatalog";
 import { useWebMCPTools } from "@/hooks/useWebMCPTools";
+import { usePieceWorld } from "@/contexts/PieceWorldContext";
+import { resolvePieceMaterial } from "@/lib/pieceWorlds";
 import {
   createAssemblyTools,
   type AssemblyToolActions,
@@ -223,6 +225,8 @@ function PersonalitySlider({
 }
 
 function SimulationBrickViewer({ turns }: { turns: SimulationTurn[] }) {
+  const { worldId, world } = usePieceWorld();
+  const baseplateStyle = resolvePieceMaterial(worldId, world.scene.baseplate);
   const allBricks = useMemo(() => {
     const bricks: Array<{
       position: [number, number, number];
@@ -244,23 +248,34 @@ function SimulationBrickViewer({ turns }: { turns: SimulationTurn[] }) {
   }, [turns]);
 
   return (
-    <div className="w-full h-full min-h-[300px] rounded-xl overflow-hidden bg-gradient-to-b from-sky-100 to-sky-50 border border-border">
+    <div
+      className="w-full h-full min-h-[300px] rounded-xl overflow-hidden border border-border transition-colors duration-300"
+      style={{ background: `linear-gradient(180deg, ${world.scene.background}, ${world.scene.baseplate})` }}
+    >
       <Canvas
         camera={{ position: [12, 10, 12], fov: 45 }}
         shadows
       >
-        <ambientLight intensity={0.6} />
+        <ambientLight intensity={world.edgeStyle === "neon" ? 0.3 : 0.6} color={world.edgeStyle === "neon" ? "#93C5FD" : "#FFFFFF"} />
         <directionalLight position={[8, 12, 5]} intensity={0.8} castShadow />
         <pointLight position={[-5, 8, -5]} intensity={0.3} />
 
         {/* Baseplate */}
         <mesh position={[0, 0, 0]} receiveShadow>
           <boxGeometry args={[16, 0.3, 16]} />
-          <meshStandardMaterial color="#4CAF50" roughness={0.6} />
+          <meshPhysicalMaterial
+            color={baseplateStyle.color}
+            roughness={baseplateStyle.roughness}
+            metalness={baseplateStyle.metalness}
+            transparent={baseplateStyle.transparent}
+            opacity={baseplateStyle.opacity}
+            transmission={baseplateStyle.transmission}
+            clearcoat={baseplateStyle.clearcoat}
+          />
         </mesh>
 
         {/* Grid lines on baseplate */}
-        <gridHelper args={[16, 16, "#388E3C", "#388E3C"]} position={[0, 0.16, 0]} />
+        <gridHelper args={[16, 16, world.scene.grid, world.scene.grid]} position={[0, 0.16, 0]} />
 
         {/* Placed bricks */}
         {allBricks.map((brick) => {

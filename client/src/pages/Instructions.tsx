@@ -14,6 +14,8 @@ import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { LegoBrick3D, UNIT, PLATE_HEIGHT, BRICK_HEIGHT, LEGO_COLORS } from "@/components/LegoBrick3D";
 import ShapeBrick3D from "@/components/ShapeBrick3D";
+import { usePieceWorld } from "@/contexts/PieceWorldContext";
+import { resolvePieceMaterial } from "@/lib/pieceWorlds";
 
 import {
   Upload,
@@ -140,6 +142,8 @@ function InstructionViewer3D({
   currentStep: number;
   showAllPrevious: boolean;
 }) {
+  const { worldId, world } = usePieceWorld();
+  const baseplateStyle = resolvePieceMaterial(worldId, world.scene.baseplate);
   const visibleBricks = useMemo(() => {
     const bricks: (InstructionBrick & { isCurrentStep: boolean })[] = [];
 
@@ -157,21 +161,29 @@ function InstructionViewer3D({
   return (
     <Canvas
       camera={{ position: [18, 14, 18], fov: 45 }}
-      style={{ background: "linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%)" }}
+      style={{ background: `linear-gradient(180deg, ${world.scene.background} 0%, ${world.scene.baseplate} 145%)` }}
     >
-      <ambientLight intensity={0.6} />
+      <ambientLight intensity={world.edgeStyle === "neon" ? 0.3 : 0.6} color={world.edgeStyle === "neon" ? "#93C5FD" : "#FFFFFF"} />
       <directionalLight position={[10, 20, 10]} intensity={0.8} castShadow />
       <directionalLight position={[-5, 10, -5]} intensity={0.3} />
 
       {/* Baseplate */}
       <mesh position={[0, -0.05, 0]} receiveShadow>
         <boxGeometry args={[32 * UNIT, 0.1, 32 * UNIT]} />
-        <meshStandardMaterial color="#4a8c3f" roughness={0.8} />
+        <meshPhysicalMaterial
+          color={baseplateStyle.color}
+          roughness={baseplateStyle.roughness}
+          metalness={baseplateStyle.metalness}
+          transparent={baseplateStyle.transparent}
+          opacity={baseplateStyle.opacity}
+          transmission={baseplateStyle.transmission}
+          clearcoat={baseplateStyle.clearcoat}
+        />
       </mesh>
 
       {/* Grid lines on baseplate */}
       <gridHelper
-        args={[32 * UNIT, 32, "#3d7a34", "#3d7a34"]}
+        args={[32 * UNIT, 32, world.scene.grid, world.scene.grid]}
         position={[0, 0.01, 0]}
       />
 
@@ -191,7 +203,7 @@ function InstructionViewer3D({
                 (brick.height / 3) * BRICK_H + 0.1,
                 brick.depth * UNIT + 0.1,
               ]} />
-              <meshBasicMaterial color="#3b82f6" transparent opacity={0.15} />
+              <meshBasicMaterial color={world.accent} transparent opacity={world.edgeStyle === "neon" ? 0.3 : 0.15} />
             </mesh>
           )}
         </group>

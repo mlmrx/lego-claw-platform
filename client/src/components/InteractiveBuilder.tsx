@@ -29,6 +29,8 @@ import { GhostBrick3D } from "./GhostBrick3D";
 import { PlacementBounce } from "./PlacementBounce";
 import { playSnapSound, playHoverTick, playDeleteSound } from "@/lib/snapSound";
 import type { BrickShape } from "@/lib/brickCatalog";
+import { usePieceWorld } from "@/contexts/PieceWorldContext";
+import { resolvePieceMaterial, resolveWorldEdgeColor } from "@/lib/pieceWorlds";
 import * as THREE from "three";
 
 // ============================================
@@ -134,20 +136,33 @@ function InteractiveBaseplate({
 }: {
   size: number;
 }) {
+  const { worldId, world } = usePieceWorld();
   const plateSize = size * UNIT;
+  const plateStyle = resolvePieceMaterial(worldId, world.scene.baseplate);
 
   return (
     <group position={[0, -0.1, 0]}>
       {/* Main plate surface */}
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[plateSize, plateSize]} />
-        <meshStandardMaterial color="#237841" roughness={0.35} />
+        <meshPhysicalMaterial
+          color={plateStyle.color}
+          roughness={plateStyle.roughness}
+          metalness={plateStyle.metalness}
+          transparent={plateStyle.transparent}
+          opacity={plateStyle.opacity}
+          transmission={plateStyle.transmission}
+          clearcoat={plateStyle.clearcoat}
+        />
       </mesh>
 
       {/* Baseplate thickness */}
       <mesh position={[0, -0.1, 0]} receiveShadow>
         <boxGeometry args={[plateSize, 0.2, plateSize]} />
-        <meshStandardMaterial color="#1e6b38" roughness={0.4} />
+        <meshStandardMaterial
+          color={resolveWorldEdgeColor(worldId, world.scene.baseplate)}
+          roughness={Math.max(plateStyle.roughness, 0.38)}
+        />
       </mesh>
 
       {/* Grid lines */}
@@ -157,11 +172,11 @@ function InteractiveBaseplate({
           <group key={`grid-${i}`}>
             <mesh position={[pos, 0.005, 0]} rotation={[-Math.PI / 2, 0, 0]}>
               <planeGeometry args={[0.02, plateSize]} />
-              <meshBasicMaterial color="#1a5c30" transparent opacity={0.25} />
+              <meshBasicMaterial color={world.scene.grid} transparent opacity={world.edgeStyle === "neon" ? 0.68 : 0.25} />
             </mesh>
             <mesh position={[0, 0.005, pos]} rotation={[-Math.PI / 2, 0, Math.PI / 2]}>
               <planeGeometry args={[0.02, plateSize]} />
-              <meshBasicMaterial color="#1a5c30" transparent opacity={0.25} />
+              <meshBasicMaterial color={world.scene.grid} transparent opacity={world.edgeStyle === "neon" ? 0.68 : 0.25} />
             </mesh>
           </group>
         );
@@ -178,8 +193,20 @@ function InteractiveBaseplate({
               (z - (size - 1) / 2) * UNIT,
             ]}
           >
-            <cylinderGeometry args={[STUD_RADIUS, STUD_RADIUS, 0.01, 8]} />
-            <meshStandardMaterial color="#2a8a4a" roughness={0.35} />
+            {world.studStyle === "voxel" ? (
+              <boxGeometry args={[STUD_RADIUS * 1.5, 0.018, STUD_RADIUS * 1.5]} />
+            ) : (
+              <cylinderGeometry args={[STUD_RADIUS, STUD_RADIUS, 0.018, world.studStyle === "crystal" ? 6 : 12]} />
+            )}
+            <meshPhysicalMaterial
+              color={plateStyle.color}
+              roughness={plateStyle.roughness}
+              metalness={plateStyle.metalness}
+              transparent={plateStyle.transparent}
+              opacity={plateStyle.opacity}
+              emissive={plateStyle.emissive}
+              emissiveIntensity={plateStyle.emissiveIntensity}
+            />
           </mesh>
         ))
       ).flat()}
@@ -489,6 +516,7 @@ export function InteractiveBuilder({
   highlightedBrickIds = [],
   className = "",
 }: InteractiveBuilderProps) {
+  const { world } = usePieceWorld();
   const [hoverInfo, setHoverInfo] = useState<{ gx: number; gz: number; worldY: number } | null>(null);
   const [placementEffects, setPlacementEffects] = useState<PlacementEffect[]>([]);
   const [recentBrickIds, setRecentBrickIds] = useState<Set<string>>(new Set());
@@ -558,17 +586,17 @@ export function InteractiveBuilder({
   const isSpecialGhost = ghostShape !== "standard" && ghostShape !== "plate";
 
   return (
-    <div className={`w-full h-full ${className}`}>
+    <div className={`w-full h-full transition-colors duration-300 ${className}`} style={{ backgroundColor: world.scene.background }}>
       <Canvas shadows>
         <PerspectiveCamera makeDefault position={[15, 12, 15]} fov={45} />
         <SceneControls deleteMode={deleteMode} />
 
         {/* Lighting — warm key + cool fill for LEGO plastic look */}
-        <ambientLight intensity={0.4} color="#f5f0e8" />
+        <ambientLight intensity={world.edgeStyle === "neon" ? 0.26 : 0.4} color={world.edgeStyle === "neon" ? "#93C5FD" : "#f5f0e8"} />
         <directionalLight
           position={[10, 15, 10]}
           intensity={1.2}
-          color="#fff8f0"
+          color={world.edgeStyle === "neon" ? "#C4B5FD" : "#fff8f0"}
           castShadow
           shadow-mapSize={[2048, 2048]}
           shadow-camera-far={50}

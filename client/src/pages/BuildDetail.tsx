@@ -34,9 +34,11 @@ import { cn } from "@/lib/utils";
 import { SocialShare } from "@/components/SocialShare";
 import { BuildRatingsComments } from "@/components/BuildRatingsComments";
 import { BuildReplay } from "@/components/BuildReplay";
+import { usePieceWorld } from "@/contexts/PieceWorldContext";
 
 // Simple 3D-like build visualization
 function Build3DViewer({ buildData, theme }: { buildData?: any; theme?: string }) {
+  const { world } = usePieceWorld();
   const [rotation, setRotation] = useState(0);
   
   // Generate a visual representation based on theme
@@ -49,10 +51,19 @@ function Build3DViewer({ buildData, theme }: { buildData?: any; theme?: string }
     'sci-fi': ['#00d4ff', '#0099cc', '#006699', '#003366'],
   };
   
-  const colors = themeColors[theme || 'city'] || themeColors.city;
+  const constructionColors = themeColors[theme || 'city'] || themeColors.city;
+  const colors = world.id === "classic-click" ? constructionColors : world.previewColors;
+  const isTranslucent = world.id === "prism-glass" || world.id === "magnasnap";
   
   return (
-    <div className="relative w-full aspect-square bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl overflow-hidden">
+    <div
+      className="relative w-full aspect-square rounded-xl overflow-hidden transition-colors duration-300"
+      style={{
+        background: world.id === "neon-circuit"
+          ? "radial-gradient(circle at 50% 30%, #1E1B4B, #090B1A 72%)"
+          : `linear-gradient(145deg, ${world.scene.background}, ${world.scene.baseplate})`,
+      }}
+    >
       {/* 3D-like visualization */}
       <div 
         className="absolute inset-0 flex items-center justify-center"
@@ -74,7 +85,16 @@ function Build3DViewer({ buildData, theme }: { buildData?: any; theme?: string }
                 backgroundColor: colors[layer % colors.length],
                 bottom: `${layer * 32}px`,
                 transform: `translateZ(${layer * 5}px)`,
-                opacity: 0.9,
+                opacity: isTranslucent ? 0.68 : 0.94,
+                borderRadius: world.studStyle === "voxel" ? "2px" : world.studStyle === "clay" || world.studStyle === "candy" ? "12px" : "4px",
+                border: world.edgeStyle === "neon" || world.edgeStyle === "frame" || world.edgeStyle === "glass"
+                  ? `1px solid ${world.accent}`
+                  : "1px solid transparent",
+                boxShadow: world.edgeStyle === "neon"
+                  ? `0 0 18px ${world.accent}66, inset 0 0 12px ${world.accent}44`
+                  : world.edgeStyle === "grain"
+                    ? "inset 3px 0 rgba(79,45,22,0.28), inset -3px 0 rgba(255,255,255,0.18), 0 8px 16px rgba(63,38,19,0.22)"
+                    : "0 8px 16px rgba(15,23,42,0.2)",
               }}
             >
               {/* Brick studs */}
@@ -82,8 +102,14 @@ function Build3DViewer({ buildData, theme }: { buildData?: any; theme?: string }
                 {[0, 1, 2, 3].map((stud) => (
                   <div
                     key={stud}
-                    className="w-4 h-4 rounded-full bg-black/20"
-                    style={{ boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3)' }}
+                    className="w-4 h-4"
+                    style={{
+                      borderRadius: world.studStyle === "voxel" ? "2px" : "999px",
+                      backgroundColor: world.studStyle === "neon" ? world.accent : "rgba(0,0,0,0.2)",
+                      boxShadow: world.studStyle === "neon"
+                        ? `0 0 8px ${world.accent}`
+                        : "inset 0 2px 4px rgba(255,255,255,0.3)",
+                    }}
                   />
                 ))}
               </div>

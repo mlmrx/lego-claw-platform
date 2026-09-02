@@ -36,29 +36,41 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { LegoBrick3D, UNIT, PLATE_HEIGHT, BRICK_HEIGHT, LEGO_COLORS } from "@/components/LegoBrick3D";
 import ShapeBrick3D from "@/components/ShapeBrick3D";
+import { usePieceWorld } from "@/contexts/PieceWorldContext";
+import { resolvePieceMaterial } from "@/lib/pieceWorlds";
 
 // ============================================
 // 3D BUILD VIEWER
 // ============================================
 
 function BuildCanvas({ bricks }: { bricks: any[] }) {
+  const { worldId, world } = usePieceWorld();
+  const baseplateStyle = resolvePieceMaterial(worldId, world.scene.baseplate);
   return (
     <Canvas
       camera={{ position: [15, 12, 15], fov: 50 }}
-      style={{ background: "linear-gradient(180deg, #e8f4fd 0%, #f0f9ff 100%)" }}
+      style={{ background: `linear-gradient(180deg, ${world.scene.background} 0%, ${world.scene.baseplate} 145%)` }}
     >
-      <ambientLight intensity={0.6} />
+      <ambientLight intensity={world.edgeStyle === "neon" ? 0.3 : 0.6} color={world.edgeStyle === "neon" ? "#93C5FD" : "#FFFFFF"} />
       <directionalLight position={[10, 15, 10]} intensity={0.8} castShadow />
       <directionalLight position={[-5, 8, -5]} intensity={0.3} />
 
       {/* Baseplate */}
       <mesh position={[0, -0.05, 0]} receiveShadow>
         <boxGeometry args={[24, 0.1, 24]} />
-        <meshStandardMaterial color="#4a9e4a" roughness={0.8} />
+        <meshPhysicalMaterial
+          color={baseplateStyle.color}
+          roughness={baseplateStyle.roughness}
+          metalness={baseplateStyle.metalness}
+          transparent={baseplateStyle.transparent}
+          opacity={baseplateStyle.opacity}
+          transmission={baseplateStyle.transmission}
+          clearcoat={baseplateStyle.clearcoat}
+        />
       </mesh>
 
       {/* Grid lines on baseplate */}
-      <gridHelper args={[24, 24, "#3d8c3d", "#3d8c3d"]} position={[0, 0.01, 0]} />
+      <gridHelper args={[24, 24, world.scene.grid, world.scene.grid]} position={[0, 0.01, 0]} />
 
       {/* Render all bricks */}
       {bricks.map((brick, i) => {
@@ -531,5 +543,4 @@ export default function SocialBuildRoom() {
     </div>
   );
 }
-
 
