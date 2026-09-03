@@ -511,3 +511,11 @@
 - [x] Re-test all nine WebMCP tools and the four-turn recommended judge mission with serializable results throughout
 - [x] Update judge testing and troubleshooting documentation with the verified input format and failure guidance
 - [x] Run TypeScript, all 387 tests, production build, and SDK build; verify the four-turn browser judge mission and prepare the fix for push/checkpoint
+
+## WebMCP Competition Thumbnail
+- [x] Review visual-generation guidance and the current showcase, results, and architecture assets
+- [x] Define a bold 1280×720 thumbnail concept with one clear focal story and a mobile-legible headline
+- [x] Generate a competition-safe hero visual showing browser-agent orchestration and a specialist creative crew
+- [x] Inspect and refine composition, text legibility, contrast, cropping, and brand consistency
+- [x] Export the final 1280×720 PNG, replace the weaker prior thumbnail, update the submission index and video guidance, and rebuild the submission ZIP
+- [ ] Commit, push, save a checkpoint, and deliver the final thumbnail

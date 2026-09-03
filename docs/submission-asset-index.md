@@ -19,7 +19,7 @@
 | Results screenshot | `media/03-collaboration-results.png` | Completed-run evidence | Normalized from a verified run; internal preview banner removed |
 | Validation report | `validation-report.md` | Tests, builds, routes, repository state | Generated after final audit |
 | Open-source license | `LICENSE` | Repository license | Ready; public visibility required |
-| YouTube thumbnail | `media/05-youtube-thumbnail.png` | 1280×720 upload artwork using the verified WebMCP hero | Ready |
+| YouTube thumbnail | `media/05-youtube-thumbnail-best.png` | High-contrast 1280×720 artwork combining a browser-agent command story with verified collaboration results | Ready |
 | Architecture source | `technical/webmcp-architecture.dot` | Deterministic editable Graphviz source | Ready |
 
 The final ZIP mirrors this index and includes only competition-relevant LEGO Claw artifacts. Krewdoo files and private internal notes are excluded.

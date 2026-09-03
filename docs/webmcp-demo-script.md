@@ -59,7 +59,9 @@ Source: https://github.com/mlmrx/lego-claw-platform
 WebMCP Challenge submission. The submitted WebMCP extension was added during the challenge period; see the public README and docs/new-vs-preexisting.md for dated evidence.
 ```
 
-**Thumbnail text:** `ONE BROWSER AGENT → A WHOLE AI CREW`
+**Thumbnail text:** `ONE AGENT. A WHOLE CREW.`
+
+**Thumbnail visual:** Use `05-youtube-thumbnail-best.png`. It pairs the short headline with a glowing browser cursor, four clearly differentiated specialists, a modular bridge, and the verified Assembly Lab results panel. Keep the full 16:9 composition; do not crop the headline, WebMCP badge, or results card.
 
 **Upload settings:** Public visibility; English language; captions uploaded or corrected; comments optional; no copyrighted music; verify playback while logged out.
 
