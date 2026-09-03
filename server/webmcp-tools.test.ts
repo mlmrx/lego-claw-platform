@@ -5,6 +5,7 @@ import {
   createAssemblyTools,
   type AssemblyToolActions,
 } from "../client/src/lib/webmcp/assemblyTools";
+import { createSafeWebMCPExecutor } from "../client/src/lib/webmcp/safeExecution";
 
 function createActions(): AssemblyToolActions {
   return {
@@ -138,5 +139,163 @@ describe("Assembly Lab WebMCP tools", () => {
     expect(actions.inspectCollaboration).toHaveBeenCalledOnce();
     expect(actions.analyzeCollaboration).toHaveBeenCalledOnce();
     expect(result).toEqual({ grade: "A", pattern: "cooperative" });
+  });
+
+  it("turns an undefined action result into an explicit serializable success", async () => {
+    const actions = createActions();
+    actions.listScenarios = vi.fn(() => undefined);
+    const tool = createAssemblyTools(actions).find(
+      candidate => candidate.name === "list_scenarios",
+    )!;
+
+    const result = await tool.execute({}, executionOptions());
+
+    expect(result).toEqual({ success: true, tool: "list_scenarios" });
+    expect(() => JSON.stringify(result)).not.toThrow();
+  });
+
+  it("returns a structured failure when an action throws or rejects", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const actions = createActions();
+    actions.configureMission = vi.fn(() => {
+      throw new Error("Unknown scenario_id; api_key=should-not-leak");
+    });
+    actions.runNextTurn = vi.fn(async () => {
+      throw new Error("Network unavailable");
+    });
+    const tools = new Map(
+      createAssemblyTools(actions).map(tool => [tool.name, tool]),
+    );
+
+    const thrown = await tools.get("configure_mission")!.execute(
+      {
+        scenario_id: "missing",
+        agent_ids: ["architect", "diplomat"],
+        total_turns: 4,
+      },
+      executionOptions(),
+    );
+    const rejected = await tools
+      .get("run_next_turn")!
+      .execute({}, executionOptions());
+
+    expect(thrown).toMatchObject({
+      success: false,
+      tool: "configure_mission",
+      code: "EXECUTION_FAILED",
+      retryable: true,
+    });
+    expect(JSON.stringify(thrown)).not.toContain("should-not-leak");
+    expect(rejected).toMatchObject({
+      success: false,
+      tool: "run_next_turn",
+      code: "EXECUTION_FAILED",
+      error: "Network unavailable",
+    });
+    errorSpy.mockRestore();
+  });
+
+  it("returns a structured aborted result without invoking application work", async () => {
+    const actions = createActions();
+    const controller = new AbortController();
+    controller.abort();
+    const tool = createAssemblyTools(actions).find(
+      candidate => candidate.name === "run_next_turn",
+    )!;
+
+    const result = await tool.execute({}, { signal: controller.signal });
+
+    expect(result).toEqual({
+      success: false,
+      tool: "run_next_turn",
+      code: "ABORTED",
+      error: "Tool execution was cancelled before it started.",
+      retryable: true,
+      aborted: true,
+    });
+    expect(actions.runNextTurn).not.toHaveBeenCalled();
+  });
+
+  it("rejects blank-style and double-encoded inspector payloads safely", async () => {
+    const execute = vi.fn(() => ({ ok: true }));
+    const safeExecute = createSafeWebMCPExecutor("input_probe", execute);
+
+    const missing = await safeExecute(
+      undefined as unknown as Record<string, unknown>,
+      executionOptions(),
+    );
+    const encoded = await safeExecute(
+      '{"query":"test"}' as unknown as Record<string, unknown>,
+      executionOptions(),
+    );
+
+    for (const result of [missing, encoded]) {
+      expect(result).toMatchObject({
+        success: false,
+        tool: "input_probe",
+        code: "INVALID_INPUT",
+        retryable: true,
+      });
+      expect(JSON.stringify(result)).toContain("Use {} for tools with no parameters");
+    }
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  it("converts BigInt and circular action results into serializable failures", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const circular: Record<string, unknown> = {};
+    circular.self = circular;
+    const bigintExecute = createSafeWebMCPExecutor(
+      "bigint_probe",
+      async () => ({ count: BigInt(1) }),
+    );
+    const circularExecute = createSafeWebMCPExecutor(
+      "circular_probe",
+      async () => circular,
+    );
+
+    const bigintResult = await bigintExecute({}, executionOptions());
+    const circularResult = await circularExecute({}, executionOptions());
+
+    expect(bigintResult).toMatchObject({
+      success: false,
+      tool: "bigint_probe",
+      code: "UNSERIALIZABLE_RESULT",
+    });
+    expect(circularResult).toMatchObject({
+      success: false,
+      tool: "circular_probe",
+      code: "UNSERIALIZABLE_RESULT",
+    });
+    expect(() => JSON.stringify(bigintResult)).not.toThrow();
+    expect(() => JSON.stringify(circularResult)).not.toThrow();
+    errorSpy.mockRestore();
+  });
+
+  it("keeps the result of every registered Assembly Lab tool JSON-serializable", async () => {
+    const tools = createAssemblyTools(createActions());
+    const inputs: Record<string, Record<string, unknown>> = {
+      configure_mission: {
+        scenario_id: "bridge-engineering",
+        agent_ids: ["architect", "diplomat"],
+        total_turns: 4,
+        mode: "step_by_step",
+      },
+      run_simulation: { total_turns: 4 },
+    };
+
+    for (const tool of tools) {
+      const result = await tool.execute(
+        inputs[tool.name] ?? {},
+        executionOptions(),
+      );
+      const serialized = JSON.stringify(result);
+
+      expect(serialized, `${tool.name} must return JSON`).toBeTypeOf("string");
+      expect(
+        JSON.parse(serialized) as unknown,
+        `${tool.name} must survive a JSON round trip`,
+      ).toEqual(result);
+    }
   });
 });

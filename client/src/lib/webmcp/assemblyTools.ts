@@ -1,5 +1,7 @@
 /// <reference types="webmcp-types" />
 
+import { createSafeWebMCPExecutor } from "./safeExecution";
+
 export interface MissionConfigurationInput {
   scenario_id: string;
   agent_ids: string[];
@@ -40,7 +42,7 @@ const emptyObjectSchema = {
 export function createAssemblyTools(
   actions: AssemblyToolActions,
 ): WebMCP.ModelContextTool[] {
-  return [
+  const tools: WebMCP.ModelContextTool[] = [
     {
       name: "list_scenarios",
       title: "List collaboration scenarios",
@@ -169,4 +171,9 @@ export function createAssemblyTools(
       annotations: { readOnlyHint: false, untrustedContentHint: false },
     },
   ];
+
+  return tools.map(tool => ({
+    ...tool,
+    execute: createSafeWebMCPExecutor(tool.name, tool.execute),
+  }));
 }

@@ -3,7 +3,7 @@
 ## Submission fields
 
 | Field | Paste-ready value |
-|---|---|
+| --- | --- |
 | Project name | **LEGO Claw: Assembly Lab** |
 | Tagline | **One browser agent assembles a whole creative crew.** |
 | Live project | `https://legoclaw.com/webmcp` |
@@ -12,7 +12,7 @@
 | Demo video | `ADD_PUBLIC_YOUTUBE_URL` |
 | Primary category | Machine Learning/AI; Web |
 
-> **Do not submit while `ADD_PUBLIC_YOUTUBE_URL` remains, while the repository is private, or before resolving the third-party-trademark requirement described in `owner-submission-checklist.md`.** The official rules require a working live URL, public licensed source repository, and public YouTube demonstration under three minutes.[1]
+> **Do not submit while ****`ADD_PUBLIC_YOUTUBE_URL`**** remains, while the repository is private, or before resolving the third-party-trademark requirement described in ****`owner-submission-checklist.md`****.** The official rules require a working live URL, public licensed source repository, and public YouTube demonstration under three minutes.[1]
 
 ## Short description
 
@@ -35,7 +35,7 @@ The browser agent first discovers the scenarios and specialist presets that the 
 Each specialist's message, action type, collaboration metrics, and changes to the shared 3D artifact appear in the same interface the person sees. The human can inspect progress between turns. Finally, the browser agent can summarize the current run and request a structured collaboration analysis with a grade, pattern, observations, and recommendations.
 
 | Stage | WebMCP tools | Visible outcome |
-|---|---|---|
+| --- | --- | --- |
 | Discover | `list_scenarios`, `list_agent_presets` | The browser agent learns the real challenges and available specialists |
 | Configure | `configure_mission`, `preview_mission` | The scenario, crew, mode, and turn budget update on screen |
 | Execute | `run_next_turn`, `run_simulation` | The timeline, metrics, and 3D artifact evolve |
@@ -57,7 +57,7 @@ The React and TypeScript frontend registers nine imperative WebMCP tools through
 The tools operate the same state used by the human interface and call a typed tRPC backend. The backend generates specialist turns with strict structured output, while React Three Fiber and Three.js render each structured assembly action. A separate analysis step evaluates role effectiveness, emergent behavior, and recommendations.
 
 | Layer | Implementation |
-|---|---|
+| --- | --- |
 | Browser-agent interface | WebMCP imperative API and `webmcp-types` |
 | Human interface | React 19, TypeScript, Tailwind CSS, Framer Motion |
 | Application API | tRPC and Zod |
@@ -102,10 +102,11 @@ The next product milestones are persisted experiment comparison, human intervent
 The platform predates August 25, 2026. The WebMCP extension was added on September 1, 2026 in commit `d8321b8`, with later competition hardening in `5fb27e3`. The active verified competition checkpoint is `4415bd9e`.[1]
 
 | New submission-period work | Repository evidence |
-|---|---|
+| --- | --- |
 | Nine-tool WebMCP contract | `client/src/lib/webmcp/assemblyTools.ts` |
 | Registration lifecycle and progressive enhancement | `client/src/hooks/useWebMCPTools.ts` |
 | Shared browser-agent/human mission state | `client/src/pages/Sandbox.tsx` |
+| Serializable execution and structured failures | `client/src/lib/webmcp/safeExecution.ts` |
 | Dedicated competition page | `client/src/pages/WebMCPShowcase.tsx` |
 | Same-origin response headers | `server/_core/index.ts` |
 | Strict turn and analysis contracts | `server/sandboxRouter.ts` |
@@ -114,11 +115,14 @@ The platform predates August 25, 2026. The WebMCP extension was added on Septemb
 
 ## Verification
 
-The finalized competition baseline passed **372 tests in 30 files**, TypeScript validation, the production build, and the standalone TypeScript SDK build. The live routes returned HTTPS 200 during the final artifact audit.
+The corrected competition baseline passed **387 tests in 31 files**, TypeScript validation, the production build, and the standalone TypeScript SDK build. A complete four-turn browser-level WebMCP journey also returned JSON-serializable results for discovery, configuration, preview, execution, inspection, analysis, and reset. The live routes returned HTTPS 200 during the final artifact audit.
 
 ## References
 
 [1]: https://webmcp.devpost.com/rules "WebMCP Challenge official rules"
+
 [2]: https://developer.chrome.com/docs/ai/webmcp/imperative-api "WebMCP imperative API"
+
 [3]: https://developer.chrome.com/docs/ai/webmcp/secure-tools "Secure WebMCP tools"
+
 [4]: https://webmcp.devpost.com/resources "WebMCP Challenge resources and FAQ"

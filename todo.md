@@ -500,3 +500,14 @@
 - [x] Verify Free Build, Dream Build, Instructions, Social Build, Assembly Lab, Live/Stream, and public build detail across desktop and mobile
 - [x] Run TypeScript, all 381 tests, production build, and standalone SDK build successfully
 - [x] Commit and push the Piece Worlds release at `4781507`, then save a reviewable checkpoint
+
+## WebMCP Invocation Failure Regression
+- [x] Reproduce the failure paths: optional delegates returned `undefined`, while validation and readiness errors rejected the callback
+- [x] Guarantee every WebMCP `execute()` path returns a plain JSON-serializable value
+- [x] Convert thrown/rejected tool errors into a structured serializable failure result without leaking sensitive details
+- [x] Reject invalid, blank, or double-encoded inspector input with an actionable message
+- [x] Preserve cancellation semantics while returning a serializable aborted result
+- [x] Add regression tests for undefined returns, thrown errors, rejected promises, aborts, invalid inputs, and unserializable values
+- [x] Re-test all nine WebMCP tools and the four-turn recommended judge mission with serializable results throughout
+- [x] Update judge testing and troubleshooting documentation with the verified input format and failure guidance
+- [x] Run TypeScript, all 387 tests, production build, and SDK build; verify the four-turn browser judge mission and prepare the fix for push/checkpoint

@@ -136,6 +136,18 @@ interface AnalysisResult {
   patternClassification: string;
 }
 
+interface WebMCPMissionState {
+  phase: "configure" | "running" | "results";
+  selectedScenario: string | null;
+  agents: AgentConfig[];
+  totalTurns: number;
+  simulationResult: SimulationResult | null;
+  analysis: AnalysisResult | null;
+  stepByStep: boolean;
+  stepTurns: SimulationTurn[];
+  isRunningStep: boolean;
+}
+
 // ============================================
 // CONSTANTS
 // ============================================
@@ -445,6 +457,28 @@ export default function Sandbox() {
     "Waiting for a browser agent",
   );
   const webMCPActionsRef = useRef<AssemblyToolActions | null>(null);
+  const webMCPStateRef = useRef<WebMCPMissionState>({
+    phase,
+    selectedScenario,
+    agents,
+    totalTurns,
+    simulationResult,
+    analysis,
+    stepByStep,
+    stepTurns,
+    isRunningStep,
+  });
+  webMCPStateRef.current = {
+    phase,
+    selectedScenario,
+    agents,
+    totalTurns,
+    simulationResult,
+    analysis,
+    stepByStep,
+    stepTurns,
+    isRunningStep,
+  };
 
   // Add agent from preset
   const addAgent = useCallback((preset: AgentConfig) => {
@@ -594,8 +628,21 @@ export default function Sandbox() {
     const demoAgents = ["architect", "diplomat", "engineer"]
       .map(id => presets.find(preset => preset.id === id))
       .filter((agent): agent is AgentConfig => Boolean(agent));
+    const configuredAgents = demoAgents.map(agent => ({ ...agent }));
+    webMCPStateRef.current = {
+      ...webMCPStateRef.current,
+      selectedScenario: "bridge-engineering",
+      agents: configuredAgents,
+      totalTurns: 4,
+      phase: "configure",
+      simulationResult: null,
+      analysis: null,
+      stepByStep: false,
+      stepTurns: [],
+      isRunningStep: false,
+    };
     setSelectedScenario("bridge-engineering");
-    setAgents(demoAgents.map(agent => ({ ...agent })));
+    setAgents(configuredAgents);
     setTotalTurns(4);
     setPhase("configure");
     setSimulationResult(null);
@@ -606,6 +653,18 @@ export default function Sandbox() {
   }, [presets, scenarios]);
 
   const resetMissionFromAgent = useCallback(() => {
+    webMCPStateRef.current = {
+      ...webMCPStateRef.current,
+      selectedScenario: null,
+      agents: [],
+      totalTurns: 8,
+      phase: "configure",
+      simulationResult: null,
+      analysis: null,
+      stepByStep: false,
+      stepTurns: [],
+      isRunningStep: false,
+    };
     setSelectedScenario(null);
     setAgents([]);
     setTotalTurns(8);
@@ -669,13 +728,27 @@ export default function Sandbox() {
       }
 
       const boundedTurns = Math.max(4, Math.min(12, input.total_turns));
+      const configuredAgents = selectedAgents.map(agent => ({ ...agent }));
+      const mode = input.mode ?? "step_by_step";
+      webMCPStateRef.current = {
+        ...webMCPStateRef.current,
+        selectedScenario: scenario.id,
+        agents: configuredAgents,
+        totalTurns: boundedTurns,
+        phase: "configure",
+        simulationResult: null,
+        analysis: null,
+        stepByStep: mode !== "full_run",
+        stepTurns: [],
+        isRunningStep: false,
+      };
       setSelectedScenario(scenario.id);
-      setAgents(selectedAgents.map(agent => ({ ...agent })));
+      setAgents(configuredAgents);
       setTotalTurns(boundedTurns);
       setPhase("configure");
       setSimulationResult(null);
       setAnalysis(null);
-      setStepByStep(input.mode !== "full_run");
+      setStepByStep(mode !== "full_run");
       setStepTurns([]);
       setLastWebMCPAction(
         `Mission configured: ${scenario.name} with ${selectedAgents.length} agents`,
@@ -685,36 +758,43 @@ export default function Sandbox() {
         scenario: scenario.name,
         crew: selectedAgents.map(agent => agent.name),
         total_turns: boundedTurns,
-        mode: input.mode ?? "step_by_step",
-        next: input.mode === "full_run" ? "run_simulation" : "run_next_turn",
+        mode,
+        next: mode === "full_run" ? "run_simulation" : "run_next_turn",
       };
     },
     previewMission: () => {
-      const scenario = scenarios?.find(item => item.id === selectedScenario);
+      const snapshot = webMCPStateRef.current;
+      const scenario = scenarios?.find(
+        item => item.id === snapshot.selectedScenario,
+      );
       setLastWebMCPAction("Browser agent previewed the mission");
       return {
-        configured: Boolean(scenario && agents.length >= 2),
+        configured: Boolean(scenario && snapshot.agents.length >= 2),
         scenario: scenario
           ? { id: scenario.id, name: scenario.name, constraints: scenario.constraints }
           : null,
-        crew: agents.map(agent => ({
+        crew: snapshot.agents.map(agent => ({
           id: agent.id,
           name: agent.name,
           specialization: agent.specialization,
           strategy: agent.strategy,
         })),
-        total_turns: totalTurns,
-        phase,
-        completed_turns: stepByStep
-          ? stepTurns.length
-          : simulationResult?.turns.length ?? 0,
+        total_turns: snapshot.totalTurns,
+        phase: snapshot.phase,
+        completed_turns: snapshot.stepByStep
+          ? snapshot.stepTurns.length
+          : snapshot.simulationResult?.turns.length ?? 0,
       };
     },
     runNextTurn: async signal => {
-      if (!selectedScenario || agents.length < 2) {
+      const snapshot = webMCPStateRef.current;
+      if (!snapshot.selectedScenario || snapshot.agents.length < 2) {
         throw new Error("Configure a scenario and at least two agents first.");
       }
-      if (stepTurns.length >= totalTurns) {
+      if (snapshot.isRunningStep) {
+        throw new Error("A collaboration turn is already running. Retry when it finishes.");
+      }
+      if (snapshot.stepTurns.length >= snapshot.totalTurns) {
         return {
           ok: true,
           complete: true,
@@ -722,25 +802,39 @@ export default function Sandbox() {
         };
       }
       signal.throwIfAborted();
+      webMCPStateRef.current = {
+        ...snapshot,
+        phase: "running",
+        stepByStep: true,
+        isRunningStep: true,
+      };
       setPhase("running");
       setStepByStep(true);
       setIsRunningStep(true);
-      setLastWebMCPAction(`Running turn ${stepTurns.length + 1}`);
+      setLastWebMCPAction(`Running turn ${snapshot.stepTurns.length + 1}`);
       try {
         const turn = (await runSingleTurn.mutateAsync({
-          scenarioId: selectedScenario,
-          agents,
-          previousTurns: stepTurns,
-          nextAgentIndex: stepTurns.length % agents.length,
+          scenarioId: snapshot.selectedScenario,
+          agents: snapshot.agents,
+          previousTurns: snapshot.stepTurns,
+          nextAgentIndex: snapshot.stepTurns.length % snapshot.agents.length,
         })) as SimulationTurn;
         signal.throwIfAborted();
-        setStepTurns(previous => [...previous, turn]);
+        const nextTurns = [...webMCPStateRef.current.stepTurns, turn];
+        webMCPStateRef.current = {
+          ...webMCPStateRef.current,
+          phase: "running",
+          stepByStep: true,
+          stepTurns: nextTurns,
+          isRunningStep: false,
+        };
+        setStepTurns(nextTurns);
         setLastWebMCPAction(
           `Turn ${turn.turnNumber}: ${turn.agentName} chose ${turn.action}`,
         );
         return {
           ok: true,
-          complete: turn.turnNumber >= totalTurns,
+          complete: nextTurns.length >= webMCPStateRef.current.totalTurns,
           turn: {
             number: turn.turnNumber,
             agent: turn.agentName,
@@ -751,18 +845,31 @@ export default function Sandbox() {
           },
         };
       } finally {
+        webMCPStateRef.current = {
+          ...webMCPStateRef.current,
+          isRunningStep: false,
+        };
         setIsRunningStep(false);
       }
     },
     runSimulation: async (input: RunSimulationInput, signal: AbortSignal) => {
-      if (!selectedScenario || agents.length < 2) {
+      const snapshot = webMCPStateRef.current;
+      if (!snapshot.selectedScenario || snapshot.agents.length < 2) {
         throw new Error("Configure a scenario and at least two agents first.");
       }
       const turnBudget = Math.max(
         4,
-        Math.min(12, input.total_turns ?? totalTurns),
+        Math.min(12, input.total_turns ?? snapshot.totalTurns),
       );
       signal.throwIfAborted();
+      webMCPStateRef.current = {
+        ...snapshot,
+        totalTurns: turnBudget,
+        phase: "running",
+        stepByStep: false,
+        simulationResult: null,
+        analysis: null,
+      };
       setTotalTurns(turnBudget);
       setPhase("running");
       setStepByStep(false);
@@ -770,11 +877,16 @@ export default function Sandbox() {
       setAnalysis(null);
       setLastWebMCPAction(`Running ${turnBudget}-turn mission`);
       const result = (await startSimulation.mutateAsync({
-        scenarioId: selectedScenario,
-        agents,
+        scenarioId: snapshot.selectedScenario,
+        agents: snapshot.agents,
         totalTurns: turnBudget,
       })) as SimulationResult;
       signal.throwIfAborted();
+      webMCPStateRef.current = {
+        ...webMCPStateRef.current,
+        phase: "results",
+        simulationResult: result,
+      };
       setSimulationResult(result);
       setPhase("results");
       setLastWebMCPAction(
@@ -788,16 +900,19 @@ export default function Sandbox() {
       };
     },
     inspectCollaboration: () => {
-      const turns = stepByStep ? stepTurns : simulationResult?.turns ?? [];
+      const snapshot = webMCPStateRef.current;
+      const turns = snapshot.stepByStep
+        ? snapshot.stepTurns
+        : snapshot.simulationResult?.turns ?? [];
       const latest = turns.at(-1);
       const average = (selector: (turn: SimulationTurn) => number) =>
         turns.length
           ? Math.round(turns.reduce((sum, turn) => sum + selector(turn), 0) / turns.length)
           : 0;
       const payload = {
-        phase,
+        phase: snapshot.phase,
         completed_turns: turns.length,
-        turn_budget: totalTurns,
+        turn_budget: snapshot.totalTurns,
         bricks: turns.reduce((sum, turn) => sum + (turn.bricks?.length ?? 0), 0),
         conflicts: turns.filter(turn => turn.action === "disagree").length,
         resolutions: turns.filter(turn =>
@@ -820,20 +935,21 @@ export default function Sandbox() {
       return payload;
     },
     analyzeCollaboration: async signal => {
-      const result = simulationResult;
-      const turns = result?.turns ?? stepTurns;
+      const snapshot = webMCPStateRef.current;
+      const result = snapshot.simulationResult;
+      const turns = result?.turns ?? snapshot.stepTurns;
       if (turns.length === 0) {
         throw new Error("Run at least one collaboration turn before analysis.");
       }
       const scenarioName =
         result?.scenario ??
-        scenarios?.find(item => item.id === selectedScenario)?.name ??
+        scenarios?.find(item => item.id === snapshot.selectedScenario)?.name ??
         "Assembly mission";
       signal.throwIfAborted();
       setLastWebMCPAction("Analyzing collaboration patterns");
       const analysisResult = (await analyzeSimulation.mutateAsync({
         scenario: scenarioName,
-        agents: agents.map(agent => ({
+        agents: snapshot.agents.map(agent => ({
           name: agent.name,
           personality: agent.personality,
           strategy: agent.strategy,
@@ -847,6 +963,10 @@ export default function Sandbox() {
         })),
       })) as AnalysisResult;
       signal.throwIfAborted();
+      webMCPStateRef.current = {
+        ...webMCPStateRef.current,
+        analysis: analysisResult,
+      };
       setAnalysis(analysisResult);
       setLastWebMCPAction(
         `Analysis ready: ${analysisResult.collaborationPattern}`,
@@ -864,31 +984,36 @@ export default function Sandbox() {
   };
 
   const assemblyTools = useMemo(
-    () =>
-      createAssemblyTools({
-        listScenarios: () => webMCPActionsRef.current?.listScenarios(),
-        listAgentPresets: () => webMCPActionsRef.current?.listAgentPresets(),
+    () => {
+      const requireActions = () => {
+        if (!webMCPActionsRef.current) {
+          throw new Error(
+            "Assembly Lab is not ready. Wait for the '9 tools ready' indicator, then retry.",
+          );
+        }
+        return webMCPActionsRef.current;
+      };
+
+      return createAssemblyTools({
+        listScenarios: () => requireActions().listScenarios(),
+        listAgentPresets: () => requireActions().listAgentPresets(),
         configureMission: input => {
-          if (!webMCPActionsRef.current) throw new Error("Assembly Lab is not ready.");
-          return webMCPActionsRef.current.configureMission(input);
+          return requireActions().configureMission(input);
         },
-        previewMission: () => webMCPActionsRef.current?.previewMission(),
+        previewMission: () => requireActions().previewMission(),
         runNextTurn: signal => {
-          if (!webMCPActionsRef.current) return Promise.reject(new Error("Assembly Lab is not ready."));
-          return webMCPActionsRef.current.runNextTurn(signal);
+          return requireActions().runNextTurn(signal);
         },
         runSimulation: (input, signal) => {
-          if (!webMCPActionsRef.current) return Promise.reject(new Error("Assembly Lab is not ready."));
-          return webMCPActionsRef.current.runSimulation(input, signal);
+          return requireActions().runSimulation(input, signal);
         },
-        inspectCollaboration: () =>
-          webMCPActionsRef.current?.inspectCollaboration(),
+        inspectCollaboration: () => requireActions().inspectCollaboration(),
         analyzeCollaboration: signal => {
-          if (!webMCPActionsRef.current) return Promise.reject(new Error("Assembly Lab is not ready."));
-          return webMCPActionsRef.current.analyzeCollaboration(signal);
+          return requireActions().analyzeCollaboration(signal);
         },
-        resetMission: () => webMCPActionsRef.current?.resetMission(),
-      }),
+        resetMission: () => requireActions().resetMission(),
+      });
+    },
     [],
   );
   const webMCP = useWebMCPTools(assemblyTools);

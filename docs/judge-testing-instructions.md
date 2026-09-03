@@ -50,9 +50,28 @@ If the browser does not expose WebMCP, click **Load judge demo**, select **Step 
 |---|---|
 | “WebMCP browser needed” | Move to ChatGPT's in-app browser or enable WebMCP in Chrome 149+ and reload |
 | Tools do not appear after enabling WebMCP | Hard-refresh `/sandbox`; verify the page is top-level and same-origin |
+| Inspector reports invalid input | Enter one JSON object. Use `{}` for tools with no parameters. Do not leave the field blank, use JavaScript or Markdown fences, or submit a double-encoded JSON string |
+| Inspector reports that invocation failed | Open DevTools → Console, enable **Preserve log**, and retry. The corrected tools return a serializable object with `success`, `tool`, `code`, `error`, and `retryable` instead of allowing application errors to reject the callback |
 | A turn takes several seconds | Wait for the structured model response; the page shows progress and retains current state |
 | Browser agent chooses an invalid ID | Ask it to call `list_scenarios` and `list_agent_presets` first |
-| A long run should stop | Cancel the browser-agent action; the cancellation signal is passed into long-running handlers |
+| A long run should stop | Cancel the browser-agent action; the cancellation signal is passed into long-running handlers and returns a serializable `ABORTED` result |
+
+For no-parameter tools, use this exact inspector payload:
+
+```json
+{}
+```
+
+For `configure_mission`, first discover valid IDs and then use an object such as:
+
+```json
+{
+  "scenario_id": "bridge-engineering",
+  "agent_ids": ["architect", "diplomat"],
+  "total_turns": 4,
+  "mode": "step_by_step"
+}
+```
 
 ## References
 
